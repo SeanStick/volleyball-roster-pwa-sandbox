@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   RotateCw,
   RotateCcw,
@@ -13,10 +13,13 @@ import {
   Eye,
   EyeOff,
   RefreshCw,
-  ArrowLeftRight
+  ArrowLeftRight,
+  Play,
+  Film
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
 import { FORMATIONS_61_DATA } from '../services/formations61Data';
+import { FORMATION_ANIMATIONS } from '../services/formationAnimationsData';
 import {
   FRONT_ROW_ZONES,
   BACK_ROW_ZONES,
@@ -31,6 +34,7 @@ import {
   validate61Formation
 } from '../services/volleyballRules';
 import FormationCanvas from './FormationCanvas';
+import FormationAnimationPlayer from './FormationAnimationPlayer';
 import FormationTacticsGuide from './FormationTacticsGuide';
 import LiberoPromptModal from './LiberoPromptModal';
 import LiberoServingPromptModal from './LiberoServingPromptModal';
@@ -86,13 +90,56 @@ export default function FormationsView({
   const isReceivePhase = phase === 'receive' || phase === 'receiving';
   const currentPhaseKey = isReceivePhase ? 'receiving' : 'serving';
 
+  // 🎬 Tactical Rally Simulator Animation State
+  const [isAnimationActive, setIsAnimationActive] = useState(true);
+  const [currentStageIndex, setCurrentStageIndex] = useState(0);
+  const [isPlaying, setIsPlaying] = useState(false);
+  const [playbackSpeed, setPlaybackSpeed] = useState(1);
+  const [isLooping, setIsLooping] = useState(true);
+
+  const currentAnimRotationData = FORMATION_ANIMATIONS[rotation] || FORMATION_ANIMATIONS[1];
+  const currentAnimPhaseData = currentAnimRotationData[currentPhaseKey] || currentAnimRotationData.receiving;
+  const animStages = currentAnimPhaseData.stages || [];
+  const currentStage = animStages[currentStageIndex] || animStages[0];
+
+  // Auto-play interval timer
+  useEffect(() => {
+    let interval = null;
+    if (isPlaying && isAnimationActive) {
+      const stepDuration = Math.round(2400 / playbackSpeed);
+      interval = setInterval(() => {
+        setCurrentStageIndex(prev => {
+          if (prev >= animStages.length - 1) {
+            if (isLooping) {
+              return 0;
+            } else {
+              setIsPlaying(false);
+              return prev;
+            }
+          }
+          return prev + 1;
+        });
+      }, stepDuration);
+    }
+    return () => {
+      if (interval) clearInterval(interval);
+    };
+  }, [isPlaying, isAnimationActive, playbackSpeed, isLooping, animStages.length]);
+
+  // Reset stage when rotation or phase changes
+  useEffect(() => {
+    setCurrentStageIndex(0);
+  }, [rotation, currentPhaseKey]);
+
   const rotationData = FORMATIONS_61_DATA[rotation] || FORMATIONS_61_DATA[1];
   const defaultPositions = isReceivePhase
     ? rotationData?.receiving?.positions
     : rotationData?.serving?.positions;
 
   const currentKey = `${rotation}-${currentPhaseKey}`;
-  const activePositions = customPositions[currentKey] || defaultPositions || {};
+  const activePositions = isAnimationActive && currentStage
+    ? currentStage.positions
+    : (customPositions[currentKey] || defaultPositions || {});
 
   const getPlayer = (id) => roster.find(p => p.id === id);
 
@@ -551,6 +598,20 @@ export default function FormationsView({
             )}
           </button>
 
+          {/* Rally Simulator Toggle */}
+          <button
+            className={`btn btn-sm ${isAnimationActive ? 'btn-primary' : 'btn-secondary'}`}
+            onClick={() => {
+              setIsAnimationActive(prev => !prev);
+              if (isPlaying) setIsPlaying(false);
+            }}
+            style={isAnimationActive ? { background: 'linear-gradient(135deg, #f59e0b, #d97706)', borderColor: '#f59e0b' } : {}}
+            title={isAnimationActive ? 'Rally Simulator is Active' : 'Switch to Interactive Board'}
+          >
+            <Volleyball size={14} className={isPlaying ? 'anim-spin' : ''} />
+            <span>{isAnimationActive ? '🎬 Rally Simulator: ON' : '🎬 Rally Simulator: OFF'}</span>
+          </button>
+
           <button
             className="btn btn-secondary btn-sm"
             onClick={() => onNavigateTab && onNavigateTab('court')}
@@ -629,8 +690,28 @@ export default function FormationsView({
 
       {/* Main 2-Column Tactical Layout */}
       <div className="formations-grid-layout">
-        {/* Left Column: Interactive Hardwood Floor Canvas */}
+        {/* Left Column: Interactive Hardwood Floor Canvas & Animation Player */}
         <div className="canvas-column">
+          {/* Rally Simulator Multi-Stage Transport Bar */}
+          {isAnimationActive && (
+            <FormationAnimationPlayer
+              rotation={rotation}
+              phase={currentPhaseKey}
+              currentStageIndex={currentStageIndex}
+              isPlaying={isPlaying}
+              playbackSpeed={playbackSpeed}
+              isLooping={isLooping}
+              onStageChange={(idx) => setCurrentStageIndex(idx)}
+              onPlayPauseToggle={() => setIsPlaying(prev => !prev)}
+              onReset={() => {
+                setIsPlaying(false);
+                setCurrentStageIndex(0);
+              }}
+              onSpeedChange={(spd) => setPlaybackSpeed(spd)}
+              onLoopToggle={() => setIsLooping(prev => !prev)}
+            />
+          )}
+
           <FormationCanvas
             positions={activePositions}
             arrows={isReceivePhase ? rotationData?.receiving?.arrows : rotationData?.serving?.arrows}
@@ -642,6 +723,10 @@ export default function FormationsView({
             onPositionsChange={handlePositionsChange}
             onTokenClick={(zoneKey) => handleOpenSubModal(zoneKey)}
             showTacticalArrows={showArrows}
+            isAnimationActive={isAnimationActive}
+            animationStage={currentStage}
+            playbackSpeed={playbackSpeed}
+            ball={currentStage ? currentStage.ball : null}
           />
         </div>
 

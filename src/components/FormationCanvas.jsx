@@ -11,7 +11,12 @@ export default function FormationCanvas({
   rotation = 1,
   onPositionsChange,
   onTokenClick,
-  showTacticalArrows = true
+  showTacticalArrows = true,
+  // Animation props
+  isAnimationActive = false,
+  animationStage = null,
+  playbackSpeed = 1,
+  ball = null
 }) {
   const courtRef = useRef(null);
   const [activeDragRole, setActiveDragRole] = useState(null);
@@ -69,6 +74,8 @@ export default function FormationCanvas({
    * Pointer Down (Mouse Click or Finger Touch)
    */
   const handlePointerDown = (e, role) => {
+    if (isAnimationActive) return; // Prevent drag during animation playback
+
     e.preventDefault();
     e.stopPropagation();
 
@@ -102,7 +109,7 @@ export default function FormationCanvas({
    * Pointer Move (Mouse Drag or Finger Slide)
    */
   const handlePointerMove = useCallback((e) => {
-    if (!activeDragRole || !courtRef.current) return;
+    if (!activeDragRole || !courtRef.current || isAnimationActive) return;
 
     const rect = courtRef.current.getBoundingClientRect();
     const clientX = e.clientX - rect.left - dragOffset.x;
@@ -123,7 +130,7 @@ export default function FormationCanvas({
         }
       });
     }
-  }, [activeDragRole, dragOffset, positions, onPositionsChange]);
+  }, [activeDragRole, dragOffset, positions, onPositionsChange, isAnimationActive]);
 
   /**
    * Pointer Up (Release)
@@ -141,6 +148,9 @@ export default function FormationCanvas({
     }
   }, [activeDragRole]);
 
+  // Transition speed calculation
+  const transitionDuration = `${0.55 / playbackSpeed}s`;
+
   return (
     <div className="formation-canvas-wrapper">
       {/* Court Floor Container */}
@@ -154,8 +164,8 @@ export default function FormationCanvas({
         {/* Floor Sheen & Texture Overlay */}
         <div className="hardwood-sheen"></div>
 
-        {/* Volleyball Net (Top boundary) */}
-        <div className="hardwood-net-line">
+        {/* Volleyball Net (Top boundary) with active flash ripple when ball is near */}
+        <div className={`hardwood-net-line ${ball && ball.visible && ball.y < 10 && ball.y > -20 ? 'net-flash' : ''}`}>
           <div className="hardwood-net-mesh"></div>
           <div className="net-antenna antenna-left"></div>
           <div className="net-antenna antenna-right"></div>
@@ -178,7 +188,7 @@ export default function FormationCanvas({
         <div className="hardwood-zone-guide zone-1">Z1</div>
 
         {/* Tactical Vectors / Arrows (SVG Overlay) */}
-        {showTacticalArrows && arrows && arrows.length > 0 && (
+        {showTacticalArrows && !isAnimationActive && arrows && arrows.length > 0 && (
           <svg className="tactical-arrows-svg" viewBox="0 0 100 100" preserveAspectRatio="none">
             <defs>
               <marker
@@ -240,26 +250,71 @@ export default function FormationCanvas({
           </svg>
         )}
 
-        {/* Draggable Circular Player Tokens */}
+        {/* Animated 3D Volleyball with Shadow & Trajectory Arc */}
+        {isAnimationActive && ball && ball.visible && (
+          <div
+            className="tactical-anim-ball-container"
+            style={{
+              left: `${ball.x}%`,
+              top: `${ball.y}%`,
+              transition: `left ${transitionDuration} cubic-bezier(0.25, 1, 0.5, 1), top ${transitionDuration} cubic-bezier(0.25, 1, 0.5, 1)`
+            }}
+          >
+            {/* Dynamic Drop Shadow on Hardwood Floor */}
+            <div
+              className="ball-floor-shadow"
+              style={{
+                opacity: ball.shadowOpacity !== undefined ? ball.shadowOpacity : 0.8,
+                transform: `scale(${ball.scale ? ball.scale * 0.9 : 1})`
+              }}
+            />
+
+            {/* Glowing 3D Volleyball Orb */}
+            <div
+              className="ball-orb-3d"
+              style={{
+                transform: `scale(${ball.scale || 1})`
+              }}
+            >
+              <div className="ball-seam-horizontal" />
+              <div className="ball-seam-vertical" />
+              <div className="ball-glow-core" />
+              <span className="ball-icon-emoji">🏐</span>
+            </div>
+          </div>
+        )}
+
+        {/* Circular Player Tokens */}
         {Object.entries(positions).map(([role, token]) => {
           const player = getPlayerForToken(token, role);
           const isDragging = activeDragRole === role;
           const isLibero = (player && (player.position === 'Libero' || player.isLibero)) || role === 'L';
           const isSetter = (player && player.position === 'Setter') || role === 'S';
           const displayRole = getRoleAbbrev(player, role);
+          const actionText = token.action;
 
           return (
             <div
               key={role}
-              className={`tactical-player-token ${isDragging ? 'is-dragging' : ''} ${isLibero ? 'is-libero' : ''} ${isSetter ? 'is-setter' : ''}`}
+              className={`tactical-player-token ${isDragging ? 'is-dragging' : ''} ${isLibero ? 'is-libero' : ''} ${isSetter ? 'is-setter' : ''} ${isAnimationActive ? 'is-animating' : ''}`}
               style={{
                 left: `${token.x}%`,
                 top: `${token.y}%`,
-                touchAction: 'none'
+                touchAction: 'none',
+                transition: isAnimationActive
+                  ? `left ${transitionDuration} cubic-bezier(0.25, 1, 0.5, 1), top ${transitionDuration} cubic-bezier(0.25, 1, 0.5, 1)`
+                  : 'none'
               }}
               onPointerDown={(e) => handlePointerDown(e, role)}
-              title={`Drag to reposition ${player?.name || token.name || role} (Zone ${token.zone || ''})`}
+              title={`${player?.name || token.name || role} (Zone ${token.zone || ''})`}
             >
+              {/* Dynamic Action Tag in Animation Mode */}
+              {isAnimationActive && actionText && (
+                <div className="token-action-pill">
+                  {actionText}
+                </div>
+              )}
+
               {/* Token Main Circle */}
               <div className="token-circle">
                 <span className="token-role">{displayRole}</span>
@@ -282,7 +337,15 @@ export default function FormationCanvas({
 
       {/* Canvas Footnote Instructions */}
       <div className="canvas-footnote">
-        <span style={{ color: 'var(--accent-orange)' }}>💡 Live Lineup Sync:</span> Player circles show the exact names & numbers from your active court lineup. Drag circles to adjust player positioning.
+        {isAnimationActive ? (
+          <span style={{ color: '#38bdf8' }}>
+            🎬 <strong>Rally Animation Active:</strong> Showing real-time player motion paths and ball flight. Use the controls above to step or scrub.
+          </span>
+        ) : (
+          <span>
+            <span style={{ color: 'var(--accent-orange)' }}>💡 Live Lineup Sync:</span> Player circles show the exact names & numbers from your active court lineup. Drag circles to adjust player positioning.
+          </span>
+        )}
       </div>
     </div>
   );

@@ -1,0 +1,42 @@
+{
+  "name": "Go Stand Over There - Volleyball Roster & Rotation Manager",
+  "short_name": "Go Stand Over There",
+  "description": "Professional Progressive Web App to manage volleyball rosters, jersey numbers, positions, and 6-player court rotations offline & online.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#0a0f1d",
+  "theme_color": "#0a0f1d",
+  "orientation": "portrait-primary",
+  "scope": "/",
+  "icons": [
+    {
+      "src": "/favicon.svg",
+      "sizes": "48x48 72x72 96x96 128x128 256x256 512x512",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    },
+    {
+      "src": "/icon.svg",
+      "sizes": "512x512",
+      "type": "image/svg+xml",
+      "purpose": "maskable any"
+    }
+  ],
+  "categories": ["sports", "productivity", "utilities"],
+  "shortcuts": [
+    {
+      "name": "Add Player",
+      "short_name": "Add",
+      "description": "Add a new volleyball player to roster",
+      "url": "/?action=add",
+      "icons": [{ "src": "/favicon.svg", "sizes": "96x96" }]
+    },
+    {
+      "name": "Court Lineup",
+      "short_name": "Court",
+      "description": "View 6-player court rotation",
+      "url": "/?tab=court",
+      "icons": [{ "src": "/favicon.svg", "sizes": "96x96" }]
+    }
+  ]
+}

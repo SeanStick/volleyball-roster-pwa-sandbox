@@ -1,0 +1,486 @@
+/* Volleyball Court & Rotation View */
+.court-container {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.court-header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  background: var(--bg-card);
+  border: 1px solid var(--border-glass);
+  border-radius: var(--radius-lg);
+  padding: 1rem 1.25rem;
+}
+
+.rotation-controls {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.rotation-indicator {
+  font-family: var(--font-jersey);
+  font-size: 1.35rem;
+  font-weight: 700;
+  color: var(--accent-orange);
+  background: rgba(255, 107, 53, 0.15);
+  border: 1px solid rgba(255, 107, 53, 0.4);
+  padding: 0.35rem 0.9rem;
+  border-radius: var(--radius-sm);
+  letter-spacing: 0.5px;
+}
+
+.rally-advance-btn {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  font-weight: 800;
+  letter-spacing: 0.3px;
+  transition: all 0.2s ease;
+}
+
+.rally-advance-btn:hover {
+  transform: translateY(-2px);
+}
+
+/* Substitution Status Pill */
+.subs-status-pill {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  background: rgba(15, 23, 42, 0.85);
+  border: 1px solid rgba(255, 107, 53, 0.4);
+  padding: 0.4rem 0.85rem;
+  border-radius: 99px;
+  font-size: 0.85rem;
+  color: #ffffff;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+}
+
+.subs-status-pill:hover {
+  background: rgba(30, 41, 59, 0.95);
+  border-color: var(--accent-orange);
+  transform: translateY(-1px);
+}
+
+/* Court Graphic Area */
+.court-stage-wrapper {
+  background: #0b1120;
+  border: 1px solid var(--border-glass);
+  border-radius: var(--radius-xl);
+  padding: 1.5rem;
+  box-shadow: var(--shadow-md);
+  display: flex;
+  justify-content: center;
+  position: relative;
+  overflow: hidden;
+}
+
+.volleyball-court {
+  width: 100%;
+  max-width: 720px;
+  background: linear-gradient(180deg, #1e3a8a 0%, #172554 100%);
+  border: 4px solid #ffffff;
+  border-radius: var(--radius-md);
+  aspect-ratio: 16 / 11;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 15px 35px rgba(0, 0, 0, 0.6), inset 0 0 40px rgba(0, 0, 0, 0.4);
+  user-select: none;
+}
+
+/* Volleyball Net (Top boundary of our side) */
+.court-net-line {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 8px;
+  background: repeating-linear-gradient(
+    90deg,
+    #ffffff,
+    #ffffff 10px,
+    #000000 10px,
+    #000000 20px
+  );
+  box-shadow: 0 4px 12px rgba(255, 255, 255, 0.4);
+  z-index: 10;
+}
+
+.court-net-label {
+  position: absolute;
+  top: 10px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: rgba(0, 0, 0, 0.8);
+  color: #93c5fd;
+  font-size: 0.68rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  padding: 0.15rem 0.55rem;
+  border-radius: 99px;
+  border: 1px solid rgba(147, 197, 253, 0.3);
+  z-index: 11;
+}
+
+/* Row Headers */
+.court-row-label {
+  position: absolute;
+  left: 12px;
+  font-size: 0.62rem;
+  font-weight: 800;
+  letter-spacing: 0.8px;
+  text-transform: uppercase;
+  z-index: 8;
+  opacity: 0.85;
+}
+
+.front-row-label {
+  top: 12px;
+  color: #fbbf24;
+}
+
+.back-row-label {
+  top: calc(48% + 6px);
+  color: #a78bfa;
+}
+
+/* 10-Foot / 3-Meter Attack Line */
+.court-attack-line {
+  position: absolute;
+  top: 48%;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: rgba(255, 255, 255, 0.75);
+  border-top: 2px dashed rgba(255, 255, 255, 0.85);
+  z-index: 5;
+}
+
+.attack-line-label {
+  position: absolute;
+  right: 12px;
+  top: -16px;
+  font-size: 0.65rem;
+  font-weight: 800;
+  color: rgba(255, 255, 255, 0.75);
+  letter-spacing: 0.5px;
+  background: rgba(0, 0, 0, 0.5);
+  padding: 0.1rem 0.4rem;
+  border-radius: 4px;
+}
+
+/* Court Zones Grid */
+.court-zones-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  grid-template-rows: 1fr 1.15fr;
+  width: 100%;
+  height: 100%;
+  padding: 1.8rem 0.85rem 0.85rem 0.85rem;
+  gap: 0.65rem;
+  z-index: 15;
+}
+
+.court-zone-slot {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: space-between;
+  background: rgba(15, 23, 42, 0.65);
+  border: 2px dashed rgba(255, 255, 255, 0.25);
+  border-radius: var(--radius-md);
+  padding: 0.45rem;
+  position: relative;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  cursor: pointer;
+}
+
+.court-zone-slot.zone-front-row {
+  border-color: rgba(245, 158, 11, 0.35);
+  background: rgba(15, 23, 42, 0.75);
+}
+
+.court-zone-slot.zone-back-row {
+  border-color: rgba(139, 92, 246, 0.35);
+  background: rgba(15, 23, 42, 0.75);
+}
+
+.court-zone-slot:hover {
+  background: rgba(30, 41, 59, 0.9);
+  border-color: var(--accent-orange);
+  transform: scale(1.02);
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.5);
+}
+
+.court-zone-slot.filled {
+  border: 2px solid rgba(255, 107, 53, 0.6);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+}
+
+.court-zone-slot.zone-front-row.filled {
+  border-color: rgba(245, 158, 11, 0.7);
+}
+
+.court-zone-slot.zone-back-row.filled {
+  border-color: rgba(139, 92, 246, 0.7);
+}
+
+.court-zone-slot.is-server {
+  border-color: #38bdf8 !important;
+  box-shadow: 0 0 16px rgba(56, 189, 248, 0.45) !important;
+}
+
+.zone-number-badge {
+  font-family: var(--font-jersey);
+  font-size: 0.85rem;
+  font-weight: 800;
+  color: rgba(255, 255, 255, 0.75);
+}
+
+.badge-row-front {
+  font-size: 0.58rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  background: rgba(245, 158, 11, 0.25);
+  color: #fbbf24;
+  border: 1px solid rgba(245, 158, 11, 0.5);
+  padding: 0.05rem 0.3rem;
+  border-radius: 3px;
+  letter-spacing: 0.5px;
+}
+
+.badge-row-back {
+  font-size: 0.58rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  background: rgba(139, 92, 246, 0.25);
+  color: #c4b5fd;
+  border: 1px solid rgba(139, 92, 246, 0.5);
+  padding: 0.05rem 0.3rem;
+  border-radius: 3px;
+  letter-spacing: 0.5px;
+}
+
+.server-badge {
+  font-size: 0.58rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  background: #38bdf8;
+  color: #020617;
+  padding: 0.05rem 0.35rem;
+  border-radius: 3px;
+  letter-spacing: 0.5px;
+}
+
+.slot-player-info {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: 0.15rem;
+  width: 100%;
+}
+
+.slot-jersey-num {
+  font-family: var(--font-jersey);
+  font-size: 1.65rem;
+  font-weight: 900;
+  line-height: 1;
+  color: #ffffff;
+  background: linear-gradient(135deg, var(--accent-orange), #ea580c);
+  padding: 0.15rem 0.55rem;
+  border-radius: var(--radius-sm);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
+}
+
+.slot-jersey-num.libero {
+  background: linear-gradient(135deg, #a855f7, #6d28d9);
+}
+
+.slot-player-name {
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: #ffffff;
+  max-width: 110px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  margin-top: 0.1rem;
+}
+
+.slot-player-pos {
+  font-size: 0.65rem;
+  font-weight: 700;
+  color: #94a3b8;
+  text-transform: uppercase;
+}
+
+.libero-covering-tag {
+  font-size: 0.62rem;
+  color: #c4b5fd;
+  background: rgba(139, 92, 246, 0.2);
+  border: 1px solid rgba(139, 92, 246, 0.35);
+  border-radius: 4px;
+  padding: 0.05rem 0.3rem;
+  margin-top: 0.15rem;
+  max-width: 110px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.slot-sub-btn {
+  display: flex;
+  align-items: center;
+  gap: 0.2rem;
+  font-size: 0.62rem;
+  font-weight: 700;
+  color: var(--accent-orange);
+  background: rgba(255, 107, 53, 0.15);
+  border: 1px solid rgba(255, 107, 53, 0.3);
+  padding: 0.1rem 0.4rem;
+  border-radius: 99px;
+  margin-top: 0.25rem;
+  opacity: 0.85;
+  transition: all 0.15s ease;
+}
+
+.court-zone-slot:hover .slot-sub-btn {
+  opacity: 1;
+  background: var(--accent-orange);
+  color: #ffffff;
+}
+
+.slot-empty-label {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.4);
+}
+
+/* Bench & Unassigned Players */
+.court-bench-section {
+  background: var(--bg-card);
+  border: 1px solid var(--border-glass);
+  border-radius: var(--radius-lg);
+  padding: 1.25rem;
+}
+
+.court-bench-title {
+  font-family: var(--font-display);
+  font-size: 1.05rem;
+  font-weight: 700;
+  margin-bottom: 0.85rem;
+  color: #ffffff;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.bench-player-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.6rem;
+}
+
+.bench-chip {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  background: rgba(30, 41, 59, 0.8);
+  border: 1px solid var(--border-glass);
+  padding: 0.4rem 0.8rem;
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.bench-chip:hover {
+  background: rgba(51, 65, 85, 0.9);
+  border-color: var(--accent-orange);
+  transform: translateY(-2px);
+}
+
+.bench-chip-num {
+  font-family: var(--font-jersey);
+  font-size: 1.1rem;
+  font-weight: 800;
+  color: var(--accent-orange);
+}
+
+.bench-chip-num.libero-num {
+  color: #c084fc;
+}
+
+.bench-chip-name {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #ffffff;
+}
+
+.bench-chip-pos {
+  font-size: 0.7rem;
+  color: var(--text-muted);
+  font-weight: 600;
+  text-transform: uppercase;
+}
+
+/* Sub Modal Rows */
+.sub-player-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  transition: all 0.2s ease;
+}
+
+.sub-player-row.is-legal:hover {
+  background: rgba(51, 65, 85, 0.85) !important;
+  border-color: var(--accent-orange) !important;
+  transform: translateX(4px);
+}
+
+/* Libero Return Card */
+.libero-return-card:hover {
+  transform: scale(1.01);
+  box-shadow: 0 8px 20px rgba(16, 185, 129, 0.3);
+}
+
+/* Server Choice & Re-entry Cards */
+.server-choice-card.is-available:hover {
+  transform: scale(1.015);
+  box-shadow: 0 8px 25px rgba(56, 189, 248, 0.25);
+  border-color: #38bdf8 !important;
+}
+
+.reentry-choice-card:hover {
+  transform: scale(1.015);
+  box-shadow: 0 8px 25px rgba(168, 85, 247, 0.25);
+  border-color: #c084fc !important;
+}
+
+@media (max-width: 640px) {
+  .court-zones-grid {
+    gap: 0.4rem;
+    padding: 1.4rem 0.4rem 0.4rem 0.4rem;
+  }
+  .slot-jersey-num {
+    font-size: 1.3rem;
+    padding: 0.1rem 0.4rem;
+  }
+  .slot-player-name {
+    font-size: 0.75rem;
+    max-width: 80px;
+  }
+  .slot-sub-btn {
+    display: none;
+  }
+}

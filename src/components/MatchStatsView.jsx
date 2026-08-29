@@ -1,7 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Printer,
-  Download,
   RotateCcw,
   RefreshCw,
   Trophy,
@@ -12,21 +11,33 @@ import {
   TrendingUp,
   User,
   Users,
-  Volleyball,
   Calendar,
   Layers,
   Sparkles,
   Trash2,
-  Plus
+  Plus,
+  Lightbulb,
+  ShieldAlert,
+  ArrowRight,
+  Compass,
+  Archive,
+  BarChart3,
+  Check,
+  Zap,
+  Info
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
 import {
   computeErrorRankings,
   computeCategoryBreakdown,
   computePlayerStats,
+  computeRotationPerformance,
+  computeHistoricalAverages,
+  generateTacticalSuggestions,
   ERROR_CATEGORIES,
   VOLLEYBALL_ERRORS
 } from '../services/matchStatsService';
+import { storageService } from '../services/storageService';
 
 export default function MatchStatsView({
   matchStats,
@@ -35,11 +46,21 @@ export default function MatchStatsView({
   teamSettings = {},
   onResetScore,
   onStartNewSet,
-  onResetFullMatch
+  onResetFullMatch,
+  onNavigateTab
 }) {
   const [selectedSetFilter, setSelectedSetFilter] = useState('ALL');
+  const [suggestionFilter, setSuggestionFilter] = useState('ALL'); // 'ALL' | 'CRITICAL' | 'TACTICAL' | 'ROTATION' | 'HISTORICAL'
   const [tableSortKey, setTableSortKey] = useState('totalErrors');
   const [tableSortAsc, setTableSortAsc] = useState(false);
+  const [matchHistory, setMatchHistory] = useState([]);
+  const [isArchiveSuccess, setIsArchiveSuccess] = useState(false);
+
+  // Load historical matches on mount
+  useEffect(() => {
+    const history = storageService.getMatchHistory();
+    setMatchHistory(history);
+  }, []);
 
   const {
     ourScore = 0,
@@ -61,6 +82,26 @@ export default function MatchStatsView({
   const errorRankings = computeErrorRankings(filteredPoints);
   const categoryBreakdown = computeCategoryBreakdown(filteredPoints);
   const playerStats = computePlayerStats(filteredPoints, roster);
+  const rotationStats = computeRotationPerformance(filteredPoints);
+  const historicalAverages = computeHistoricalAverages(matchHistory, roster);
+
+  // Generate deep tactical coaching suggestions
+  const allSuggestions = generateTacticalSuggestions({
+    currentMatch: matchStats,
+    matchHistory,
+    roster,
+    teamSettings
+  });
+
+  // Filter suggestions based on active pill
+  const filteredSuggestions = allSuggestions.filter(s => {
+    if (suggestionFilter === 'ALL') return true;
+    if (suggestionFilter === 'CRITICAL') return s.priority === 'critical';
+    if (suggestionFilter === 'TACTICAL') return s.priority === 'tactical' || s.priority === 'positive';
+    if (suggestionFilter === 'ROTATION') return s.type === 'rotation';
+    if (suggestionFilter === 'HISTORICAL') return s.type === 'historical';
+    return true;
+  });
 
   // Overall Match Totals
   const totalOurPoints = filteredPoints.filter(p => p.pointWonBy === 'us').length;
@@ -73,6 +114,28 @@ export default function MatchStatsView({
   // Print to PDF Trigger
   const handlePrintPDF = () => {
     window.print();
+  };
+
+  // Archive Current Match to History
+  const handleArchiveMatch = () => {
+    const opp = prompt('Enter Opponent Team Name for match archive:', opponentName || 'Opponent');
+    if (opp !== null) {
+      const archived = storageService.archiveCurrentMatch(matchStats, opp);
+      if (archived) {
+        setMatchHistory(storageService.getMatchHistory());
+        setIsArchiveSuccess(true);
+        setTimeout(() => setIsArchiveSuccess(false), 3500);
+        confetti({ particleCount: 35, spread: 55, origin: { y: 0.4 } });
+      }
+    }
+  };
+
+  // Delete an archived match
+  const handleDeleteArchivedMatch = (matchId) => {
+    if (window.confirm('Delete this past match from your history archive?')) {
+      const updated = storageService.deleteMatchFromHistory(matchId);
+      setMatchHistory(updated);
+    }
   };
 
   // Sort Table
@@ -105,7 +168,6 @@ export default function MatchStatsView({
     if (window.confirm('Delete this point entry from the match record?')) {
       setMatchStats(prev => {
         const updatedHistory = prev.pointHistory.filter(p => p.id !== pointId);
-        // Recalculate score from updated history for the active set
         const activeSetPoints = updatedHistory.filter(p => p.setNumber === prev.setNumber);
         const newOurScore = activeSetPoints.filter(p => p.pointWonBy === 'us').length;
         const newOppScore = activeSetPoints.filter(p => p.pointWonBy === 'opponent').length;
@@ -119,6 +181,9 @@ export default function MatchStatsView({
       });
     }
   };
+
+  const criticalCount = allSuggestions.filter(s => s.priority === 'critical').length;
+  const tacticalCount = allSuggestions.filter(s => s.priority === 'tactical').length;
 
   return (
     <div className="stats-view-container">
@@ -137,17 +202,17 @@ export default function MatchStatsView({
         <div>
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', marginBottom: '0.25rem' }}>
             <Trophy size={24} color="#f59e0b" />
-            <h2 style={{ margin: 0, fontSize: '1.4rem', color: '#f8fafc', fontWeight: 800 }}>
-              Match Stats & Error Analytics
+            <h2 style={{ margin: 0, fontSize: '1.35rem', color: '#f8fafc', fontWeight: 800 }}>
+              Match Stats & Tactical Analysis
             </h2>
           </div>
           <p style={{ margin: 0, fontSize: '0.84rem', color: 'var(--text-secondary)' }}>
-            Real-time tracking of team errors, scoring efficiency, and player performance.
+            Real-time tracking of team errors, 6-2 tactical adjustments, and multi-game historical trends.
           </p>
         </div>
 
-        {/* Action Buttons: Print PDF & New Set */}
-        <div className="no-print" style={{ display: 'flex', gap: '0.6rem', flexWrap: 'wrap' }}>
+        {/* Action Buttons: Print PDF, Save to Archive & New Set */}
+        <div className="no-print stats-actions-bar">
           <button
             className="btn btn-primary"
             onClick={handlePrintPDF}
@@ -156,6 +221,16 @@ export default function MatchStatsView({
           >
             <Printer size={16} />
             <span>Export / Print PDF</span>
+          </button>
+
+          <button
+            className="btn btn-secondary"
+            onClick={handleArchiveMatch}
+            title="Save and archive this match into historical games"
+            style={isArchiveSuccess ? { borderColor: '#10b981', color: '#34d399' } : {}}
+          >
+            {isArchiveSuccess ? <Check size={16} /> : <Archive size={16} />}
+            <span>{isArchiveSuccess ? 'Match Archived!' : 'Save to History'}</span>
           </button>
 
           <button
@@ -187,10 +262,312 @@ export default function MatchStatsView({
         </div>
       </div>
 
+      {/* =========================================================================
+          🧠 TACTICAL COACHING & GAME ADJUSTMENT SUGGESTIONS PANEL
+         ========================================================================= */}
+      <div className="tactical-coaching-panel">
+        <div className="tactical-panel-header">
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
+            <div className="tactical-brain-icon">
+              <Lightbulb size={22} color="#fbbf24" />
+            </div>
+            <div>
+              <h3 style={{ margin: 0, fontSize: '1.15rem', color: '#ffffff', fontWeight: 800 }}>
+                Tactical Coaching Suggestions & Match Adjustments
+              </h3>
+              <p style={{ margin: 0, fontSize: '0.78rem', color: 'var(--text-secondary)' }}>
+                Rule-compliant volleyball adjustments analyzing current rally data & {matchHistory.length} saved historical games.
+              </p>
+            </div>
+          </div>
+
+          {/* Quick Badges */}
+          <div className="no-print" style={{ display: 'flex', gap: '0.4rem', flexWrap: 'wrap' }}>
+            {criticalCount > 0 && (
+              <span className="badge-critical">
+                <AlertTriangle size={12} /> {criticalCount} Critical
+              </span>
+            )}
+            <span className="badge-tactical">
+              <Compass size={12} /> 6-2 System
+            </span>
+          </div>
+        </div>
+
+        {/* Suggestion Filter Pills */}
+        <div className="no-print suggestion-filter-row">
+          <button
+            className={`sug-filter-pill ${suggestionFilter === 'ALL' ? 'active' : ''}`}
+            onClick={() => setSuggestionFilter('ALL')}
+          >
+            All Suggestions ({allSuggestions.length})
+          </button>
+          <button
+            className={`sug-filter-pill ${suggestionFilter === 'CRITICAL' ? 'active' : ''}`}
+            onClick={() => setSuggestionFilter('CRITICAL')}
+          >
+            Critical Action Items ({criticalCount})
+          </button>
+          <button
+            className={`sug-filter-pill ${suggestionFilter === 'ROTATION' ? 'active' : ''}`}
+            onClick={() => setSuggestionFilter('ROTATION')}
+          >
+            Rotation Weaknesses
+          </button>
+          <button
+            className={`sug-filter-pill ${suggestionFilter === 'HISTORICAL' ? 'active' : ''}`}
+            onClick={() => setSuggestionFilter('HISTORICAL')}
+          >
+            Saved Games Trends ({matchHistory.length})
+          </button>
+        </div>
+
+        {/* List of Suggestion Cards */}
+        <div className="suggestion-cards-list">
+          {filteredSuggestions.map(sug => {
+            const isCrit = sug.priority === 'critical';
+            const isPos = sug.priority === 'positive';
+
+            return (
+              <div
+                key={sug.id}
+                className={`tactical-sug-card ${isCrit ? 'critical' : isPos ? 'positive' : 'tactical'}`}
+              >
+                <div className="tactical-sug-top">
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap' }}>
+                    <span className={`sug-priority-badge ${sug.priority}`}>
+                      {isCrit ? 'CRITICAL ADJUSTMENT' : isPos ? 'POSITIVE TREND' : 'TACTICAL OPPORTUNITY'}
+                    </span>
+                    <span className="sug-category-label">{sug.category}</span>
+                  </div>
+
+                  {sug.ruleReference && (
+                    <span className="sug-rule-ref">
+                      <Info size={12} /> {sug.ruleReference}
+                    </span>
+                  )}
+                </div>
+
+                <h4 className="tactical-sug-title">{sug.title}</h4>
+
+                {/* Evidence / Data Box */}
+                {sug.evidence && (
+                  <div className="tactical-sug-evidence">
+                    <strong style={{ color: isCrit ? '#fca5a5' : isPos ? '#6ee7b7' : '#93c5fd' }}>
+                      Data Diagnostic:
+                    </strong>{' '}
+                    {sug.evidence}
+                  </div>
+                )}
+
+                {/* Recommendation */}
+                <div className="tactical-sug-rec">
+                  <strong>Coach Recommendation:</strong> {sug.recommendation}
+                </div>
+
+                {/* Action Link / Navigation */}
+                {sug.actionLabel && onNavigateTab && (
+                  <div className="no-print" style={{ marginTop: '0.75rem', display: 'flex', justifyContent: 'flex-end' }}>
+                    <button
+                      className="btn btn-sm btn-secondary"
+                      onClick={() => {
+                        if (sug.targetRotation) {
+                          onNavigateTab('formations', sug.targetRotation);
+                        } else if (sug.type === 'formation' || sug.category.includes('6-2') || sug.category.includes('Receive')) {
+                          onNavigateTab('formations');
+                        } else if (sug.type === 'timeout') {
+                          alert('Tactical Timeout Called! 30-second break.');
+                        } else {
+                          onNavigateTab('court');
+                        }
+                      }}
+                      style={{ fontSize: '0.76rem', gap: '0.35rem' }}
+                    >
+                      <span>{sug.actionLabel}</span>
+                      <ArrowRight size={13} />
+                    </button>
+                  </div>
+                )}
+              </div>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* =========================================================================
+          ROTATION PERFORMANCE GRID (R1 - R6 SIDE-OUT & ERROR CONCESSION MAP)
+         ========================================================================= */}
+      <div className="error-leaderboard-card">
+        <div className="leaderboard-title-row">
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+            <Compass size={20} color="#38bdf8" />
+            <h3 style={{ margin: 0, fontSize: '1.1rem', color: '#f8fafc', fontWeight: 800 }}>
+              6-2 Rotational Performance & Side-Out Efficiency (R1 – R6)
+            </h3>
+          </div>
+          <span style={{ fontSize: '0.78rem', color: 'var(--text-secondary)' }}>
+            Identifies rotation vulnerabilities under USAV 6-2 System
+          </span>
+        </div>
+
+        <div className="rotations-grid">
+          {rotationStats.map(rStat => {
+            const isWeak = rStat.netDifferential < 0 && rStat.totalRallies >= 2;
+            const isStrong = rStat.netDifferential > 0 && rStat.totalRallies >= 2;
+
+            return (
+              <div
+                key={rStat.rotation}
+                className={`rotation-stat-card ${isWeak ? 'weak' : isStrong ? 'strong' : ''}`}
+              >
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.4rem' }}>
+                  <strong style={{ fontSize: '0.92rem', color: '#f8fafc' }}>
+                    Rotation {rStat.rotation}
+                  </strong>
+                  <span className={`net-badge ${rStat.netDifferential > 0 ? 'positive' : rStat.netDifferential < 0 ? 'negative' : 'neutral'}`}>
+                    {rStat.netDifferential > 0 ? `+${rStat.netDifferential}` : rStat.netDifferential} Net
+                  </span>
+                </div>
+
+                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.76rem', color: 'var(--text-secondary)', marginBottom: '0.3rem' }}>
+                  <span>Side-Out: <strong style={{ color: rStat.sideOutPercentage >= 60 ? '#34d399' : '#f87171' }}>{rStat.sideOutPercentage}%</strong></span>
+                  <span>Rallies: <strong>{rStat.totalRallies}</strong></span>
+                </div>
+
+                {rStat.topError ? (
+                  <div style={{ fontSize: '0.72rem', color: '#fca5a5', background: 'rgba(239, 68, 68, 0.1)', padding: '0.25rem 0.4rem', borderRadius: '4px', marginTop: '0.3rem' }}>
+                    Top Error: <strong>{rStat.topError.label.split('(')[0]}</strong> ({rStat.topError.count}x)
+                  </div>
+                ) : (
+                  <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)', marginTop: '0.3rem' }}>
+                    {rStat.totalRallies === 0 ? 'No rallies logged' : 'Clean rotation'}
+                  </div>
+                )}
+
+                {onNavigateTab && (
+                  <button
+                    className="no-print btn btn-secondary btn-sm"
+                    onClick={() => onNavigateTab('formations', rStat.rotation)}
+                    style={{ width: '100%', marginTop: '0.5rem', fontSize: '0.72rem', padding: '0.3rem' }}
+                    title={`View Rotation ${rStat.rotation} Tactics Board`}
+                  >
+                    View Tactics (R{rStat.rotation})
+                  </button>
+                )}
+              </div>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* =========================================================================
+          HISTORICAL MULTI-MATCH BENCHMARKS & SAVED MATCH ARCHIVE
+         ========================================================================= */}
+      <div className="error-leaderboard-card">
+        <div className="leaderboard-title-row">
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+            <Calendar size={20} color="#a855f7" />
+            <h3 style={{ margin: 0, fontSize: '1.1rem', color: '#f8fafc', fontWeight: 800 }}>
+              Cross-Game Historical Analysis ({matchHistory.length} Saved Games)
+            </h3>
+          </div>
+          <span style={{ fontSize: '0.78rem', color: 'var(--text-secondary)' }}>
+            Win Rate: {historicalAverages.winRate}% ({historicalAverages.matchesWon}/{historicalAverages.totalMatches} Matches)
+          </span>
+        </div>
+
+        {/* Historical vs Current Comparison Bar */}
+        <div className="historical-comparison-grid">
+          <div className="hist-comp-item">
+            <span className="hist-comp-label">Avg Errors / Set</span>
+            <div className="hist-comp-value">{historicalAverages.avgErrorsPerSet}</div>
+            <span className="hist-comp-sub">Multi-game average</span>
+          </div>
+
+          <div className="hist-comp-item">
+            <span className="hist-comp-label">Service Error %</span>
+            <div className="hist-comp-value" style={{ color: '#fbbf24' }}>{historicalAverages.serviceErrorPct}%</div>
+            <span className="hist-comp-sub">Of total errors</span>
+          </div>
+
+          <div className="hist-comp-item">
+            <span className="hist-comp-label">Attack Error %</span>
+            <div className="hist-comp-value" style={{ color: '#f87171' }}>{historicalAverages.attackErrorPct}%</div>
+            <span className="hist-comp-sub">Of total errors</span>
+          </div>
+
+          <div className="hist-comp-item">
+            <span className="hist-comp-label">Passing Error %</span>
+            <div className="hist-comp-value" style={{ color: '#60a5fa' }}>{historicalAverages.passingErrorPct}%</div>
+            <span className="hist-comp-sub">Of total errors</span>
+          </div>
+        </div>
+
+        {/* List of Saved Historical Matches */}
+        <div className="no-print" style={{ marginTop: '1rem' }}>
+          <div style={{ fontSize: '0.82rem', fontWeight: 700, color: 'var(--text-secondary)', marginBottom: '0.5rem' }}>
+            Archived Past Matches:
+          </div>
+
+          {matchHistory.length === 0 ? (
+            <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)' }}>
+              No matches archived yet. Use the "Save to History" button at the top to save your completed games.
+            </div>
+          ) : (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.45rem', maxHeight: '220px', overflowY: 'auto' }}>
+              {matchHistory.map(m => (
+                <div
+                  key={m.id}
+                  style={{
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    alignItems: 'center',
+                    padding: '0.55rem 0.85rem',
+                    background: 'rgba(15, 23, 42, 0.6)',
+                    borderRadius: 'var(--radius-sm)',
+                    border: '1px solid rgba(255, 255, 255, 0.08)',
+                    fontSize: '0.82rem'
+                  }}
+                >
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.65rem' }}>
+                    <span style={{
+                      fontWeight: 800,
+                      color: m.result === 'WON' ? '#34d399' : '#f87171',
+                      background: m.result === 'WON' ? 'rgba(16, 185, 129, 0.15)' : 'rgba(239, 68, 68, 0.15)',
+                      padding: '0.15rem 0.45rem',
+                      borderRadius: '4px',
+                      fontSize: '0.75rem'
+                    }}>
+                      {m.result}
+                    </span>
+                    <strong>vs {m.opponentName}</strong>
+                    <span style={{ color: 'var(--text-muted)' }}>({m.finalScore})</span>
+                  </div>
+
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.65rem' }}>
+                    <span style={{ fontSize: '0.74rem', color: 'var(--text-muted)' }}>
+                      {new Date(m.date).toLocaleDateString()}
+                    </span>
+                    <button
+                      className="btn-icon btn-sm"
+                      onClick={() => handleDeleteArchivedMatch(m.id)}
+                      title="Delete this match from history"
+                      style={{ color: '#ef4444', padding: '0.2rem' }}
+                    >
+                      <Trash2 size={13} />
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
+
       {/* Set Filter Pill Ribbon */}
       <div className="no-print" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap' }}>
         <span style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', fontWeight: 700 }}>
-          Filter by Set:
+          Filter Current Match by Set:
         </span>
         <button
           className={`btn-sm btn ${selectedSetFilter === 'ALL' ? 'btn-primary' : 'btn-secondary'}`}
@@ -289,7 +666,6 @@ export default function MatchStatsView({
         ) : (
           <div>
             {errorRankings.map((item, index) => {
-              // Find top player who made this error
               const topPlayerEntry = Object.entries(item.playerCounts).sort((a, b) => b[1] - a[1])[0];
               const topPlayer = topPlayerEntry ? roster.find(p => p.id === topPlayerEntry[0]) : null;
 
@@ -457,8 +833,8 @@ export default function MatchStatsView({
             No rallies logged yet.
           </div>
         ) : (
-          <div style={{ maxHeight: '360px', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
-            {[...filteredPoints].reverse().map((pt, idx) => {
+          <div style={{ maxHeight: '320px', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
+            {[...filteredPoints].reverse().map((pt) => {
               const isUs = pt.pointWonBy === 'us';
 
               return (

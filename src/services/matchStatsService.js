@@ -380,3 +380,441 @@ export function computePlayerStats(pointHistory = [], roster = []) {
     return a.player.number - b.player.number;
   });
 }
+
+/**
+ * Computes performance analytics for each of the 6 volleyball rotations (R1 through R6).
+ *
+ * @param {Array} pointHistory - Array of point events
+ * @returns {Array} List of 6 rotation performance metrics
+ */
+export function computeRotationPerformance(pointHistory = []) {
+  const rotationStats = {};
+
+  for (let r = 1; r <= 6; r++) {
+    rotationStats[r] = {
+      rotation: r,
+      ourPointsWon: 0,
+      opponentPointsWon: 0,
+      totalRallies: 0,
+      servePointsWon: 0,
+      servePointsTotal: 0,
+      receivePointsWon: 0,
+      receivePointsTotal: 0,
+      errorCount: 0,
+      errorsByType: {},
+      netDifferential: 0,
+      sideOutPercentage: 0,
+      servePercentage: 0,
+      topError: null
+    };
+  }
+
+  if (!Array.isArray(pointHistory)) return Object.values(rotationStats);
+
+  pointHistory.forEach(pt => {
+    const r = pt.rotation || 1;
+    if (!rotationStats[r]) return;
+
+    const rStat = rotationStats[r];
+    rStat.totalRallies += 1;
+
+    if (pt.phase === 'serve') {
+      rStat.servePointsTotal += 1;
+      if (pt.pointWonBy === 'us') rStat.servePointsWon += 1;
+    } else {
+      rStat.receivePointsTotal += 1;
+      if (pt.pointWonBy === 'us') rStat.receivePointsWon += 1;
+    }
+
+    if (pt.pointWonBy === 'us') {
+      rStat.ourPointsWon += 1;
+    } else {
+      rStat.opponentPointsWon += 1;
+      if (pt.errorTypeId) {
+        rStat.errorCount += 1;
+        rStat.errorsByType[pt.errorTypeId] = (rStat.errorsByType[pt.errorTypeId] || 0) + 1;
+      }
+    }
+  });
+
+  return Object.values(rotationStats).map(rStat => {
+    rStat.netDifferential = rStat.ourPointsWon - rStat.opponentPointsWon;
+    rStat.sideOutPercentage = rStat.receivePointsTotal > 0
+      ? Math.round((rStat.receivePointsWon / rStat.receivePointsTotal) * 100)
+      : 0;
+    rStat.servePercentage = rStat.servePointsTotal > 0
+      ? Math.round((rStat.servePointsWon / rStat.servePointsTotal) * 100)
+      : 0;
+
+    // Determine top error in this rotation
+    const errorEntries = Object.entries(rStat.errorsByType).sort((a, b) => b[1] - a[1]);
+    if (errorEntries.length > 0) {
+      const errDef = VOLLEYBALL_ERRORS.find(e => e.id === errorEntries[0][0]);
+      rStat.topError = {
+        errorTypeId: errorEntries[0][0],
+        count: errorEntries[0][1],
+        label: errDef?.label || errorEntries[0][0]
+      };
+    }
+
+    return rStat;
+  });
+}
+
+/**
+ * Computes historical averages across all saved past matches.
+ *
+ * @param {Array} matchHistory - List of saved matches
+ * @param {Array} roster - Team roster
+ * @returns {Object} Historical metrics summary
+ */
+export function computeHistoricalAverages(matchHistory = [], roster = []) {
+  if (!Array.isArray(matchHistory) || matchHistory.length === 0) {
+    return {
+      totalMatches: 0,
+      totalSets: 0,
+      totalPoints: 0,
+      winRate: 0,
+      avgErrorsPerSet: 0,
+      serviceErrorPct: 0,
+      attackErrorPct: 0,
+      passingErrorPct: 0,
+      handlingErrorPct: 0,
+      recurrentWeakRotations: []
+    };
+  }
+
+  let totalMatches = matchHistory.length;
+  let matchesWon = 0;
+  let totalSets = 0;
+  let totalPoints = 0;
+  let totalErrors = 0;
+  let serviceErrors = 0;
+  let attackErrors = 0;
+  let passingErrors = 0;
+  let handlingErrors = 0;
+  const rotationErrorMap = { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0, 6: 0 };
+
+  matchHistory.forEach(match => {
+    if (match.result === 'WON') matchesWon += 1;
+    const sets = match.setScores?.length || 1;
+    totalSets += sets;
+
+    const points = match.pointHistory || [];
+    totalPoints += points.length;
+
+    points.forEach(pt => {
+      if (pt.pointWonBy === 'opponent' && pt.errorTypeId) {
+        totalErrors += 1;
+        const r = pt.rotation || 1;
+        rotationErrorMap[r] = (rotationErrorMap[r] || 0) + 1;
+
+        const cat = pt.errorCategory || '';
+        if (cat === ERROR_CATEGORIES.SERVICE || pt.errorTypeId.includes('serve')) serviceErrors += 1;
+        else if (cat === ERROR_CATEGORIES.ATTACK || pt.errorTypeId.includes('attack')) attackErrors += 1;
+        else if (cat === ERROR_CATEGORIES.PASS_RECEIVE || pt.errorTypeId.includes('receive') || pt.errorTypeId.includes('pass')) passingErrors += 1;
+        else if (cat === ERROR_CATEGORIES.HANDLING || pt.errorTypeId.includes('contact') || pt.errorTypeId.includes('lift')) handlingErrors += 1;
+      }
+    });
+  });
+
+  const winRate = totalMatches > 0 ? Math.round((matchesWon / totalMatches) * 100) : 0;
+  const avgErrorsPerSet = totalSets > 0 ? Number((totalErrors / totalSets).toFixed(1)) : 0;
+  const serviceErrorPct = totalErrors > 0 ? Math.round((serviceErrors / totalErrors) * 100) : 0;
+  const attackErrorPct = totalErrors > 0 ? Math.round((attackErrors / totalErrors) * 100) : 0;
+  const passingErrorPct = totalErrors > 0 ? Math.round((passingErrors / totalErrors) * 100) : 0;
+  const handlingErrorPct = totalErrors > 0 ? Math.round((handlingErrors / totalErrors) * 100) : 0;
+
+  // Rank historical weak rotations
+  const recurrentWeakRotations = Object.entries(rotationErrorMap)
+    .map(([rot, errCount]) => ({ rotation: Number(rot), errorCount: errCount }))
+    .sort((a, b) => b.errorCount - a.errorCount);
+
+  return {
+    totalMatches,
+    matchesWon,
+    winRate,
+    totalSets,
+    totalPoints,
+    totalErrors,
+    avgErrorsPerSet,
+    serviceErrorPct,
+    attackErrorPct,
+    passingErrorPct,
+    handlingErrorPct,
+    recurrentWeakRotations
+  };
+}
+
+/**
+ * Generates intelligent, rule-compliant tactical coaching recommendations and game adjustments.
+ *
+ * @param {Object} params - Context parameters
+ * @param {Object} params.currentMatch - Current match statistics object
+ * @param {Array} params.matchHistory - Saved historical matches
+ * @param {Array} params.roster - Full team roster
+ * @param {Object} params.teamSettings - Team settings
+ * @returns {Array} Prioritized list of actionable tactical coaching suggestions
+ */
+export function generateTacticalSuggestions({
+  currentMatch = {},
+  matchHistory = [],
+  roster = [],
+  teamSettings = {}
+}) {
+  const suggestions = [];
+  const points = currentMatch.pointHistory || [];
+  const errorPoints = points.filter(p => p.pointWonBy === 'opponent' && p.errorTypeId);
+  const totalErrors = errorPoints.length;
+
+  const playerStats = computePlayerStats(points, roster);
+  const rotationStats = computeRotationPerformance(points);
+  const categoryBreakdown = computeCategoryBreakdown(points);
+  const historical = computeHistoricalAverages(matchHistory, roster);
+
+  // Helper lookups
+  const liberos = roster.filter(p => p.position === 'Libero' || p.isLibero);
+  const defensiveSpecialists = roster.filter(p => p.position === 'Defensive Specialist' || p.secondaryPosition?.includes('Defensive'));
+  const setters = roster.filter(p => p.position === 'Setter');
+  const opposites = roster.filter(p => p.position === 'Right Side' || p.position === 'Opposite');
+  const middles = roster.filter(p => p.position === 'Middle Blocker');
+
+  // =========================================================================
+  // 1. IN-GAME MOMENTUM & ACTIVE OPPONENT SCORING RUNS (Rule 15.4)
+  // =========================================================================
+  if (points.length >= 3) {
+    let opponentRun = 0;
+    for (let i = points.length - 1; i >= 0; i--) {
+      if (points[i].pointWonBy === 'opponent') {
+        opponentRun += 1;
+      } else {
+        break;
+      }
+    }
+
+    if (opponentRun >= 3) {
+      suggestions.push({
+        id: 'sug-timeout-momentum',
+        category: 'Momentum & Timeouts',
+        priority: 'critical',
+        type: 'timeout',
+        title: `Call Tactical Timeout (Opponent on ${opponentRun}-0 Run)`,
+        evidence: `Opponent has scored ${opponentRun} consecutive unanswered points in the current set.`,
+        recommendation: `Call an immediate 30-second timeout to freeze the opponent server's momentum, calm the team, and re-establish primary serve-receive passing responsibilities.`,
+        ruleReference: `USAV / NFHS Rule 15.4 (Each team permitted 2 timeouts of 30 seconds per set).`,
+        actionLabel: 'Call Timeout'
+      });
+    }
+  }
+
+  // =========================================================================
+  // 2. SERVE RECEIVE & PASSING STABILIZATION (Rule 9.2 & Rule 15.6)
+  // =========================================================================
+  const receiveErrors = errorPoints.filter(p =>
+    p.errorTypeId === 'receive_ace_against' ||
+    p.errorTypeId === 'overpass_kill' ||
+    p.errorCategory === ERROR_CATEGORIES.PASS_RECEIVE
+  );
+
+  if (receiveErrors.length >= 2) {
+    // Find who made the receive errors
+    const passerErrorMap = {};
+    receiveErrors.forEach(p => {
+      if (p.errorPlayerId) {
+        passerErrorMap[p.errorPlayerId] = (passerErrorMap[p.errorPlayerId] || 0) + 1;
+      }
+    });
+
+    const worstPasserEntry = Object.entries(passerErrorMap).sort((a, b) => b[1] - a[1])[0];
+    const worstPasser = worstPasserEntry ? roster.find(p => p.id === worstPasserEntry[0]) : null;
+    const count = worstPasserEntry ? worstPasserEntry[1] : receiveErrors.length;
+
+    const dsAvailable = defensiveSpecialists.find(p => p.id !== worstPasser?.id) || liberos[0];
+
+    suggestions.push({
+      id: 'sug-serve-receive-pinch',
+      category: 'Serve Receive',
+      priority: count >= 3 ? 'critical' : 'tactical',
+      type: 'formation',
+      title: worstPasser ? `Stabilize Serve Receive: ${worstPasser.name}` : 'Tighten Serve Receive Passing Seams',
+      evidence: worstPasser
+        ? `${worstPasser.name} (#${worstPasser.number}) has ${count} reception/overpass errors (${Math.round((count / Math.max(1, receiveErrors.length)) * 100)}% of receive breakdowns).`
+        : `Team has conceded ${receiveErrors.length} points on serve receive aces and overpasses.`,
+      recommendation: worstPasser && dsAvailable
+        ? `Shift Libero (#${liberos[0]?.number || 'L'}) toward the deep seam to pinch court coverage. Under Rule 15.6, consider subbing in Defensive Specialist #${dsAvailable.number} ${dsAvailable.name} for #${worstPasser.number} in the back row to solidify passing.`
+        : `Tighten the 3-passer cup and instruct the Right Side to drop back into the left seam. Passers must hold their platform angle toward target rather than swinging their arms.`,
+      ruleReference: `USAV Rule 9.2 (Ball Handling) & Rule 15.6 (Position-locked Substitutions).`,
+      targetPlayerId: worstPasser?.id || null,
+      actionLabel: 'View 6-2 Tactics'
+    });
+  }
+
+  // =========================================================================
+  // 3. SERVING STRATEGY & SERVICE ERROR REDUCTION (Rule 12 & Rule 19.3.1.3)
+  // =========================================================================
+  const serviceErrors = errorPoints.filter(p =>
+    p.errorTypeId?.includes('serve') ||
+    p.errorCategory === ERROR_CATEGORIES.SERVICE
+  );
+
+  if (serviceErrors.length >= 2) {
+    const netServes = serviceErrors.filter(p => p.errorTypeId === 'missed_serve_net').length;
+    const outServes = serviceErrors.filter(p => p.errorTypeId === 'missed_serve_out' || p.errorTypeId === 'service_foot_fault').length;
+
+    const libero = liberos[0];
+
+    suggestions.push({
+      id: 'sug-serving-targets',
+      category: 'Serving Strategy',
+      priority: serviceErrors.length >= 4 ? 'critical' : 'tactical',
+      type: 'tactical',
+      title: 'Target Deep Corners & Lower Service Error Rate',
+      evidence: `Team has committed ${serviceErrors.length} missed serves (${netServes} in the net, ${outServes} long/out), accounting for ${Math.round((serviceErrors.length / Math.max(1, totalErrors)) * 100)}% of opponent points.`,
+      recommendation: netServes >= outServes
+        ? `Servers are contacting with flat trajectory or dropping their elbow. Focus on driving deep float serves targeting Zone 5 (Left Back) and Zone 1 (Right Back). ${libero ? `Under Rule 19.3.1.3, ensure Libero #${libero.number} serves in Zone 1 for reliable ball control.` : ''}`
+        : `Servers are over-hitting. Dial back power to 80% with high flat-hand contact aimed between opponent passers into the deep seam.`,
+      ruleReference: `USAV Rule 12.4 (Execution of Service) & Rule 19.3.1.3 (Libero Serving in one rotational position per set).`,
+      actionLabel: 'View Formations'
+    });
+  }
+
+  // =========================================================================
+  // 4. 6-2 ATTACK DISTRIBUTION & SETTER DEPTH (Rule 13 & 6-2 System)
+  // =========================================================================
+  const attackErrors = errorPoints.filter(p =>
+    p.errorTypeId?.includes('attack') ||
+    p.errorCategory === ERROR_CATEGORIES.ATTACK
+  );
+
+  if (attackErrors.length >= 2) {
+    const blockedCount = attackErrors.filter(p => p.errorTypeId === 'attack_blocked').length;
+    const netAttackCount = attackErrors.filter(p => p.errorTypeId === 'attack_net').length;
+    const outAttackCount = attackErrors.filter(p => p.errorTypeId === 'attack_out').length;
+
+    // Find hitter with most errors
+    const hitterErrorMap = {};
+    attackErrors.forEach(p => {
+      if (p.errorPlayerId) {
+        hitterErrorMap[p.errorPlayerId] = (hitterErrorMap[p.errorPlayerId] || 0) + 1;
+      }
+    });
+
+    const worstHitterEntry = Object.entries(hitterErrorMap).sort((a, b) => b[1] - a[1])[0];
+    const worstHitter = worstHitterEntry ? roster.find(p => p.id === worstHitterEntry[0]) : null;
+
+    suggestions.push({
+      id: 'sug-62-attack-depth',
+      category: '6-2 Attack Strategy',
+      priority: attackErrors.length >= 4 ? 'critical' : 'tactical',
+      type: 'tactical',
+      title: blockedCount >= 2 ? 'Spread 6-2 Offense to Break Opponent Block' : 'Push Sets 2-3 Feet Off the Net',
+      evidence: `${attackErrors.length} attack errors logged (${netAttackCount} into net, ${blockedCount} roofed/blocked, ${outAttackCount} out). ${worstHitter ? `${worstHitter.name} has ${worstHitterEntry[1]} attack errors.` : ''}`,
+      recommendation: blockedCount >= 2
+        ? `In a 6-2 system, utilize all 3 active front-row hitters! Run Middle quicks (1-ball/31) and Right-Side back sets to freeze the opponent middle blocker and create 1-on-1 open nets for outside hitters.`
+        : `Sets are currently too tight to the net tape. Back-row setters must push sets 2 to 3 feet off the net to give hitters approach depth and the ability to tool or roll-shot off opponent fingertips.`,
+      ruleReference: `USAV Rule 13.1 (Attack-Hit) & 6-2 System 3-Hitter Front Row Principles.`,
+      targetPlayerId: worstHitter?.id || null,
+      actionLabel: 'View 6-2 Tactics'
+    });
+  }
+
+  // =========================================================================
+  // 5. ROTATION WEAKNESS PINPOINT (R1 - R6)
+  // =========================================================================
+  const weakRotations = [...rotationStats]
+    .filter(r => r.totalRallies >= 2 && r.netDifferential < 0)
+    .sort((a, b) => a.netDifferential - b.netDifferential);
+
+  if (weakRotations.length > 0) {
+    const weakest = weakRotations[0];
+    suggestions.push({
+      id: `sug-rotation-${weakest.rotation}-weakness`,
+      category: `Rotation ${weakest.rotation} Adjustment`,
+      priority: weakest.netDifferential <= -2 ? 'critical' : 'tactical',
+      type: 'rotation',
+      title: `Tactical Adjustment: Rotation ${weakest.rotation} (Net: ${weakest.netDifferential > 0 ? '+' : ''}${weakest.netDifferential})`,
+      evidence: `Rotation ${weakest.rotation} has conceded ${weakest.opponentPointsWon} points with only ${weakest.sideOutPercentage}% side-out conversion. ${weakest.topError ? `Most frequent error: ${weakest.topError.label} (${weakest.topError.count}x).` : ''}`,
+      recommendation: weakest.rotation === 4
+        ? `In Rotation 4 (Setter 2 in Zone 1, Outside 2 in Zone 4), ensure Setter penetrates along the right sideline after serve contact without triggering Rule 7.4 overlap with Right Side in Zone 2.`
+        : weakest.rotation === 3
+        ? `In Rotation 3 (Setter in Zone 5), keep Outside Hitter stacked near the left pin to accelerate approach transition onto the high ball.`
+        : `Reinforce primary passing seams in Rotation ${weakest.rotation} and execute high-percentage cross-court spikes to force side-out on the first ball.`,
+      ruleReference: `USAV Rule 7.4 (Positional Faults & Overlaps) & Rule 7.5.`,
+      targetRotation: weakest.rotation,
+      actionLabel: `View Rotation ${weakest.rotation}`
+    });
+  }
+
+  // =========================================================================
+  // 6. HISTORICAL TRENDS & SAVED GAMES COMPARISON
+  // =========================================================================
+  if (historical.totalMatches >= 1) {
+    const currentServicePct = totalErrors > 0
+      ? Math.round((serviceErrors.length / totalErrors) * 100)
+      : 0;
+
+    if (totalErrors >= 3 && currentServicePct > historical.serviceErrorPct + 10) {
+      suggestions.push({
+        id: 'sug-hist-service-spike',
+        category: 'Historical Comparison',
+        priority: 'tactical',
+        type: 'historical',
+        title: `Service Errors Above Historical Average (${currentServicePct}% vs ${historical.serviceErrorPct}%)`,
+        evidence: `In ${historical.totalMatches} saved matches, service errors averaged ${historical.serviceErrorPct}%. Today they account for ${currentServicePct}% of all team unforced errors.`,
+        recommendation: `Switch to high-consistency tactical zones rather than aggressive jump serves to align with historical win-rate benchmarks (${historical.winRate}% win rate).`,
+        ruleReference: `Longitudinal Multi-Match Benchmark across ${historical.totalMatches} matches.`
+      });
+    }
+
+    if (historical.recurrentWeakRotations.length > 0) {
+      const topHistoricalWeakRot = historical.recurrentWeakRotations[0].rotation;
+      suggestions.push({
+        id: 'sug-hist-rot-trend',
+        category: 'Historical Comparison',
+        priority: 'tactical',
+        type: 'historical',
+        title: `Historical Weak Point: Rotation ${topHistoricalWeakRot}`,
+        evidence: `Across all ${historical.totalMatches} saved past games, Rotation ${topHistoricalWeakRot} is the team's #1 error magnet (${historical.recurrentWeakRotations[0].errorCount} historical errors).`,
+        recommendation: `Prepare specific side-out release options for Rotation ${topHistoricalWeakRot} before entering this rotation during tight late-set points.`,
+        ruleReference: `Multi-Game Historical Trend Analysis.`
+      });
+    }
+  }
+
+  // =========================================================================
+  // 7. POSITIVE HIGHLIGHTS & BEST PRACTICES
+  // =========================================================================
+  const aces = points.filter(p => p.pointWonBy === 'us' && p.earnedType === 'ace').length;
+  const kills = points.filter(p => p.pointWonBy === 'us' && p.earnedType === 'kill').length;
+  const topPlayer = [...playerStats].sort((a, b) => b.netScore - a.netScore)[0];
+
+  if (topPlayer && topPlayer.netScore >= 2) {
+    suggestions.push({
+      id: 'sug-positive-impact',
+      category: 'Player Performance',
+      priority: 'positive',
+      type: 'strength',
+      title: `Standout Contributor: ${topPlayer.player.name} (Net Rating: +${topPlayer.netScore})`,
+      evidence: `${topPlayer.player.name} (#${topPlayer.player.number}) has generated ${topPlayer.pointsEarned} points (${topPlayer.kills} kills, ${topPlayer.aces} aces, ${topPlayer.blocks} blocks) with only ${topPlayer.totalErrors} errors.`,
+      recommendation: `Continue feeding ${topPlayer.player.name} in transition and keep them involved as a primary scoring option in high-pressure rallies.`,
+      ruleReference: `Team MVP Rating (+/- Net Efficiency).`
+    });
+  }
+
+  // Default suggestions if match just started and little data exists
+  if (suggestions.length === 0) {
+    suggestions.push({
+      id: 'sug-default-start',
+      category: '6-2 Game Plan',
+      priority: 'tactical',
+      type: 'tactical',
+      title: '6-2 Offensive System Execution Focus',
+      evidence: 'Match tracking is active. Log points, kills, aces, and errors to unlock real-time tactical adjustments.',
+      recommendation: 'Maintain aggressive deep float serves, run middle hitters in transition to open up the pins, and ensure back-row setters penetrate promptly at serve contact.',
+      ruleReference: 'USAV Volleyball Standard Rules & 6-2 System Tactics.'
+    });
+  }
+
+  return suggestions;
+}
+

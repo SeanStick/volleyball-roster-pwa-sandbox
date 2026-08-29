@@ -661,6 +661,10 @@ export default function App() {
           onResetScore={handleResetScore}
           onStartNewSet={handleStartNewSet}
           onResetFullMatch={handleResetFullMatch}
+          onNavigateTab={(tab, rot) => {
+            setActiveTab(tab);
+            if (rot) setRotation(rot);
+          }}
         />
       )}
 

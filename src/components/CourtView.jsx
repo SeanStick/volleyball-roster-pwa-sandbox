@@ -31,9 +31,9 @@ import {
   checkSubstitutionLegality,
   checkLiberoServingEligibility,
   checkLiberoReentryOpportunity,
-  validate61Formation,
+  validate62Formation,
   deriveLineupForRotation,
-  detect61SubstitutionOpportunities
+  detect62SubstitutionOpportunities
 } from '../services/volleyballRules';
 import { storageService } from '../services/storageService';
 import LiberoPromptModal from './LiberoPromptModal';
@@ -41,7 +41,7 @@ import LiberoServingPromptModal from './LiberoServingPromptModal';
 import LiberoReentryPromptModal from './LiberoReentryPromptModal';
 import SubModal from './SubModal';
 import SubstitutionLogModal from './SubstitutionLogModal';
-import Formation61MismatchModal from './Formation61MismatchModal';
+import Formation62MismatchModal from './Formation62MismatchModal';
 import AutoFillLineupModal from './AutoFillLineupModal';
 
 export default function CourtView({
@@ -66,9 +66,9 @@ export default function CourtView({
   setEnforcePositionLock,
   onUpdatePlayerPosition
 }) {
-  // 6-1 System Validation
-  const validation61 = validate61Formation(lineup, roster);
-  const [is61ModalOpen, setIs61ModalOpen] = useState(false);
+  // 6-2 System Validation
+  const validation62 = validate62Formation(lineup, roster);
+  const [is62ModalOpen, setIs62ModalOpen] = useState(false);
 
   // Auto-Fill Starting 6 Modal
   const [isAutoFillModalOpen, setIsAutoFillModalOpen] = useState(false);
@@ -78,7 +78,7 @@ export default function CourtView({
   const [draggedZoneKey, setDraggedZoneKey] = useState(null);
   const [dropTargetZoneKey, setDropTargetZoneKey] = useState(null);
 
-  // 💡 Smart 6-1 Substitution Opportunities State
+  // 💡 Smart 6-2 Substitution Opportunities State
   const [dismissedSubIds, setDismissedSubIds] = useState([]);
 
   useEffect(() => {
@@ -695,8 +695,8 @@ export default function CourtView({
     );
   };
 
-  // 💡 6-1 Smart Substitution Recommendations Engine
-  const smartSubOpportunities = detect61SubstitutionOpportunities(
+  // 💡 6-2 Smart Substitution Recommendations Engine
+  const smartSubOpportunities = detect62SubstitutionOpportunities(
     lineup,
     rotation,
     phase,
@@ -827,31 +827,31 @@ export default function CourtView({
 
         {/* Status Pills: Substitution Counter & Libero Serve Status */}
         <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap', alignItems: 'center' }}>
-          {/* 6-1 System Positional Status Banner */}
+          {/* 6-2 System Positional Status Banner */}
           <div
             className="subs-status-pill"
-            onClick={() => setIs61ModalOpen(true)}
+            onClick={() => setIs62ModalOpen(true)}
             style={{
-              background: validation61.isValid61
+              background: validation62.isValid62
                 ? 'rgba(16, 185, 129, 0.12)'
                 : 'rgba(245, 158, 11, 0.18)',
-              borderColor: validation61.isValid61
+              borderColor: validation62.isValid62
                 ? 'rgba(16, 185, 129, 0.4)'
                 : '#f59e0b',
-              color: validation61.isValid61 ? '#a7f3d0' : '#fde68a',
+              color: validation62.isValid62 ? '#a7f3d0' : '#fde68a',
               cursor: 'pointer'
             }}
-            title="Click to view 6-1 volleyball positional alignment and player roles"
+            title="Click to view 6-2 volleyball positional alignment and player roles"
           >
-            {validation61.isValid61 ? (
+            {validation62.isValid62 ? (
               <>
                 <CheckCircle size={15} color="#10b981" />
-                <span><strong>6-1 Verified</strong></span>
+                <span><strong>6-2 Verified</strong></span>
               </>
             ) : (
               <>
                 <AlertTriangle size={15} color="#f59e0b" />
-                <span><strong>6-1 Mismatch (Tap to Fix)</strong></span>
+                <span><strong>6-2 Mismatch (Tap to Fix)</strong></span>
               </>
             )}
           </div>
@@ -932,7 +932,7 @@ export default function CourtView({
                 Drag & Drop Rotation 1 Mode Active
               </div>
               <div style={{ fontSize: '0.78rem', color: '#fde68a', lineHeight: 1.4 }}>
-                Drag player cards between court zones to re-order the starting lineup. All following rotations (R2–R6) and the 6-1 Tactics board will automatically update!
+                Drag player cards between court zones to re-order the starting lineup. All following rotations (R2–R6) and the 6-2 Tactics board will automatically update!
               </div>
             </div>
           </div>
@@ -947,7 +947,7 @@ export default function CourtView({
         </div>
       )}
 
-      {/* 💡 6-1 Smart Substitution Tactical Prompt Banner */}
+      {/* 💡 6-2 Smart Substitution Tactical Prompt Banner */}
       {activeSubRec && (
         <div style={{
           background: 'linear-gradient(135deg, rgba(245, 158, 11, 0.22), rgba(15, 23, 42, 0.95))',
@@ -1189,14 +1189,14 @@ export default function CourtView({
         maxSubs={maxSubs}
       />
 
-      {/* 6. 6-1 Formation Positional Alignment Modal */}
-      <Formation61MismatchModal
-        isOpen={is61ModalOpen}
-        onClose={() => setIs61ModalOpen(false)}
-        validation={validation61}
+      {/* 6. 6-2 Formation Positional Alignment Modal */}
+      <Formation62MismatchModal
+        isOpen={is62ModalOpen}
+        onClose={() => setIs62ModalOpen(false)}
+        validation={validation62}
         lineup={lineup}
         roster={roster}
-        onApplyAutoCorrection={(new61Lineup) => setLineup(new61Lineup)}
+        onApplyAutoCorrection={(new62Lineup) => setLineup(new62Lineup)}
         onUpdatePlayerPosition={onUpdatePlayerPosition}
         onOpenSubModal={handleOpenSubModal}
       />

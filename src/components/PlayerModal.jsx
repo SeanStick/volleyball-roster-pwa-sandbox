@@ -288,7 +288,7 @@ export default function PlayerModal({ isOpen, onClose, onSave, playerToEdit, tea
             <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', marginBottom: '0.75rem' }}>
               <ArrowLeftRight size={16} color="var(--accent-orange)" />
               <span style={{ fontSize: '0.86rem', fontWeight: 800, color: '#f8fafc' }}>
-                Substitution & 6-1 Rotation Strategy
+                Substitution & 6-2 Rotation Strategy
               </span>
             </div>
 

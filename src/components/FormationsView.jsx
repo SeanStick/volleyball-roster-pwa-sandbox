@@ -18,7 +18,7 @@ import {
   Film
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
-import { FORMATIONS_61_DATA } from '../services/formations61Data';
+import { FORMATIONS_62_DATA } from '../services/formations62Data';
 import { FORMATION_ANIMATIONS } from '../services/formationAnimationsData';
 import {
   FRONT_ROW_ZONES,
@@ -31,8 +31,8 @@ import {
   checkSubstitutionLegality,
   checkLiberoServingEligibility,
   checkLiberoReentryOpportunity,
-  validate61Formation,
-  detect61SubstitutionOpportunities
+  validate62Formation,
+  detect62SubstitutionOpportunities
 } from '../services/volleyballRules';
 import FormationCanvas from './FormationCanvas';
 import FormationAnimationPlayer from './FormationAnimationPlayer';
@@ -41,7 +41,7 @@ import LiberoPromptModal from './LiberoPromptModal';
 import LiberoServingPromptModal from './LiberoServingPromptModal';
 import LiberoReentryPromptModal from './LiberoReentryPromptModal';
 import SubModal from './SubModal';
-import Formation61MismatchModal from './Formation61MismatchModal';
+import Formation62MismatchModal from './Formation62MismatchModal';
 import AutoFillLineupModal from './AutoFillLineupModal';
 
 export default function FormationsView({
@@ -73,9 +73,9 @@ export default function FormationsView({
   const [isSubModalOpen, setIsSubModalOpen] = useState(false);
   const [isAutoFillModalOpen, setIsAutoFillModalOpen] = useState(false);
 
-  // 6-1 System Positional Validation
-  const validation61 = validate61Formation(lineup, roster);
-  const [is61ModalOpen, setIs61ModalOpen] = useState(false);
+  // 6-2 System Positional Validation
+  const validation62 = validate62Formation(lineup, roster);
+  const [is62ModalOpen, setIs62ModalOpen] = useState(false);
 
   // Modal States for Rule Enforcement
   const [isLiberoPromptOpen, setIsLiberoPromptOpen] = useState(false);
@@ -132,14 +132,14 @@ export default function FormationsView({
     setCurrentStageIndex(0);
   }, [rotation, currentPhaseKey]);
 
-  // 💡 Smart 6-1 Substitution Opportunities State
+  // 💡 Smart 6-2 Substitution Opportunities State
   const [dismissedSubIds, setDismissedSubIds] = useState([]);
 
   useEffect(() => {
     setDismissedSubIds([]);
   }, [rotation, currentPhaseKey]);
 
-  const smartSubOpportunities = detect61SubstitutionOpportunities(
+  const smartSubOpportunities = detect62SubstitutionOpportunities(
     lineup,
     rotation,
     currentPhaseKey,
@@ -185,7 +185,7 @@ export default function FormationsView({
     setDismissedSubIds(prev => [...prev, rec.id]);
   };
 
-  const rotationData = FORMATIONS_61_DATA[rotation] || FORMATIONS_61_DATA[1];
+  const rotationData = FORMATIONS_62_DATA[rotation] || FORMATIONS_62_DATA[1];
   const defaultPositions = isReceivePhase
     ? rotationData?.receiving?.positions
     : rotationData?.serving?.positions;
@@ -620,34 +620,34 @@ export default function FormationsView({
 
         {/* Action Tools */}
         <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center', flexWrap: 'wrap' }}>
-          {/* 6-1 System Positional Status Banner */}
+          {/* 6-2 System Positional Status Banner */}
           <button
             className="btn btn-secondary btn-sm"
-            onClick={() => setIs61ModalOpen(true)}
+            onClick={() => setIs62ModalOpen(true)}
             style={{
-              background: validation61.isValid61
+              background: validation62.isValid62
                 ? 'rgba(16, 185, 129, 0.12)'
                 : 'rgba(245, 158, 11, 0.18)',
-              borderColor: validation61.isValid61
+              borderColor: validation62.isValid62
                 ? 'rgba(16, 185, 129, 0.4)'
                 : '#f59e0b',
-              color: validation61.isValid61 ? '#a7f3d0' : '#fde68a',
+              color: validation62.isValid62 ? '#a7f3d0' : '#fde68a',
               fontWeight: 700,
               display: 'flex',
               alignItems: 'center',
               gap: '0.4rem'
             }}
-            title="Click to view 6-1 volleyball positional alignment and player roles"
+            title="Click to view 6-2 volleyball positional alignment and player roles"
           >
-            {validation61.isValid61 ? (
+            {validation62.isValid62 ? (
               <>
                 <CheckCircle size={15} color="#10b981" />
-                <span>6-1 Verified</span>
+                <span>6-2 Verified</span>
               </>
             ) : (
               <>
                 <AlertTriangle size={15} color="#f59e0b" />
-                <span>6-1 Mismatch (Tap to Fix)</span>
+                <span>6-2 Mismatch (Tap to Fix)</span>
               </>
             )}
           </button>
@@ -677,10 +677,10 @@ export default function FormationsView({
           <button
             className="btn btn-secondary btn-sm"
             onClick={() => setIsAutoFillModalOpen(true)}
-            title="Auto-fill official 6-1 starting lineup with Serve 1st / Receive 1st options"
+            title="Auto-fill official 6-2 starting lineup with Serve 1st / Receive 1st options"
           >
             <Sparkles size={14} color="var(--accent-orange)" />
-            <span>Auto-Fill 6-1</span>
+            <span>Auto-Fill 6-2</span>
           </button>
 
           <button
@@ -695,7 +695,7 @@ export default function FormationsView({
           <button
             className="btn btn-secondary btn-sm"
             onClick={handleResetToStandard}
-            title="Reset player circles to textbook 6-1 positions"
+            title="Reset player circles to textbook 6-2 positions"
           >
             <RefreshCw size={14} />
             <span>Reset to Standard</span>
@@ -912,14 +912,14 @@ export default function FormationsView({
         enforcePositionLock={enforcePositionLock}
       />
 
-      {/* 5. 6-1 Formation Positional Alignment Modal */}
-      <Formation61MismatchModal
-        isOpen={is61ModalOpen}
-        onClose={() => setIs61ModalOpen(false)}
-        validation={validation61}
+      {/* 5. 6-2 Formation Positional Alignment Modal */}
+      <Formation62MismatchModal
+        isOpen={is62ModalOpen}
+        onClose={() => setIs62ModalOpen(false)}
+        validation={validation62}
         lineup={lineup}
         roster={roster}
-        onApplyAutoCorrection={(new61Lineup) => setLineup && setLineup(new61Lineup)}
+        onApplyAutoCorrection={(new62Lineup) => setLineup && setLineup(new62Lineup)}
         onUpdatePlayerPosition={onUpdatePlayerPosition}
         onOpenSubModal={handleOpenSubModal}
       />

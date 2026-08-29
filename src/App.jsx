@@ -37,7 +37,7 @@ export default function App() {
   const [positionFilter, setPositionFilter] = useState('ALL');
   const [sortBy, setSortBy] = useState('number-asc');
 
-  // Lifted Match State (shared between Court Lineup and 6-1 Formations Board)
+  // Lifted Match State (shared between Court Lineup and 6-2 Formations Board)
   const getDefaultLineup = (rosterPool) => {
     if (!Array.isArray(rosterPool) || rosterPool.length === 0) {
       return { pos1: null, pos2: null, pos3: null, pos4: null, pos5: null, pos6: null };
@@ -52,7 +52,7 @@ export default function App() {
     const pos1 = setters[0]?.id || starters[0]?.id || rosterPool[0]?.id || null;
     const pos2 = outsides[0]?.id || starters[1]?.id || rosterPool[1]?.id || null;
     const pos3 = middles[0]?.id || starters[2]?.id || rosterPool[2]?.id || null;
-    const pos4 = opposites[0]?.id || starters[3]?.id || rosterPool[3]?.id || null;
+    const pos4 = setters[1]?.id || opposites[0]?.id || starters[3]?.id || rosterPool[3]?.id || null;
     const pos5 = outsides[1]?.id || starters[4]?.id || rosterPool[4]?.id || null;
     const pos6 = liberos[0]?.id || middles[1]?.id || starters[5]?.id || rosterPool[5]?.id || null;
 
@@ -424,7 +424,7 @@ export default function App() {
           onClick={() => setActiveTab('formations')}
         >
           <Compass size={18} />
-          <span>6-1 Formations & Tactics</span>
+          <span>6-2 Formations & Tactics</span>
         </button>
 
         <button

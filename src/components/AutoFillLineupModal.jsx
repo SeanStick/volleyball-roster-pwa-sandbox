@@ -10,7 +10,7 @@ import {
   Info
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
-import { generate61LineupForServeState, ZONE_LABELS } from '../services/volleyballRules';
+import { generate62LineupForServeState, ZONE_LABELS } from '../services/volleyballRules';
 
 export default function AutoFillLineupModal({
   isOpen,
@@ -32,7 +32,7 @@ export default function AutoFillLineupModal({
 
   if (!isOpen) return null;
 
-  const generatedLineup = generate61LineupForServeState(roster, serveState, selectedServerId);
+  const generatedLineup = generate62LineupForServeState(roster, serveState, selectedServerId);
 
   const getPlayer = (id) => roster.find(p => p.id === id);
 
@@ -72,7 +72,7 @@ export default function AutoFillLineupModal({
                 Auto-Fill Starting 6 Lineup
               </h2>
               <p style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', margin: 0 }}>
-                Official 6-1 Formation & First Server Rules Engine
+                Official 6-2 (6 Hitters, 2 Setters) Rules Engine
               </p>
             </div>
           </div>

@@ -301,21 +301,17 @@ export function rotateLineupCounterClockwise(currentLineup) {
 }
 
 /**
- * Evaluates whether a 6-player lineup adheres strictly to a 6-1 volleyball offensive system.
- * In a standard 6-1 system:
- * 1. Exactly 1 dedicated Setter (S).
- * 2. Exactly 1 Opposite Hitter (OPP) playing diagonally across from the Setter (3 zones apart).
- * 3. Exactly 2 Outside Hitters (OH1, OH2) playing diagonally across from each other (3 zones apart).
- * 4. Exactly 2 Middle Blockers (or MB + Libero/DS) playing diagonally across from each other (3 zones apart).
- * 
- * Pairs are:
- * - Pair A: pos1 (Zone 1) & pos4 (Zone 4)
- * - Pair B: pos2 (Zone 2) & pos5 (Zone 5)
- * - Pair C: pos3 (Zone 3) & pos6 (Zone 6)
+ * Validates a 6-2 Volleyball Formation Lineup.
+ *
+ * In an official 6-2 Offensive System:
+ * - 2 Setters (S1 and S2) or Setter/Right Side pairs are positioned opposite each other (Zones 1 ⇄ 4).
+ * - 2 Outside Hitters (OH1 and OH2) are positioned opposite each other (Zones 2 ⇄ 5).
+ * - 2 Middle Blockers (MB1 and MB2/Libero) are positioned opposite each other (Zones 3 ⇄ 6).
+ * - The setter in the BACK ROW runs the offense, allowing 3 front-row hitters in all 6 rotations!
  */
-export function validate61Formation(lineup, roster) {
+export function validate62Formation(lineup = {}, roster = []) {
   if (!lineup || !roster) {
-    return { isValid61: true, isComplete: false, issues: [], pairsSummary: null, autoCorrectLineup: null, suggestedRoleUpdates: [] };
+    return { isValid62: true, isValid61: true, isComplete: false, issues: [], pairsSummary: null, autoCorrectLineup: null, suggestedRoleUpdates: [] };
   }
 
   const getPlayer = (id) => roster.find(p => p.id === id);
@@ -329,30 +325,29 @@ export function validate61Formation(lineup, roster) {
     pos6: getPlayer(lineup.pos6),
   };
 
-  const assignedCount = Object.values(players).filter(Boolean).length;
-  if (assignedCount < 6) {
-    const fallback61 = generate61LineupForServeState(roster, 'serve');
+  const issues = [];
+  const suggestedRoleUpdates = [];
+
+  // Verify all 6 slots are filled
+  const filledSlots = Object.entries(players).filter(([k, v]) => Boolean(v));
+  if (filledSlots.length < 6) {
+    const fallback62 = generate62LineupForServeState(roster, 'serve');
     return {
+      isValid62: false,
       isValid61: false,
       isComplete: false,
-      issues: [{
-        type: 'incomplete',
-        severity: 'warning',
-        message: `Lineup incomplete (${assignedCount}/6 players assigned). Assign all 6 zones to verify 6-1 formation.`
-      }],
+      issues: [{ type: 'incomplete_lineup', severity: 'error', message: `Lineup has only ${filledSlots.length}/6 positions assigned.` }],
       pairsSummary: null,
-      autoCorrectLineup: fallback61,
+      autoCorrectLineup: fallback62,
       suggestedRoleUpdates: []
     };
   }
 
-  const issues = [];
-  const suggestedRoleUpdates = [];
-
+  // Normalize role keys
   const getNormRole = (p) => {
-    if (!p) return 'Unknown';
+    if (!p) return 'UNKNOWN';
     if (p.position === 'Setter') return 'S';
-    if (p.position === 'Opposite Hitter' || p.position === 'Right Side') return 'OPP';
+    if (p.position === 'Opposite Hitter' || p.position === 'Right Side') return 'RS';
     if (p.position === 'Outside Hitter') return 'OH';
     if (p.position === 'Middle Blocker') return 'MB';
     if (p.position === 'Libero' || p.isLibero) return 'L';
@@ -369,33 +364,7 @@ export function validate61Formation(lineup, roster) {
     pos6: getNormRole(players.pos6),
   };
 
-  // Count positions
-  const setters = Object.entries(roles).filter(([k, r]) => r === 'S');
-
-  // Check 1: Setter Count
-  if (setters.length === 0) {
-    issues.push({
-      type: 'missing_setter',
-      severity: 'error',
-      message: 'A 6-1 system requires exactly 1 primary Setter on the court.'
-    });
-  } else if (setters.length > 1) {
-    issues.push({
-      type: 'multiple_setters',
-      severity: 'warning',
-      message: `You have ${setters.length} Setters on court (${setters.map(([k]) => `#${players[k]?.number || ''} ${players[k]?.name || 'Setter'}`).join(', ')}). In a 6-1, one should be designated as the Opposite Hitter (OPP).`
-    });
-    if (setters.length === 2 && players[setters[1][0]]) {
-      suggestedRoleUpdates.push({
-        playerId: players[setters[1][0]].id,
-        playerName: players[setters[1][0]].name || 'Setter',
-        targetRole: 'Opposite Hitter',
-        reason: 'Designate as Opposite Hitter to play opposite Primary Setter'
-      });
-    }
-  }
-
-  // Check 2: Diagonals (3-zone pairs)
+  // Check 3-zone diagonal pairs (opposite across court)
   const pairs = [
     { name: 'Pair 1 (Zones 1 ⇄ 4)', posA: 'pos1', posB: 'pos4', pA: players.pos1, pB: players.pos4, rA: roles.pos1, rB: roles.pos4 },
     { name: 'Pair 2 (Zones 2 ⇄ 5)', posA: 'pos2', posB: 'pos5', pA: players.pos2, pB: players.pos5, rA: roles.pos2, rB: roles.pos5 },
@@ -407,31 +376,13 @@ export function validate61Formation(lineup, roster) {
   let middlePair = null;
 
   for (const pair of pairs) {
-    const hasSetter = pair.rA === 'S' || pair.rB === 'S';
-    const hasOpp = pair.rA === 'OPP' || pair.rB === 'OPP';
+    const isSetterPair = (pair.rA === 'S' || pair.rA === 'RS') && (pair.rB === 'S' || pair.rB === 'RS');
     const bothOH = pair.rA === 'OH' && pair.rB === 'OH';
     const bothMBorL = (pair.rA === 'MB' || pair.rA === 'L' || pair.rA === 'DS') &&
                       (pair.rB === 'MB' || pair.rB === 'L' || pair.rB === 'DS');
 
-    if (hasSetter) {
+    if (isSetterPair) {
       setterPair = pair;
-      if (!hasOpp) {
-        const otherPlayer = pair.rA === 'S' ? pair.pB : pair.pA;
-        const otherZone = pair.rA === 'S' ? pair.posB : pair.posA;
-        if (otherPlayer) {
-          issues.push({
-            type: 'setter_opposite_mismatch',
-            severity: 'error',
-            message: `${otherPlayer.name || 'Player'} (${otherPlayer.position || 'Unknown'}) is in ${ZONE_LABELS[otherZone]?.name || 'Zone'} opposite Setter. In a 6-1, an Opposite Hitter (OPP) must play opposite the Setter.`
-          });
-          suggestedRoleUpdates.push({
-            playerId: otherPlayer.id,
-            playerName: otherPlayer.name || 'Player',
-            targetRole: 'Opposite Hitter',
-            reason: `Update ${otherPlayer.name || 'Player'}'s position to Opposite Hitter`
-          });
-        }
-      }
     } else if (bothOH) {
       outsidePair = pair;
     } else if (bothMBorL) {
@@ -440,19 +391,19 @@ export function validate61Formation(lineup, roster) {
       issues.push({
         type: 'pair_mismatch',
         severity: 'warning',
-        message: `${pair.name}: ${pair.pA?.name || 'Player'} (${pair.pA?.position || 'Unknown'}) and ${pair.pB?.name || 'Player'} (${pair.pB?.position || 'Unknown'}) are paired across the court. A 6-1 pairs OH ⇄ OH and MB ⇄ MB/Libero.`
+        message: `${pair.name}: ${pair.pA?.name || 'Player'} (${pair.pA?.position || 'Unknown'}) and ${pair.pB?.name || 'Player'} (${pair.pB?.position || 'Unknown'}) are paired across the court. In a 6-2, Setters/Right Sides (S1 ⇄ S2/RS), Outsides (OH ⇄ OH), and Middles (MB ⇄ MB/Libero) play opposite each other.`
       });
     }
   }
 
-  // Generate 1-Tap Auto-Correct Lineup
+  // Generate 1-Tap Auto-Correct 6-2 Lineup
   const allOnCourt = [players.pos1, players.pos2, players.pos3, players.pos4, players.pos5, players.pos6].filter(Boolean);
   
-  const activeSetter = allOnCourt.find(p => p.position === 'Setter') || allOnCourt[0];
-  const activeOpp = allOnCourt.find(p => p.id !== activeSetter?.id && (p.position === 'Opposite Hitter' || p.position === 'Right Side')) ||
-                    allOnCourt.find(p => p.id !== activeSetter?.id && p.position === 'Setter') ||
-                    allOnCourt.find(p => p.id !== activeSetter?.id);
-  const rest = allOnCourt.filter(p => p.id !== activeSetter?.id && p.id !== activeOpp?.id);
+  const settersAndRS = allOnCourt.filter(p => p.position === 'Setter' || p.position === 'Opposite Hitter' || p.position === 'Right Side');
+  const s1 = settersAndRS[0] || allOnCourt[0];
+  const s2 = settersAndRS[1] || allOnCourt.find(p => p.id !== s1?.id);
+  
+  const rest = allOnCourt.filter(p => p.id !== s1?.id && p.id !== s2?.id);
   const activeOHs = rest.filter(p => p.position === 'Outside Hitter');
   const activeMBs = rest.filter(p => p.position === 'Middle Blocker');
   const activeLibs = rest.filter(p => p.position === 'Libero' || p.isLibero || p.position === 'Defensive Specialist');
@@ -466,16 +417,17 @@ export function validate61Formation(lineup, roster) {
   const mb2 = poolMB[1] || rest[3] || null;
 
   const autoCorrectLineup = {
-    pos1: activeSetter?.id || null, // Setter (Zone 1)
-    pos2: oh1?.id || null,          // OH1 (Zone 2)
-    pos3: mb1?.id || null,          // MB1 (Zone 3)
-    pos4: activeOpp?.id || null,     // OPP (Zone 4 - opposite Setter)
-    pos5: oh2?.id || null,          // OH2 (Zone 5 - opposite OH1)
-    pos6: mb2?.id || null           // MB2 / Libero (Zone 6 - opposite MB1)
+    pos1: s1?.id || null,  // Setter 1 (Zone 1)
+    pos2: oh1?.id || null, // OH1 (Zone 2)
+    pos3: mb1?.id || null, // MB1 (Zone 3)
+    pos4: s2?.id || null,  // Setter 2 / Right Side (Zone 4 - opposite S1)
+    pos5: oh2?.id || null, // OH2 (Zone 5 - opposite OH1)
+    pos6: mb2?.id || null  // MB2 / Libero (Zone 6 - opposite MB1)
   };
 
   return {
-    isValid61: issues.length === 0,
+    isValid62: issues.length === 0,
+    isValid61: issues.length === 0, // backwards compatibility
     isComplete: true,
     issues,
     pairsSummary: {
@@ -487,6 +439,9 @@ export function validate61Formation(lineup, roster) {
     suggestedRoleUpdates
   };
 }
+
+// Backwards-compatible alias
+export const validate61Formation = validate62Formation;
 
 /**
  * Mathematically derives the court lineup for any target rotation (1..6) from a starting lineup (Rotation 1).
@@ -507,11 +462,11 @@ export function deriveLineupForRotation(startingLineup, targetRotation, roster =
 }
 
 /**
- * Generates an official 6-1 starting lineup based on whether the team Serves 1st or Receives 1st.
- * - If Serves 1st: First Server starts in Zone 1 (Position I).
- * - If Receives 1st: First Server starts in Zone 2 (Position II) so they rotate to Zone 1 on the 1st side-out (USAV / FIVB Rule 7.3.5.2).
+ * Generates an official 6-2 starting lineup based on whether the team Serves 1st or Receives 1st.
+ * - If Serves 1st: Setter 1 starts in Zone 1 (Position I).
+ * - If Receives 1st: Setter 1 starts in Zone 2 (Position II) so they rotate to Zone 1 on the 1st side-out (USAV / FIVB Rule 7.3.5.2).
  */
-export function generate61LineupForServeState(rosterPool = [], serveState = 'serve', preferredServerId = null) {
+export function generate62LineupForServeState(rosterPool = [], serveState = 'serve', preferredServerId = null) {
   if (!Array.isArray(rosterPool) || rosterPool.length === 0) {
     return { pos1: null, pos2: null, pos3: null, pos4: null, pos5: null, pos6: null };
   }
@@ -523,7 +478,7 @@ export function generate61LineupForServeState(rosterPool = [], serveState = 'ser
   const liberos = rosterPool.filter(p => p.position === 'Libero' || p.isLibero || p.position === 'Defensive Specialist');
   const starters = rosterPool.filter(p => p.isStarter);
 
-  // Determine Designated First Server
+  // Determine Designated First Server / S1
   let firstServer = null;
   if (preferredServerId) {
     firstServer = rosterPool.find(p => p.id === preferredServerId);
@@ -535,112 +490,93 @@ export function generate61LineupForServeState(rosterPool = [], serveState = 'ser
     firstServer = setters[0] || starters[0] || rosterPool[0];
   }
 
-  // Resolve Primary Setter (distinct from OPP if possible)
-  const primarySetter = (firstServer?.position === 'Setter')
+  // Resolve S1 and S2 (Setter / Right Side Pair)
+  const s1 = (firstServer?.position === 'Setter')
     ? firstServer
-    : (setters[0] || starters.find(p => p.id !== firstServer?.id) || rosterPool.find(p => p.id !== firstServer?.id));
+    : (setters[0] || starters[0] || rosterPool[0]);
 
-  // Resolve OPP
-  const primaryOpp = opposites.find(p => p.id !== primarySetter?.id && p.id !== firstServer?.id) ||
-                     setters.find(p => p.id !== primarySetter?.id && p.id !== firstServer?.id) ||
-                     outsides.find(p => p.id !== primarySetter?.id && p.id !== firstServer?.id) ||
-                     starters.find(p => p.id !== primarySetter?.id && p.id !== firstServer?.id) ||
-                     rosterPool.find(p => p.id !== primarySetter?.id && p.id !== firstServer?.id);
+  const s2 = setters.find(p => p.id !== s1?.id) ||
+             opposites.find(p => p.id !== s1?.id) ||
+             starters.find(p => p.id !== s1?.id) ||
+             rosterPool.find(p => p.id !== s1?.id);
 
-  // Resolve Outsides
-  const availableOH = outsides.filter(p => p.id !== primarySetter?.id && p.id !== primaryOpp?.id && p.id !== firstServer?.id);
-  const oh1 = (firstServer?.position === 'Outside Hitter') ? firstServer : (availableOH[0] || starters[1] || rosterPool[1]);
-  const oh2 = (firstServer?.position === 'Outside Hitter') ? (availableOH[0] || starters[2] || rosterPool[2]) : (availableOH[1] || starters[2] || rosterPool[2]);
+  // Resolve Outsides (OH1 and OH2)
+  const availableOH = outsides.filter(p => p.id !== s1?.id && p.id !== s2?.id);
+  const oh1 = availableOH[0] || starters.find(p => p.id !== s1?.id && p.id !== s2?.id) || rosterPool[1];
+  const oh2 = availableOH[1] || starters.find(p => p.id !== s1?.id && p.id !== s2?.id && p.id !== oh1?.id) || rosterPool[2];
 
-  // Resolve Middles & Libero
-  const availableMB = middles.filter(p => p.id !== primarySetter?.id && p.id !== primaryOpp?.id && p.id !== firstServer?.id && p.id !== oh1?.id && p.id !== oh2?.id);
-  const mb1 = availableMB[0] || starters[3] || rosterPool[3];
-  const mb2OrLibero = liberos[0] || availableMB[1] || starters[4] || rosterPool[4];
+  // Resolve Middles (MB1 and MB2 / Libero)
+  const availableMB = middles.filter(p => p.id !== s1?.id && p.id !== s2?.id && p.id !== oh1?.id && p.id !== oh2?.id);
+  const mb1 = availableMB[0] || starters.find(p => p.id !== s1?.id && p.id !== s2?.id && p.id !== oh1?.id && p.id !== oh2?.id) || rosterPool[3];
+  const mb2OrLibero = liberos[0] || availableMB[1] || rosterPool[4];
+
+  // Base Rotation 1 Lineup
+  const baseLineup = {
+    pos1: s1?.id || null,          // Setter 1 (Zone 1)
+    pos2: oh1?.id || null,         // OH1 (Zone 2)
+    pos3: mb1?.id || null,         // MB1 (Zone 3)
+    pos4: s2?.id || null,          // Setter 2 / RS2 (Zone 4 - opposite S1)
+    pos5: oh2?.id || null,         // OH2 (Zone 5 - opposite OH1)
+    pos6: mb2OrLibero?.id || null  // MB2 / Libero (Zone 6 - opposite MB1)
+  };
 
   const isFirstServerLibero = firstServer && (firstServer.position === 'Libero' || firstServer.isLibero);
 
   if (serveState === 'serve') {
-    // SERVING FIRST: First Server starts in Zone 1 (Position I)
+    // SERVING FIRST: First server must start in Zone 1 (Position I)
     if (isFirstServerLibero) {
-      // Libero starts in Zone 1 (Server)
       return {
-        pos1: firstServer.id,          // Libero (Zone 1 - Server)
-        pos2: oh1?.id || null,         // OH1 (Zone 2)
-        pos3: mb1?.id || null,         // MB1 (Zone 3)
-        pos4: primaryOpp?.id || null,   // OPP (Zone 4 - opposite S)
-        pos5: oh2?.id || null,         // OH2 (Zone 5 - opposite OH1)
-        pos6: primarySetter?.id || null // S (Zone 6 - opposite MB1)
-      };
-    } else if (firstServer?.id === primarySetter?.id) {
-      return {
-        pos1: primarySetter?.id || null, // S (Zone 1 - Server)
-        pos2: oh1?.id || null,          // OH1 (Zone 2)
-        pos3: mb1?.id || null,          // MB1 (Zone 3)
-        pos4: primaryOpp?.id || null,    // OPP (Zone 4 - opposite S)
-        pos5: oh2?.id || null,          // OH2 (Zone 5 - opposite OH1)
-        pos6: mb2OrLibero?.id || null   // MB2 / Libero (Zone 6 - opposite MB1)
-      };
-    } else if (firstServer?.id === oh1?.id) {
-      return {
-        pos1: oh1?.id || null,          // OH1 (Zone 1 - Server)
-        pos2: mb1?.id || null,          // MB1 (Zone 2)
-        pos3: primaryOpp?.id || null,    // OPP (Zone 3)
-        pos4: oh2?.id || null,          // OH2 (Zone 4 - opposite OH1)
-        pos5: mb2OrLibero?.id || null,  // MB2 / Libero (Zone 5 - opposite MB1)
-        pos6: primarySetter?.id || null // S (Zone 6 - opposite OPP)
-      };
-    } else {
-      return {
-        pos1: firstServer?.id || null,
+        pos1: firstServer.id,
         pos2: oh1?.id || null,
         pos3: mb1?.id || null,
-        pos4: primaryOpp?.id || null,
+        pos4: s2?.id || null,
         pos5: oh2?.id || null,
-        pos6: mb2OrLibero?.id || null
+        pos6: s1?.id || null
       };
     }
+
+    // Find which zone firstServer is in baseLineup, and rotate until in pos1
+    let lineup = { ...baseLineup };
+    for (let i = 0; i < 6; i++) {
+      if (lineup.pos1 === firstServer?.id) break;
+      lineup = rotateLineupClockwise(lineup);
+    }
+    return lineup;
   } else {
-    // RECEIVING FIRST: First Server starts in Zone 2 (Position II) -> Rotates to Zone 1 on 1st Side-Out!
+    // RECEIVING FIRST (USAV 7.3.5.2):
+    // First server must start in Zone 2 so they rotate into Zone 1 on 1st side-out!
     if (isFirstServerLibero) {
-      // VOLLEYBALL RULE 19.3.1.1: LIBERO CANNOT BE IN FRONT ROW (ZONE 2)!
-      // Middle Blocker (mb1) starts in Zone 2. On 1st side-out, mb1 rotates to Zone 1, and Libero exchanges in to serve!
-      // Libero starts safely in the back row (Zone 5) paired opposite mb1.
+      // RULE 19.3.1.1: Libero CANNOT start in front row (Zone 2)!
+      // MB1 starts in Zone 2 (rotates to Z1 on side-out for Libero serve exchange)
       return {
-        pos1: primarySetter?.id || null, // S (Zone 1 - Back Row)
-        pos2: mb1?.id || null,          // MB1 (Zone 2 - Front Row; rotates to Z1 on side-out for Libero serve exchange)
-        pos3: oh1?.id || null,          // OH1 (Zone 3 - Front Row)
-        pos4: primaryOpp?.id || null,    // OPP (Zone 4 - Front Row, opposite S)
-        pos5: firstServer.id,           // Libero (Zone 5 - Back Row, opposite MB1)
-        pos6: oh2?.id || null           // OH2 (Zone 6 - Back Row, opposite OH1)
-      };
-    } else if (firstServer?.id === primarySetter?.id) {
-      // Setter in Zone 2, rotates to Zone 1 on side-out
-      return {
-        pos1: mb2OrLibero?.id || null,  // MB2 / Libero (Zone 1)
-        pos2: primarySetter?.id || null, // S (Zone 2 - First Server after side-out)
-        pos3: oh1?.id || null,          // OH1 (Zone 3)
-        pos4: mb1?.id || null,          // MB1 (Zone 4)
-        pos5: primaryOpp?.id || null,    // OPP (Zone 5 - opposite S)
-        pos6: oh2?.id || null           // OH2 (Zone 6 - opposite OH1)
-      };
-    } else {
-      // Standard 6-1 Receive: Setter in Zone 1, OH1 (First Server) in Zone 2 -> OH1 rotates to Zone 1 on side-out
-      return {
-        pos1: primarySetter?.id || null, // S (Zone 1 - penetrates from back row)
-        pos2: firstServer?.id || oh1?.id || null, // OH1 / 1st Server (Zone 2 - rotates to Zone 1 on side-out!)
-        pos3: mb1?.id || null,          // MB1 (Zone 3)
-        pos4: primaryOpp?.id || null,    // OPP (Zone 4 - opposite S)
-        pos5: oh2?.id || null,          // OH2 (Zone 5 - opposite OH1)
+        pos1: s1?.id || null,
+        pos2: mb1?.id || null,
+        pos3: oh1?.id || null,
+        pos4: s2?.id || null,
+        pos5: firstServer.id,
+        pos6: oh2?.id || null
       };
     }
+
+    // Find lineup where firstServer is in pos2 (rotates to pos1 on 1st side-out)
+    let lineup = { ...baseLineup };
+    for (let i = 0; i < 6; i++) {
+      if (lineup.pos2 === firstServer?.id) break;
+      lineup = rotateLineupClockwise(lineup);
+    }
+    return lineup;
   }
 }
 
+// Backwards-compatible alias
+export const generate61LineupForServeState = generate62LineupForServeState;
+
 /**
- * Detects smart tactical substitution opportunities based on the active 6-1 rotation and player settings.
+ * Detects smart tactical substitution opportunities based on the active 6-2 rotation and player settings.
  * Strictly adheres to all USAV, NFHS, and FIVB volleyball substitution rules:
  * - Libero NEVER enters front row (Zones 4, 3, 2).
  * - Position-locking and re-entry constraints (Rule 15.6 / NFHS 10-3).
+ * - Traditional 6-2 Setter / Right Side substitution pairs (subbing in front-row hitter and back-row setter).
  * - Matches designated player substitution strategies (DS, Serving Specialist, Hitter Re-entry).
  *
  * @param {Object} currentLineup - Active court positions { pos1..pos6 }
@@ -651,7 +587,7 @@ export function generate61LineupForServeState(rosterPool = [], serveState = 'ser
  * @param {Object} options - { maxSubs: 12, enforcePositionLock: true }
  * @returns {Array} List of recommended substitution opportunities
  */
-export function detect61SubstitutionOpportunities(
+export function detect62SubstitutionOpportunities(
   currentLineup = {},
   rotation = 1,
   phase = 'serve',
@@ -668,6 +604,58 @@ export function detect61SubstitutionOpportunities(
   const benchPlayers = roster.filter(p => !assignedIds.includes(p.id) && p.status !== 'Injured');
 
   const getPlayer = (id) => roster.find(p => p.id === id);
+
+  // 1. Classic 6-2 Setter / Right Side Sub Opportunity
+  // When a setter rotates to the front row (Zone 4), sub in an attacking Right Side in front row and fresh Setter in back row (Zone 1)
+  const z4Player = getPlayer(currentLineup.pos4);
+  const z1Player = getPlayer(currentLineup.pos1);
+
+  if (z4Player && z4Player.position === 'Setter') {
+    const benchRS = benchPlayers.find(p => p.position === 'Opposite Hitter' || p.position === 'Right Side');
+    const benchSetter = benchPlayers.find(p => p.position === 'Setter');
+
+    if (benchRS) {
+      const legality = checkSubstitutionLegality(benchRS, 'pos4', currentLineup, subHistory, options);
+      if (legality.isLegal) {
+        recommendations.push({
+          id: `rec-62-rs-${benchRS.id}-${z4Player.id}`,
+          priority: 'high',
+          type: '62_setter_hitter_sub',
+          incomingPlayer: benchRS,
+          outgoingPlayer: z4Player,
+          targetZone: 'pos4',
+          zoneNum: 4,
+          rotation,
+          phase,
+          isLiberoExchange: false,
+          title: `6-2 Front-Row Hitter Sub: #${benchRS.number} ${benchRS.name}`,
+          description: `Sub in Right Side attacker #${benchRS.number} ${benchRS.name} for Setter #${z4Player.number} ${z4Player.name} in Zone 4 to maximize front-row attacking power.`,
+          ruleNote: 'Standard 6-2 offensive substitution (USAV 15.6).'
+        });
+      }
+    }
+
+    if (benchSetter && z1Player && (z1Player.position === 'Opposite Hitter' || z1Player.position === 'Right Side')) {
+      const legality = checkSubstitutionLegality(benchSetter, 'pos1', currentLineup, subHistory, options);
+      if (legality.isLegal) {
+        recommendations.push({
+          id: `rec-62-setter-${benchSetter.id}-${z1Player.id}`,
+          priority: 'high',
+          type: '62_setter_hitter_sub',
+          incomingPlayer: benchSetter,
+          outgoingPlayer: z1Player,
+          targetZone: 'pos1',
+          zoneNum: 1,
+          rotation,
+          phase,
+          isLiberoExchange: false,
+          title: `6-2 Back-Row Setter Sub: #${benchSetter.number} ${benchSetter.name}`,
+          description: `Sub in Setter #${benchSetter.number} ${benchSetter.name} for #${z1Player.number} ${z1Player.name} in Zone 1 to run the 6-2 offense from the back row.`,
+          ruleNote: 'Standard 6-2 offensive substitution (USAV 15.6).'
+        });
+      }
+    }
+  }
 
   // 1. Check Configured Sub Partners (from Player Settings)
   benchPlayers.forEach(benchPlayer => {
@@ -825,5 +813,8 @@ export function detect61SubstitutionOpportunities(
 
   return recommendations;
 }
+
+// Backwards-compatible alias
+export const detect61SubstitutionOpportunities = detect62SubstitutionOpportunities;
 
 

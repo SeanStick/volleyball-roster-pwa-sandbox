@@ -32,7 +32,8 @@ import {
   checkLiberoServingEligibility,
   checkLiberoReentryOpportunity,
   validate61Formation,
-  deriveLineupForRotation
+  deriveLineupForRotation,
+  detect61SubstitutionOpportunities
 } from '../services/volleyballRules';
 import { storageService } from '../services/storageService';
 import LiberoPromptModal from './LiberoPromptModal';
@@ -76,6 +77,14 @@ export default function CourtView({
   const [isDragDropMode, setIsDragDropMode] = useState(false);
   const [draggedZoneKey, setDraggedZoneKey] = useState(null);
   const [dropTargetZoneKey, setDropTargetZoneKey] = useState(null);
+
+  // 💡 Smart 6-1 Substitution Opportunities State
+  const [dismissedSubIds, setDismissedSubIds] = useState([]);
+
+  useEffect(() => {
+    setDismissedSubIds([]);
+  }, [rotation, phase]);
+
   // Modal States
   const [isLiberoPromptOpen, setIsLiberoPromptOpen] = useState(false);
   const [liberoViolationData, setLiberoViolationData] = useState(null);
@@ -686,6 +695,53 @@ export default function CourtView({
     );
   };
 
+  // 💡 6-1 Smart Substitution Recommendations Engine
+  const smartSubOpportunities = detect61SubstitutionOpportunities(
+    lineup,
+    rotation,
+    phase,
+    roster,
+    subHistory,
+    { maxSubs, enforcePositionLock }
+  ).filter(rec => !dismissedSubIds.includes(rec.id));
+
+  const activeSubRec = smartSubOpportunities[0] || null;
+
+  const handleExecuteSmartSub = (rec) => {
+    if (!rec) return;
+    const { incomingPlayer, outgoingPlayer, targetZone, isLiberoExchange } = rec;
+
+    setLineup(prev => ({
+      ...prev,
+      [targetZone]: incomingPlayer.id
+    }));
+
+    if (isLiberoExchange) {
+      setLiberoExchanges(prev => ({
+        ...prev,
+        [incomingPlayer.id]: outgoingPlayer.id
+      }));
+    }
+
+    const newHistoryEntry = {
+      id: `sub-${Date.now()}`,
+      timestamp: new Date().toISOString(),
+      zoneKey: targetZone,
+      outgoingPlayerId: outgoingPlayer.id,
+      outgoingPlayerName: outgoingPlayer.name,
+      outgoingPlayerNumber: outgoingPlayer.number,
+      incomingPlayerId: incomingPlayer.id,
+      incomingPlayerName: incomingPlayer.name,
+      incomingPlayerNumber: incomingPlayer.number,
+      isLiberoExchange: Boolean(isLiberoExchange),
+      subNumber: isLiberoExchange ? null : regularSubsUsed + 1
+    };
+
+    setSubHistory(prev => [newHistoryEntry, ...prev]);
+    confetti({ particleCount: 40, spread: 60, origin: { y: 0.6 } });
+    setDismissedSubIds(prev => [...prev, rec.id]);
+  };
+
   return (
     <div className="court-container">
       {/* Court Top Controls Header */}
@@ -888,6 +944,65 @@ export default function CourtView({
           >
             Done Editing
           </button>
+        </div>
+      )}
+
+      {/* 💡 6-1 Smart Substitution Tactical Prompt Banner */}
+      {activeSubRec && (
+        <div style={{
+          background: 'linear-gradient(135deg, rgba(245, 158, 11, 0.22), rgba(15, 23, 42, 0.95))',
+          border: '1px solid #f59e0b',
+          borderRadius: 'var(--radius-md)',
+          padding: '0.85rem 1.1rem',
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          gap: '1rem',
+          boxShadow: '0 4px 18px rgba(245, 158, 11, 0.25)',
+          marginTop: '0.5rem'
+        }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+            <div style={{
+              width: 36,
+              height: 36,
+              borderRadius: '50%',
+              background: 'rgba(245, 158, 11, 0.2)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              flexShrink: 0
+            }}>
+              <ArrowLeftRight size={20} color="#f59e0b" />
+            </div>
+            <div>
+              <div style={{ fontSize: '0.88rem', color: '#fef3c7', fontWeight: 800 }}>
+                {activeSubRec.title}
+              </div>
+              <div style={{ fontSize: '0.80rem', color: '#fde68a', marginTop: '0.15rem' }}>
+                {activeSubRec.description}
+              </div>
+              <div style={{ fontSize: '0.72rem', color: 'rgba(254, 243, 199, 0.7)', marginTop: '0.1rem' }}>
+                ⚖️ {activeSubRec.ruleNote}
+              </div>
+            </div>
+          </div>
+
+          <div style={{ display: 'flex', gap: '0.5rem', flexShrink: 0 }}>
+            <button
+              className="btn btn-primary btn-sm"
+              style={{ background: 'linear-gradient(135deg, #f59e0b, #d97706)', borderColor: '#f59e0b', fontSize: '0.8rem', fontWeight: 700 }}
+              onClick={() => handleExecuteSmartSub(activeSubRec)}
+            >
+              <Sparkles size={14} /> Sub In Now
+            </button>
+            <button
+              className="btn btn-secondary btn-sm"
+              style={{ fontSize: '0.78rem' }}
+              onClick={() => setDismissedSubIds(prev => [...prev, activeSubRec.id])}
+            >
+              Dismiss
+            </button>
+          </div>
         </div>
       )}
 

@@ -402,6 +402,7 @@ export default function App() {
                   onEdit={handleOpenEdit}
                   onDelete={handleDeletePlayer}
                   onDuplicate={handleDuplicatePlayer}
+                  roster={roster}
                 />
               ))}
             </div>
@@ -410,7 +411,7 @@ export default function App() {
       )}
 
       {activeTab === 'court' && (
-        /* 6-Player Interactive Court View */
+        /* 6-Position Real Court Lineup & Substitutions */
         <CourtView
           roster={roster}
           lineup={lineup}
@@ -471,6 +472,7 @@ export default function App() {
         onSave={handleSavePlayer}
         playerToEdit={playerToEdit}
         teamSettings={teamSettings}
+        roster={roster}
       />
 
       <ImportExportModal

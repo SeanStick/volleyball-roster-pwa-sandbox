@@ -12,9 +12,10 @@ const POSITION_CLASSES = {
   'Serving Specialist': 'pos-ds',
 };
 
-export default function PlayerCard({ player, onEdit, onDelete, onDuplicate }) {
+export default function PlayerCard({ player, onEdit, onDelete, onDuplicate, roster = [] }) {
   const isLibero = player.position === 'Libero';
   const posClass = POSITION_CLASSES[player.position] || 'pos-outside';
+  const subPartner = player.subPartnerId ? roster.find(p => p.id === player.subPartnerId) : null;
 
   return (
     <div className={`player-card ${player.isCaptain ? 'is-captain' : ''} ${isLibero ? 'is-libero' : ''}`}>
@@ -83,6 +84,11 @@ export default function PlayerCard({ player, onEdit, onDelete, onDuplicate }) {
           {player.isFirstServer && (
             <span className="badge-status" style={{ color: '#38bdf8', background: 'rgba(56, 189, 248, 0.15)', borderColor: 'rgba(56, 189, 248, 0.3)' }}>
               1st Server
+            </span>
+          )}
+          {subPartner && (
+            <span className="badge-status" style={{ color: '#f59e0b', background: 'rgba(245, 158, 11, 0.15)', borderColor: 'rgba(245, 158, 11, 0.3)' }}>
+              🔄 Sub for #{subPartner.number} ({player.subTrigger === 'back_row' ? 'Back' : player.subTrigger === 'serving' ? 'Serve' : 'Front'})
             </span>
           )}
         </div>

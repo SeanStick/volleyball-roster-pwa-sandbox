@@ -631,10 +631,199 @@ export function generate61LineupForServeState(rosterPool = [], serveState = 'ser
         pos3: mb1?.id || null,          // MB1 (Zone 3)
         pos4: primaryOpp?.id || null,    // OPP (Zone 4 - opposite S)
         pos5: oh2?.id || null,          // OH2 (Zone 5 - opposite OH1)
-        pos6: mb2OrLibero?.id || null   // MB2 / Libero (Zone 6 - opposite MB1)
       };
     }
   }
+}
+
+/**
+ * Detects smart tactical substitution opportunities based on the active 6-1 rotation and player settings.
+ * Strictly adheres to all USAV, NFHS, and FIVB volleyball substitution rules:
+ * - Libero NEVER enters front row (Zones 4, 3, 2).
+ * - Position-locking and re-entry constraints (Rule 15.6 / NFHS 10-3).
+ * - Matches designated player substitution strategies (DS, Serving Specialist, Hitter Re-entry).
+ *
+ * @param {Object} currentLineup - Active court positions { pos1..pos6 }
+ * @param {number} rotation - Current rotation 1..6
+ * @param {string} phase - Current phase ('serve' | 'receive')
+ * @param {Array} roster - Complete team roster array
+ * @param {Array} subHistory - Substitution event log
+ * @param {Object} options - { maxSubs: 12, enforcePositionLock: true }
+ * @returns {Array} List of recommended substitution opportunities
+ */
+export function detect61SubstitutionOpportunities(
+  currentLineup = {},
+  rotation = 1,
+  phase = 'serve',
+  roster = [],
+  subHistory = [],
+  options = {}
+) {
+  if (!Array.isArray(roster) || roster.length === 0 || !currentLineup) {
+    return [];
+  }
+
+  const recommendations = [];
+  const assignedIds = Object.values(currentLineup).filter(Boolean);
+  const benchPlayers = roster.filter(p => !assignedIds.includes(p.id) && p.status !== 'Injured');
+
+  const getPlayer = (id) => roster.find(p => p.id === id);
+
+  // 1. Check Configured Sub Partners (from Player Settings)
+  benchPlayers.forEach(benchPlayer => {
+    const isLibero = benchPlayer.position === 'Libero' || benchPlayer.isLibero;
+
+    if (benchPlayer.subPartnerId) {
+      const partner = getPlayer(benchPlayer.subPartnerId);
+      if (partner) {
+        // Find which zone partner occupies
+        const zoneEntry = Object.entries(currentLineup).find(([k, id]) => id === partner.id);
+        if (zoneEntry) {
+          const [zoneKey] = zoneEntry;
+          const isFrontRow = FRONT_ROW_ZONES.includes(zoneKey);
+          const isBackRow = BACK_ROW_ZONES.includes(zoneKey);
+          const isServingZone = zoneKey === 'pos1' && phase === 'serve';
+
+          // Check if trigger matches
+          let triggerMatches = false;
+          if (benchPlayer.subTrigger === 'back_row' && isBackRow) {
+            triggerMatches = true;
+          } else if (benchPlayer.subTrigger === 'serving' && isServingZone) {
+            triggerMatches = true;
+          } else if (benchPlayer.subTrigger === 'front_row' && isFrontRow && !isLibero) {
+            triggerMatches = true;
+          } else if (!benchPlayer.subTrigger && isBackRow) {
+            // Default trigger for DS/Libero is back row
+            triggerMatches = true;
+          }
+
+          // Rule Check: Libero can NEVER enter front row!
+          if (isLibero && isFrontRow) {
+            triggerMatches = false;
+          }
+
+          if (triggerMatches) {
+            const legality = checkSubstitutionLegality(benchPlayer, zoneKey, currentLineup, subHistory, options);
+            if (legality.isLegal) {
+              const zoneNum = ZONE_LABELS[zoneKey]?.num || zoneKey;
+              recommendations.push({
+                id: `rec-partner-${benchPlayer.id}-${partner.id}`,
+                priority: 'high',
+                type: 'configured_partner',
+                incomingPlayer: benchPlayer,
+                outgoingPlayer: partner,
+                targetZone: zoneKey,
+                zoneNum,
+                rotation,
+                phase,
+                isLiberoExchange: isLibero,
+                title: `Designated Sub: #${benchPlayer.number} ${benchPlayer.name}`,
+                description: `Sub in #${benchPlayer.number} ${benchPlayer.name} (${benchPlayer.position}) for #${partner.number} ${partner.name} in Zone ${zoneNum} (${isBackRow ? 'Back Row' : isServingZone ? 'Server' : 'Front Row'}).`,
+                ruleNote: isLibero ? 'Free Libero back-row replacement (USAV 19.3.2).' : 'Follows configured player substitution strategy.'
+              });
+            }
+          }
+        }
+      }
+    }
+  });
+
+  // 2. Defensive Specialist (DS) Smart Opportunity
+  const dsBench = benchPlayers.filter(p => (p.position === 'Defensive Specialist' || p.secondaryPosition === 'Defensive Specialist') && !p.subPartnerId);
+  dsBench.forEach(ds => {
+    // Find back-row Outside Hitter or Opposite
+    BACK_ROW_ZONES.forEach(zoneKey => {
+      const occupantId = currentLineup[zoneKey];
+      const occupant = getPlayer(occupantId);
+      if (occupant && (occupant.position === 'Outside Hitter' || occupant.position === 'Opposite Hitter' || occupant.position === 'Right Side')) {
+        const legality = checkSubstitutionLegality(ds, zoneKey, currentLineup, subHistory, options);
+        if (legality.isLegal) {
+          const zoneNum = ZONE_LABELS[zoneKey]?.num || zoneKey;
+          recommendations.push({
+            id: `rec-ds-${ds.id}-${occupant.id}`,
+            priority: 'medium',
+            type: 'defensive_specialist',
+            incomingPlayer: ds,
+            outgoingPlayer: occupant,
+            targetZone: zoneKey,
+            zoneNum,
+            rotation,
+            phase,
+            isLiberoExchange: false,
+            title: `Defensive Upgrade: #${ds.number} ${ds.name}`,
+            description: `Sub in Defensive Specialist #${ds.number} ${ds.name} for #${occupant.number} ${occupant.name} in Zone ${zoneNum} to boost back-row serve receive and digging.`,
+            ruleNote: 'Counts as 1 team substitution. Regular starter may re-enter when rotating to front row (Rule 15.6).'
+          });
+        }
+      }
+    });
+  });
+
+  // 3. Serving Specialist (SS) Smart Opportunity (When in Zone 1 on Serve)
+  if (phase === 'serve') {
+    const serverId = currentLineup.pos1;
+    const currentServer = getPlayer(serverId);
+    const ssBench = benchPlayers.filter(p => p.position === 'Serving Specialist' || p.secondaryPosition === 'Serving Specialist');
+
+    ssBench.forEach(ss => {
+      if (currentServer && currentServer.position !== 'Serving Specialist' && !currentServer.isFirstServer) {
+        const legality = checkSubstitutionLegality(ss, 'pos1', currentLineup, subHistory, options);
+        if (legality.isLegal) {
+          recommendations.push({
+            id: `rec-ss-${ss.id}-${currentServer.id}`,
+            priority: 'medium',
+            type: 'serving_specialist',
+            incomingPlayer: ss,
+            outgoingPlayer: currentServer,
+            targetZone: 'pos1',
+            zoneNum: 1,
+            rotation,
+            phase,
+            isLiberoExchange: false,
+            title: `Serving Specialist: #${ss.number} ${ss.name}`,
+            description: `Sub in #${ss.number} ${ss.name} to take the opening serve in Zone 1 for #${currentServer.number} ${currentServer.name}.`,
+            ruleNote: 'Enters server position (Zone 1).'
+          });
+        }
+      }
+    });
+  }
+
+  // 4. Starter Re-Entry Opportunity (Rule 15.6: Starter returns to front row)
+  FRONT_ROW_ZONES.forEach(zoneKey => {
+    const currentOccupantId = currentLineup[zoneKey];
+    const currentOccupant = getPlayer(currentOccupantId);
+    if (currentOccupant && (currentOccupant.position === 'Defensive Specialist' || currentOccupant.position === 'Serving Specialist')) {
+      // Find original starter who was subbed out for this player
+      const subRecord = subHistory.find(s => s.incomingPlayerId === currentOccupant.id && !s.isLiberoExchange);
+      if (subRecord) {
+        const originalStarter = getPlayer(subRecord.outgoingPlayerId);
+        if (originalStarter && benchPlayers.some(p => p.id === originalStarter.id)) {
+          const legality = checkSubstitutionLegality(originalStarter, zoneKey, currentLineup, subHistory, options);
+          if (legality.isLegal) {
+            const zoneNum = ZONE_LABELS[zoneKey]?.num || zoneKey;
+            recommendations.push({
+              id: `rec-reentry-${originalStarter.id}-${currentOccupant.id}`,
+              priority: 'high',
+              type: 'starter_reentry',
+              incomingPlayer: originalStarter,
+              outgoingPlayer: currentOccupant,
+              targetZone: zoneKey,
+              zoneNum,
+              rotation,
+              phase,
+              isLiberoExchange: false,
+              title: `Front-Row Re-Entry: #${originalStarter.number} ${originalStarter.name}`,
+              description: `Re-enter primary attacker #${originalStarter.number} ${originalStarter.name} (${originalStarter.position}) for #${currentOccupant.number} ${currentOccupant.name} as they rotate into front row (Zone ${zoneNum}).`,
+              ruleNote: 'Legal starter re-entry in same rotational position (USAV 15.6 / NFHS 10-3).'
+            });
+          }
+        }
+      }
+    }
+  });
+
+  return recommendations;
 }
 
 

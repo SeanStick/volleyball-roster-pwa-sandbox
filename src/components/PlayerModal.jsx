@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { X, Check, Star, Award, Shield, User, Volleyball } from 'lucide-react';
+import { X, Check, Star, Award, Shield, User, Volleyball, ArrowLeftRight } from 'lucide-react';
 import JerseyVisualizer from './JerseyVisualizer';
 
 const POSITIONS = [
@@ -13,7 +13,7 @@ const POSITIONS = [
   'Serving Specialist'
 ];
 
-export default function PlayerModal({ isOpen, onClose, onSave, playerToEdit, teamSettings }) {
+export default function PlayerModal({ isOpen, onClose, onSave, playerToEdit, teamSettings, roster = [] }) {
   const [formData, setFormData] = useState({
     name: '',
     number: '',
@@ -24,6 +24,8 @@ export default function PlayerModal({ isOpen, onClose, onSave, playerToEdit, tea
     isFirstServer: false,
     height: '',
     status: 'Active',
+    subPartnerId: '',
+    subTrigger: 'back_row',
     notes: ''
   });
 
@@ -41,6 +43,8 @@ export default function PlayerModal({ isOpen, onClose, onSave, playerToEdit, tea
         isFirstServer: Boolean(playerToEdit.isFirstServer),
         height: playerToEdit.height || '',
         status: playerToEdit.status || 'Active',
+        subPartnerId: playerToEdit.subPartnerId || '',
+        subTrigger: playerToEdit.subTrigger || 'back_row',
         notes: playerToEdit.notes || ''
       });
     } else {
@@ -55,6 +59,8 @@ export default function PlayerModal({ isOpen, onClose, onSave, playerToEdit, tea
         isFirstServer: false,
         height: '',
         status: 'Active',
+        subPartnerId: '',
+        subTrigger: 'back_row',
         notes: ''
       });
     }
@@ -95,11 +101,14 @@ export default function PlayerModal({ isOpen, onClose, onSave, playerToEdit, tea
       isFirstServer: formData.isFirstServer,
       height: formData.height.trim(),
       status: formData.status,
+      subPartnerId: formData.subPartnerId || null,
+      subTrigger: formData.subTrigger || 'back_row',
       notes: formData.notes.trim()
     });
   };
 
   const isLibero = formData.position === 'Libero';
+  const availablePartners = roster.filter(p => !playerToEdit || p.id !== playerToEdit.id);
 
   return (
     <div className="modal-overlay" onClick={onClose}>
@@ -266,6 +275,66 @@ export default function PlayerModal({ isOpen, onClose, onSave, playerToEdit, tea
                 onChange={(e) => setFormData({ ...formData, isFirstServer: e.target.checked })}
               />
             </div>
+          </div>
+
+          {/* 🔄 Substitution & Rotation Strategy Section */}
+          <div style={{
+            background: 'rgba(30, 41, 59, 0.65)',
+            border: '1px solid rgba(255, 255, 255, 0.08)',
+            borderRadius: 'var(--radius-md)',
+            padding: '0.9rem',
+            marginBottom: '1.25rem'
+          }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', marginBottom: '0.75rem' }}>
+              <ArrowLeftRight size={16} color="var(--accent-orange)" />
+              <span style={{ fontSize: '0.86rem', fontWeight: 800, color: '#f8fafc' }}>
+                Substitution & 6-1 Rotation Strategy
+              </span>
+            </div>
+
+            <div className="form-row" style={{ marginBottom: 0 }}>
+              <div className="form-group">
+                <label className="form-label" style={{ fontSize: '0.78rem' }}>
+                  Designated Sub For (Starter):
+                </label>
+                <select
+                  className="form-select"
+                  value={formData.subPartnerId}
+                  onChange={(e) => setFormData({ ...formData, subPartnerId: e.target.value })}
+                >
+                  <option value="">None (Regular Rotation)</option>
+                  {availablePartners.map(p => (
+                    <option key={p.id} value={p.id}>
+                      #{p.number} {p.name} ({p.position}) {p.isStarter ? '★ Starter' : ''}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="form-group">
+                <label className="form-label" style={{ fontSize: '0.78rem' }}>
+                  Sub-In Trigger:
+                </label>
+                <select
+                  className="form-select"
+                  value={formData.subTrigger}
+                  onChange={(e) => setFormData({ ...formData, subTrigger: e.target.value })}
+                  disabled={!formData.subPartnerId}
+                >
+                  <option value="back_row">When Partner is in Back Row (Z1, Z6, Z5)</option>
+                  <option value="serving">When Partner is Serving (Zone 1)</option>
+                  {!isLibero && <option value="front_row">When Partner is in Front Row (Z4, Z3, Z2)</option>}
+                </select>
+              </div>
+            </div>
+
+            {/* Libero Rule Notification */}
+            {isLibero && (
+              <div style={{ fontSize: '0.74rem', color: '#c084fc', marginTop: '0.5rem', display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
+                <Shield size={14} color="#c084fc" />
+                <span><strong>Volleyball Rule 19.3.1.1:</strong> Libero is strictly restricted to back-row replacement only.</span>
+              </div>
+            )}
           </div>
 
           {/* Coach Notes */}

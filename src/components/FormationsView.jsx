@@ -43,6 +43,7 @@ import LiberoReentryPromptModal from './LiberoReentryPromptModal';
 import SubModal from './SubModal';
 import Formation62MismatchModal from './Formation62MismatchModal';
 import AutoFillLineupModal from './AutoFillLineupModal';
+import RallyOutcomeModal from './RallyOutcomeModal';
 
 export default function FormationsView({
   roster = [],
@@ -64,7 +65,10 @@ export default function FormationsView({
   enforcePositionLock = true,
   onSelectRotation,
   onUpdatePlayerPosition,
-  onNavigateTab
+  onNavigateTab,
+  matchStats,
+  onRallyWonByUs,
+  onRallyWonByOpponent
 }) {
   const [showArrows, setShowArrows] = useState(true);
   const [customPositions, setCustomPositions] = useState({});
@@ -72,6 +76,7 @@ export default function FormationsView({
   const [subTargetZone, setSubTargetZone] = useState(null);
   const [isSubModalOpen, setIsSubModalOpen] = useState(false);
   const [isAutoFillModalOpen, setIsAutoFillModalOpen] = useState(false);
+  const [isRallyModalOpen, setIsRallyModalOpen] = useState(false);
 
   // 6-2 System Positional Validation
   const validation62 = validate62Formation(lineup, roster);
@@ -207,11 +212,19 @@ export default function FormationsView({
   const teamLibero = roster.find(p => p.position === 'Libero' || p.isLibero);
 
   /**
-   * Official Volleyball Rally & Side-Out Rotation Flow on 6-1 Tab:
+   * Official Volleyball Rally & Side-Out Rotation Flow:
    * 1. When Serving -> Losing point switches team to Receive (same rotation).
    * 2. When Receiving -> Winning point (Side-Out) triggers Clockwise Rotation with full Libero rules validation and switches to Serve!
    */
   const handleAdvanceRally = () => {
+    if (onRallyWonByUs && onRallyWonByOpponent) {
+      setIsRallyModalOpen(true);
+    } else {
+      handleDirectAdvanceOnly();
+    }
+  };
+
+  const handleDirectAdvanceOnly = () => {
     if (!isReceivePhase) {
       // Team was serving and lost serve -> switch to Receive (same rotation)
       setPhase && setPhase('receive');
@@ -931,6 +944,20 @@ export default function FormationsView({
         roster={roster}
         currentPhase={phase}
         onApplyLineup={handleApplyAutoFill}
+      />
+
+      {/* 7. Rally Outcome & Side-Out Score Prompt Modal */}
+      <RallyOutcomeModal
+        isOpen={isRallyModalOpen}
+        onClose={() => setIsRallyModalOpen(false)}
+        phase={phase}
+        rotation={rotation}
+        lineup={lineup}
+        roster={roster}
+        currentScore={matchStats || { ourScore: 0, opponentScore: 0, setNumber: 1 }}
+        onRallyWonByUs={onRallyWonByUs}
+        onRallyWonByOpponent={onRallyWonByOpponent}
+        onDirectAdvanceOnly={handleDirectAdvanceOnly}
       />
     </div>
   );

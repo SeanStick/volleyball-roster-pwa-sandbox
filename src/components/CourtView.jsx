@@ -43,6 +43,7 @@ import SubModal from './SubModal';
 import SubstitutionLogModal from './SubstitutionLogModal';
 import Formation62MismatchModal from './Formation62MismatchModal';
 import AutoFillLineupModal from './AutoFillLineupModal';
+import RallyOutcomeModal from './RallyOutcomeModal';
 
 export default function CourtView({
   roster,
@@ -64,7 +65,10 @@ export default function CourtView({
   setMaxSubs,
   enforcePositionLock,
   setEnforcePositionLock,
-  onUpdatePlayerPosition
+  onUpdatePlayerPosition,
+  matchStats,
+  onRallyWonByUs,
+  onRallyWonByOpponent
 }) {
   // 6-2 System Validation
   const validation62 = validate62Formation(lineup, roster);
@@ -80,6 +84,9 @@ export default function CourtView({
 
   // 💡 Smart 6-2 Substitution Opportunities State
   const [dismissedSubIds, setDismissedSubIds] = useState([]);
+
+  // Rally Outcome & Side-Out Modal
+  const [isRallyModalOpen, setIsRallyModalOpen] = useState(false);
 
   useEffect(() => {
     setDismissedSubIds([]);
@@ -133,6 +140,15 @@ export default function CourtView({
    * 2. When Receiving -> Winning point (Side-Out) awards serve to your team, triggers Clockwise Rotation, and switches to Serve!
    */
   const handleAdvanceRally = () => {
+    // If scoring handlers are available, prompt for rally outcome to make score tracking effortless
+    if (onRallyWonByUs && onRallyWonByOpponent) {
+      setIsRallyModalOpen(true);
+    } else {
+      handleDirectAdvanceOnly();
+    }
+  };
+
+  const handleDirectAdvanceOnly = () => {
     if (phase === 'serve') {
       // Team lost serve -> switch to Receive (same rotation)
       setPhase('receive');
@@ -1208,6 +1224,20 @@ export default function CourtView({
         roster={roster}
         currentPhase={phase}
         onApplyLineup={handleApplyAutoFill}
+      />
+
+      {/* 8. Rally Outcome & Side-Out Score Prompt Modal */}
+      <RallyOutcomeModal
+        isOpen={isRallyModalOpen}
+        onClose={() => setIsRallyModalOpen(false)}
+        phase={phase}
+        rotation={rotation}
+        lineup={lineup}
+        roster={roster}
+        currentScore={matchStats || { ourScore: 0, opponentScore: 0, setNumber: 1 }}
+        onRallyWonByUs={onRallyWonByUs}
+        onRallyWonByOpponent={onRallyWonByOpponent}
+        onDirectAdvanceOnly={handleDirectAdvanceOnly}
       />
     </div>
   );

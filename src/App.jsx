@@ -622,11 +622,14 @@ export default function App() {
           enforcePositionLock={enforcePositionLock}
           setEnforcePositionLock={setEnforcePositionLock}
           onUpdatePlayerPosition={handleUpdatePlayerPosition}
+          matchStats={matchStats}
+          onRallyWonByUs={handleRallyWonByUs}
+          onRallyWonByOpponent={handleRallyWonByOpponent}
         />
       )}
 
       {activeTab === 'formations' && (
-        /* 6-1 Formations & Tactics Interactive Board */
+        /* 6-2 Formations & Tactics Interactive Board */
         <FormationsView
           roster={roster}
           lineup={lineup}
@@ -647,7 +650,13 @@ export default function App() {
           enforcePositionLock={enforcePositionLock}
           onSelectRotation={handleUpdateRotation}
           onUpdatePlayerPosition={handleUpdatePlayerPosition}
-          onNavigateTab={(tab) => setActiveTab(tab)}
+          onNavigateTab={(tab, rot) => {
+            setActiveTab(tab);
+            if (rot) setRotation(rot);
+          }}
+          matchStats={matchStats}
+          onRallyWonByUs={handleRallyWonByUs}
+          onRallyWonByOpponent={handleRallyWonByOpponent}
         />
       )}
 

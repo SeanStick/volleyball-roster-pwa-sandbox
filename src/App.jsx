@@ -32,10 +32,15 @@ import './styles/stats.css';
 export default function App() {
   const [roster, setRoster] = useState(() => storageService.getRoster());
   const [teamSettings, setTeamSettings] = useState(() => storageService.getTeamSettings());
-  const [activeTab, setActiveTab] = useState('roster'); // 'roster' | 'court' | 'formations'
+  const [activeTab, setActiveTab] = useState(() => storageService.getActiveTab()); // 'roster' | 'court' | 'formations' | 'stats'
   const [searchTerm, setSearchTerm] = useState('');
   const [positionFilter, setPositionFilter] = useState('ALL');
   const [sortBy, setSortBy] = useState('number-asc');
+
+  // Persist active tab selection across page refreshes
+  useEffect(() => {
+    storageService.saveActiveTab(activeTab);
+  }, [activeTab]);
 
   // Lifted Match State (shared between Court Lineup and 6-2 Formations Board)
   const getDefaultLineup = (rosterPool) => {

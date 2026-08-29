@@ -3,6 +3,7 @@ const TEAM_SETTINGS_KEY = 'gostandoverthere_team_settings_v1';
 const MATCH_STATE_KEY = 'gostandoverthere_match_state_v1';
 const MATCH_STATS_KEY = 'gostandoverthere_match_stats_v1';
 const MATCH_HISTORY_KEY = 'gostandoverthere_match_history_v1';
+const ACTIVE_TAB_KEY = 'gostandoverthere_active_tab_v1';
 const LEGACY_ROSTER_KEY = 'spikesync_volleyball_roster_v1';
 const LEGACY_TEAM_KEY = 'spikesync_team_settings_v1';
 
@@ -246,6 +247,31 @@ export const storageService = {
       localStorage.setItem(MATCH_STATE_KEY, JSON.stringify(matchState));
     } catch (e) {
       console.error('Error saving match state to localStorage:', e);
+    }
+  },
+
+  getActiveTab() {
+    try {
+      const tab = localStorage.getItem(ACTIVE_TAB_KEY);
+      const validTabs = ['roster', 'court', 'formations', 'stats'];
+      if (tab && validTabs.includes(tab)) {
+        return tab;
+      }
+      return 'roster';
+    } catch (e) {
+      console.error('Error reading active tab from localStorage:', e);
+      return 'roster';
+    }
+  },
+
+  saveActiveTab(tab) {
+    try {
+      const validTabs = ['roster', 'court', 'formations', 'stats'];
+      if (tab && validTabs.includes(tab)) {
+        localStorage.setItem(ACTIVE_TAB_KEY, tab);
+      }
+    } catch (e) {
+      console.error('Error saving active tab to localStorage:', e);
     }
   },
 

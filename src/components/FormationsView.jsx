@@ -90,8 +90,8 @@ export default function FormationsView({
   const isReceivePhase = phase === 'receive' || phase === 'receiving';
   const currentPhaseKey = isReceivePhase ? 'receiving' : 'serving';
 
-  // 🎬 Tactical Rally Simulator Animation State
-  const [isAnimationActive, setIsAnimationActive] = useState(true);
+  // 🎬 Tactical Rally Simulator Animation State (Defaulted to OFF)
+  const [isAnimationActive, setIsAnimationActive] = useState(false);
   const [currentStageIndex, setCurrentStageIndex] = useState(0);
   const [isPlaying, setIsPlaying] = useState(false);
   const [playbackSpeed, setPlaybackSpeed] = useState(1);

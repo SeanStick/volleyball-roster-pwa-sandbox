@@ -401,38 +401,58 @@ export default function App() {
 
       <InstallPrompt />
 
-      {/* Navigation Tabs: Roster vs 6-Player Court View */}
-      <div className="tabs-bar">
+      {/* Navigation Tabs: Roster vs Lineup vs 6-2 vs Match Stats */}
+      <div className="tabs-bar" role="tablist" aria-label="Main Navigation">
         <button
+          id="tab-roster"
+          role="tab"
+          aria-selected={activeTab === 'roster'}
           className={`tab-button ${activeTab === 'roster' ? 'active' : ''}`}
           onClick={() => setActiveTab('roster')}
+          title="Team Roster"
         >
-          <Users size={18} />
-          <span>Team Roster ({totalPlayers})</span>
+          <Users size={18} className="tab-icon" />
+          <span className="tab-label-desktop">Team Roster ({totalPlayers})</span>
+          <span className="tab-label-mobile">Roster</span>
         </button>
 
         <button
+          id="tab-court"
+          role="tab"
+          aria-selected={activeTab === 'court'}
           className={`tab-button ${activeTab === 'court' ? 'active' : ''}`}
           onClick={() => setActiveTab('court')}
+          title="6-Position Lineup"
         >
-          <LayoutGrid size={18} />
-          <span>6-Position Court Lineup</span>
+          <LayoutGrid size={18} className="tab-icon" />
+          <span className="tab-label-desktop">6-Position Lineup</span>
+          <span className="tab-label-mobile">Lineup</span>
         </button>
 
         <button
+          id="tab-formations"
+          role="tab"
+          aria-selected={activeTab === 'formations'}
           className={`tab-button ${activeTab === 'formations' ? 'active' : ''}`}
           onClick={() => setActiveTab('formations')}
+          title="6-2 Formations & Tactics"
         >
-          <Compass size={18} />
-          <span>6-2 Formations & Tactics</span>
+          <Compass size={18} className="tab-icon" />
+          <span className="tab-label-desktop">6-2 Formations & Tactics</span>
+          <span className="tab-label-mobile">6-2 Tactics</span>
         </button>
 
         <button
+          id="tab-stats"
+          role="tab"
+          aria-selected={activeTab === 'stats'}
           className={`tab-button ${activeTab === 'stats' ? 'active' : ''}`}
           onClick={() => setActiveTab('stats')}
+          title="Match Stats & PDF"
         >
-          <BarChart3 size={18} />
-          <span>Match Stats & PDF</span>
+          <BarChart3 size={18} className="tab-icon" />
+          <span className="tab-label-desktop">Match Stats & PDF</span>
+          <span className="tab-label-mobile">Stats & PDF</span>
         </button>
       </div>
 

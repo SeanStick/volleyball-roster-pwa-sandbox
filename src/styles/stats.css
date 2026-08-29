@@ -363,9 +363,75 @@
   color: #f87171;
 }
 
-.net-badge.neutral {
-  background: rgba(255, 255, 255, 0.08);
-  color: var(--text-muted);
+/* =========================================================================
+   MOBILE RESPONSIVE STYLES (< 640px)
+   ========================================================================= */
+@media (max-width: 640px) {
+  .scoreboard-ribbon {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0.65rem;
+    padding: 0.65rem 0.85rem;
+  }
+
+  .scoreboard-score-group {
+    justify-content: center;
+    width: 100%;
+    gap: 0.75rem;
+  }
+
+  .scoreboard-digit {
+    font-size: 1.75rem;
+    min-width: 2rem;
+  }
+
+  .scoreboard-action-group {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 0.4rem;
+    width: 100%;
+  }
+
+  .scoreboard-action-group .btn {
+    width: 100%;
+    justify-content: center;
+    font-size: 0.75rem;
+    padding: 0.45rem 0.4rem;
+  }
+
+  .stats-hero-banner {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.75rem;
+    padding: 1rem;
+  }
+
+  .stats-kpi-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 0.6rem;
+  }
+
+  .stats-actions-bar {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0.6rem;
+  }
+
+  .stats-actions-bar .btn {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .leaderboard-title-row {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.35rem;
+  }
+
+  .point-modal-dialog {
+    padding: 1rem;
+    max-height: 85vh;
+  }
 }
 
 /* =========================================================================

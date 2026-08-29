@@ -250,44 +250,67 @@ body::before {
 
 /* Main Navigation Tabs */
 .tabs-bar {
-  display: flex;
-  background: rgba(15, 23, 42, 0.6);
-  backdrop-filter: blur(12px);
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  background: rgba(15, 23, 42, 0.85);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
   padding: 0.35rem;
   border-radius: var(--radius-md);
   border: 1px solid var(--border-glass);
-  margin-bottom: 1.5rem;
+  margin-bottom: 1.25rem;
   gap: 0.35rem;
+  position: sticky;
+  top: 4.5rem;
+  z-index: 95;
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.35);
 }
 
 .tab-button {
-  flex: 1;
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 0.5rem;
-  padding: 0.7rem 1rem;
+  gap: 0.45rem;
+  padding: 0.65rem 0.5rem;
   font-family: var(--font-display);
   font-weight: 700;
-  font-size: 0.95rem;
-  border: none;
+  font-size: 0.92rem;
+  border: 1px solid transparent;
   background: transparent;
   color: var(--text-secondary);
   border-radius: var(--radius-sm);
   cursor: pointer;
-  transition: all 0.2s ease;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  min-height: 44px;
+  touch-action: manipulation;
+  user-select: none;
+  -webkit-tap-highlight-color: transparent;
+  width: 100%;
+}
+
+.tab-button .tab-icon {
+  flex-shrink: 0;
+}
+
+.tab-button .tab-label-desktop {
+  display: inline;
+  white-space: nowrap;
+}
+
+.tab-button .tab-label-mobile {
+  display: none;
 }
 
 .tab-button.active {
-  background: linear-gradient(135deg, rgba(255, 107, 53, 0.25), rgba(59, 130, 246, 0.2));
+  background: linear-gradient(135deg, rgba(255, 107, 53, 0.3), rgba(59, 130, 246, 0.25));
   color: #ffffff;
-  border: 1px solid rgba(255, 107, 53, 0.5);
-  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+  border: 1px solid rgba(255, 107, 53, 0.6);
+  box-shadow: 0 4px 15px rgba(255, 107, 53, 0.25);
 }
 
 .tab-button:not(.active):hover {
   color: var(--text-primary);
-  background: rgba(255, 255, 255, 0.05);
+  background: rgba(255, 255, 255, 0.06);
 }
 
 /* Stats / Dashboard Ribbon */
@@ -737,13 +760,39 @@ body::before {
 }
 
 /* Responsive Styles */
+@media (max-width: 860px) {
+  .tabs-bar {
+    top: 4.15rem;
+    padding: 0.25rem;
+    gap: 0.25rem;
+  }
+  .tab-button {
+    flex-direction: column;
+    gap: 0.2rem;
+    padding: 0.5rem 0.2rem;
+    min-height: 48px;
+  }
+  .tab-button .tab-label-desktop {
+    display: none;
+  }
+  .tab-button .tab-label-mobile {
+    display: block;
+    font-size: 0.76rem;
+    font-weight: 700;
+    line-height: 1.1;
+    white-space: nowrap;
+    text-align: center;
+  }
+}
+
 @media (max-width: 640px) {
   .app-container {
-    padding: 0.75rem 0.85rem 5rem 0.85rem;
+    padding: 0.5rem 0.65rem 5rem 0.65rem;
   }
   .header-glass {
-    top: 0.5rem;
-    padding: 0.65rem 0.85rem;
+    top: 0.4rem;
+    padding: 0.55rem 0.75rem;
+    margin-bottom: 0.85rem;
   }
   .brand-title {
     font-size: 1.15rem;
@@ -754,5 +803,28 @@ body::before {
   .controls-bar {
     flex-direction: column;
     align-items: stretch;
+  }
+  .tabs-bar {
+    top: 3.85rem;
+    margin-bottom: 0.85rem;
+    border-radius: var(--radius-md);
+  }
+  .tab-button {
+    padding: 0.45rem 0.15rem;
+    min-height: 46px;
+  }
+  .tab-button svg {
+    width: 17px;
+    height: 17px;
+  }
+  .tab-button .tab-label-mobile {
+    font-size: 0.72rem;
+    letter-spacing: -0.2px;
+  }
+}
+
+@media (max-width: 360px) {
+  .tab-button .tab-label-mobile {
+    font-size: 0.66rem;
   }
 }

@@ -1,8 +1,21 @@
 const ROSTER_STORAGE_KEY = 'gostandoverthere_volleyball_roster_v1';
 const TEAM_SETTINGS_KEY = 'gostandoverthere_team_settings_v1';
 const MATCH_STATE_KEY = 'gostandoverthere_match_state_v1';
+const MATCH_STATS_KEY = 'gostandoverthere_match_stats_v1';
 const LEGACY_ROSTER_KEY = 'spikesync_volleyball_roster_v1';
 const LEGACY_TEAM_KEY = 'spikesync_team_settings_v1';
+
+export const INITIAL_MATCH_STATS = {
+  ourScore: 0,
+  opponentScore: 0,
+  setNumber: 1,
+  ourSetsWon: 0,
+  opponentSetsWon: 0,
+  opponentName: 'Opponent',
+  isTrackingEnabled: true,
+  pointHistory: [],
+  setHistory: []
+};
 
 export const INITIAL_SAMPLE_ROSTER = [
   {
@@ -182,6 +195,51 @@ export const storageService = {
       localStorage.setItem(MATCH_STATE_KEY, JSON.stringify(matchState));
     } catch (e) {
       console.error('Error saving match state to localStorage:', e);
+    }
+  },
+
+  getMatchStats() {
+    try {
+      const data = localStorage.getItem(MATCH_STATS_KEY);
+      if (!data) return { ...INITIAL_MATCH_STATS };
+      return { ...INITIAL_MATCH_STATS, ...JSON.parse(data) };
+    } catch (e) {
+      console.error('Error reading match stats from localStorage:', e);
+      return { ...INITIAL_MATCH_STATS };
+    }
+  },
+
+  saveMatchStats(stats) {
+    try {
+      localStorage.setItem(MATCH_STATS_KEY, JSON.stringify(stats));
+    } catch (e) {
+      console.error('Error saving match stats to localStorage:', e);
+    }
+  },
+
+  resetMatchScore() {
+    try {
+      const current = this.getMatchStats();
+      const updated = {
+        ...current,
+        ourScore: 0,
+        opponentScore: 0
+      };
+      this.saveMatchStats(updated);
+      return updated;
+    } catch (e) {
+      console.error('Error resetting score:', e);
+      return { ...INITIAL_MATCH_STATS };
+    }
+  },
+
+  resetFullMatch() {
+    try {
+      this.saveMatchStats(INITIAL_MATCH_STATS);
+      return { ...INITIAL_MATCH_STATS };
+    } catch (e) {
+      console.error('Error resetting full match stats:', e);
+      return { ...INITIAL_MATCH_STATS };
     }
   },
 

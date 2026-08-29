@@ -1,17 +1,33 @@
 import React, { useState, useEffect } from 'react';
-import { Users, Search, Plus, Filter, ArrowUpDown, Shield, LayoutGrid, ShieldCheck, Trophy, Sparkles, Compass } from 'lucide-react';
+import {
+  Users,
+  Search,
+  Plus,
+  Filter,
+  ArrowUpDown,
+  Shield,
+  LayoutGrid,
+  ShieldCheck,
+  Trophy,
+  Sparkles,
+  Compass,
+  BarChart3
+} from 'lucide-react';
 import confetti from 'canvas-confetti';
 import Navbar from './components/Navbar';
 import PlayerCard from './components/PlayerCard';
 import PlayerModal from './components/PlayerModal';
 import CourtView from './components/CourtView';
 import FormationsView from './components/FormationsView';
+import ScoreboardBar from './components/ScoreboardBar';
+import MatchStatsView from './components/MatchStatsView';
 import ImportExportModal from './components/ImportExportModal';
 import InstallPrompt from './components/InstallPrompt';
 import { storageService } from './services/storageService';
 import { rotateLineupClockwise, checkLineupFrontRowLiberoViolation } from './services/volleyballRules';
 import './styles/court.css';
 import './styles/formations.css';
+import './styles/stats.css';
 
 export default function App() {
   const [roster, setRoster] = useState(() => storageService.getRoster());
@@ -85,6 +101,14 @@ export default function App() {
     });
   }, [lineup, startingLineup, rotation, phase, liberoExchanges, liberoServingRotation, subHistory, maxSubs, enforcePositionLock]);
 
+  // Match Stats & Error Tracking State
+  const [matchStats, setMatchStats] = useState(() => storageService.getMatchStats());
+
+  // Sync matchStats to localStorage
+  useEffect(() => {
+    storageService.saveMatchStats(matchStats);
+  }, [matchStats]);
+
   const handleUpdateRotation = (newRotation) => {
     if (newRotation === rotation) return;
     const steps = (newRotation - rotation + 6) % 6;
@@ -98,6 +122,127 @@ export default function App() {
     }
     setLineup(current);
     setRotation(newRotation);
+  };
+
+  // Official Volleyball Scoring & Side-Out Rotation Handlers
+  const handleRallyWonByUs = (pointDetails = {}) => {
+    const newPoint = {
+      id: `pt-${Date.now()}`,
+      timestamp: new Date().toISOString(),
+      pointWonBy: 'us',
+      rotation,
+      phase,
+      setNumber: matchStats?.setNumber || 1,
+      ...pointDetails
+    };
+
+    setMatchStats(prev => ({
+      ...prev,
+      ourScore: (prev?.ourScore || 0) + 1,
+      pointHistory: [...(prev?.pointHistory || []), newPoint]
+    }));
+
+    // Official Rule: If receiving and win rally -> Side-Out! Rotate clockwise and take serve!
+    if (phase === 'receive') {
+      const nextRot = rotation === 6 ? 1 : rotation + 1;
+      let nextLineup = rotateLineupClockwise(lineup);
+      const violation = checkLineupFrontRowLiberoViolation(nextLineup, roster, liberoExchanges);
+      if (violation.hasViolation && violation.replacedPlayer) {
+        nextLineup[violation.zoneKey] = violation.replacedPlayer.id;
+      }
+      setLineup(nextLineup);
+      setRotation(nextRot);
+      setPhase('serve');
+    }
+  };
+
+  const handleRallyWonByOpponent = (pointDetails = {}) => {
+    const newPoint = {
+      id: `pt-${Date.now()}`,
+      timestamp: new Date().toISOString(),
+      pointWonBy: 'opponent',
+      rotation,
+      phase,
+      setNumber: matchStats?.setNumber || 1,
+      ...pointDetails
+    };
+
+    setMatchStats(prev => ({
+      ...prev,
+      opponentScore: (prev?.opponentScore || 0) + 1,
+      pointHistory: [...(prev?.pointHistory || []), newPoint]
+    }));
+
+    // Official Rule: If serving and lose rally -> Side-Out! Switch to receive (same rotation).
+    if (phase === 'serve') {
+      setPhase('receive');
+    }
+  };
+
+  const handleUndoLastPoint = () => {
+    if (!matchStats?.pointHistory || matchStats.pointHistory.length === 0) return;
+    const lastPoint = matchStats.pointHistory[matchStats.pointHistory.length - 1];
+
+    setMatchStats(prev => {
+      const updatedHistory = prev.pointHistory.slice(0, -1);
+      return {
+        ...prev,
+        ourScore: lastPoint.pointWonBy === 'us' ? Math.max(0, prev.ourScore - 1) : prev.ourScore,
+        opponentScore: lastPoint.pointWonBy === 'opponent' ? Math.max(0, prev.opponentScore - 1) : prev.opponentScore,
+        pointHistory: updatedHistory
+      };
+    });
+
+    if (lastPoint.rotation && lastPoint.rotation !== rotation) {
+      handleUpdateRotation(lastPoint.rotation);
+    }
+    if (lastPoint.phase && lastPoint.phase !== phase) {
+      setPhase(lastPoint.phase);
+    }
+  };
+
+  const handleResetScore = () => {
+    setMatchStats(prev => ({
+      ...prev,
+      ourScore: 0,
+      opponentScore: 0
+    }));
+  };
+
+  const handleStartNewSet = () => {
+    const isOurSet = (matchStats?.ourScore || 0) > (matchStats?.opponentScore || 0);
+    const completedSet = {
+      setNumber: matchStats?.setNumber || 1,
+      ourScore: matchStats?.ourScore || 0,
+      opponentScore: matchStats?.opponentScore || 0,
+      winner: isOurSet ? 'us' : 'opponent'
+    };
+
+    setMatchStats(prev => ({
+      ...prev,
+      ourScore: 0,
+      opponentScore: 0,
+      setNumber: (prev?.setNumber || 1) + 1,
+      ourSetsWon: isOurSet ? (prev?.ourSetsWon || 0) + 1 : (prev?.ourSetsWon || 0),
+      opponentSetsWon: !isOurSet ? (prev?.opponentSetsWon || 0) + 1 : (prev?.opponentSetsWon || 0),
+      setHistory: [...(prev?.setHistory || []), completedSet]
+    }));
+
+    if (startingLineup) {
+      setLineup(startingLineup);
+    }
+    setRotation(1);
+    setPhase('serve');
+  };
+
+  const handleResetFullMatch = () => {
+    const fresh = storageService.resetFullMatch();
+    setMatchStats(fresh);
+    if (startingLineup) {
+      setLineup(startingLineup);
+    }
+    setRotation(1);
+    setPhase('serve');
   };
 
   const handleAdvanceRally = () => {
@@ -281,7 +426,31 @@ export default function App() {
           <Compass size={18} />
           <span>6-1 Formations & Tactics</span>
         </button>
+
+        <button
+          className={`tab-button ${activeTab === 'stats' ? 'active' : ''}`}
+          onClick={() => setActiveTab('stats')}
+        >
+          <BarChart3 size={18} />
+          <span>Match Stats & PDF</span>
+        </button>
       </div>
+
+      {/* Floating In-Game Scoreboard Ribbon (Visible on all tabs for quick score & error tracking) */}
+      <ScoreboardBar
+        matchStats={matchStats}
+        setMatchStats={setMatchStats}
+        onRallyWonByUs={handleRallyWonByUs}
+        onRallyWonByOpponent={handleRallyWonByOpponent}
+        onUndoLastPoint={handleUndoLastPoint}
+        onResetScore={handleResetScore}
+        onStartNewSet={handleStartNewSet}
+        lineup={lineup}
+        roster={roster}
+        rotation={rotation}
+        phase={phase}
+        onNavigateTab={(tab) => setActiveTab(tab)}
+      />
 
       {/* Stats Ribbon */}
       <div className="stats-ribbon">
@@ -459,6 +628,19 @@ export default function App() {
           onSelectRotation={handleUpdateRotation}
           onUpdatePlayerPosition={handleUpdatePlayerPosition}
           onNavigateTab={(tab) => setActiveTab(tab)}
+        />
+      )}
+
+      {activeTab === 'stats' && (
+        /* Match Stats, Error Ranking Leaderboard & PDF Report Export */
+        <MatchStatsView
+          matchStats={matchStats}
+          setMatchStats={setMatchStats}
+          roster={roster}
+          teamSettings={teamSettings}
+          onResetScore={handleResetScore}
+          onStartNewSet={handleStartNewSet}
+          onResetFullMatch={handleResetFullMatch}
         />
       )}
 

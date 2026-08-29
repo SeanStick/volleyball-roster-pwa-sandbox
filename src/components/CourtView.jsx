@@ -17,7 +17,10 @@ import {
   Award,
   ArrowRight,
   GripVertical,
-  Move
+  Move,
+  Check,
+  Archive,
+  Flag
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
 import {
@@ -68,11 +71,19 @@ export default function CourtView({
   onUpdatePlayerPosition,
   matchStats,
   onRallyWonByUs,
-  onRallyWonByOpponent
+  onRallyWonByOpponent,
+  onStartNewSet,
+  onArchiveMatch,
+  onResetScore,
+  onResetFullMatch,
+  onNavigateTab
 }) {
   // 6-2 System Validation
   const validation62 = validate62Formation(lineup, roster);
   const [is62ModalOpen, setIs62ModalOpen] = useState(false);
+
+  // Archive success toast
+  const [isArchiveSuccess, setIsArchiveSuccess] = useState(false);
 
   // Auto-Fill Starting 6 Modal
   const [isAutoFillModalOpen, setIsAutoFillModalOpen] = useState(false);
@@ -133,6 +144,33 @@ export default function CourtView({
   // Find team libero
   const teamLibero = roster.find(p => p.position === 'Libero' || p.isLibero);
   const isLiberoOnCourt = teamLibero ? Object.values(lineup).includes(teamLibero.id) : false;
+
+  // Match and Set Handlers
+  const handleFinishSetClick = () => {
+    const currentSetNum = matchStats?.setNumber || 1;
+    const ourPts = matchStats?.ourScore || 0;
+    const oppPts = matchStats?.opponentScore || 0;
+    if (window.confirm(`Finish Set ${currentSetNum} (Score: US ${ourPts} - ${oppPts} OPP) and start Set ${currentSetNum + 1}?`)) {
+      if (onStartNewSet) onStartNewSet();
+    }
+  };
+
+  const handleArchiveMatchClick = () => {
+    if (onArchiveMatch) {
+      const res = onArchiveMatch();
+      if (res) {
+        setIsArchiveSuccess(true);
+        setTimeout(() => setIsArchiveSuccess(false), 3500);
+      }
+    }
+  };
+
+  const handleResetScoreClick = () => {
+    if ((matchStats?.ourScore || 0) === 0 && (matchStats?.opponentScore || 0) === 0) return;
+    if (window.confirm('Reset current set score back to 0 - 0? (Point history will be preserved).')) {
+      if (onResetScore) onResetScore();
+    }
+  };
 
   /**
    * Official Volleyball Rally & Side-Out Rotation Flow:
@@ -917,6 +955,37 @@ export default function CourtView({
             <span>{isDragDropMode ? '✋ Drag & Drop: ON' : '✋ Drag & Drop Rotations'}</span>
           </button>
 
+          {/* Finish Set & Save Match Actions */}
+          <button
+            className="btn btn-sm"
+            onClick={handleFinishSetClick}
+            style={{
+              background: 'linear-gradient(135deg, rgba(16, 185, 129, 0.2), rgba(5, 150, 105, 0.35))',
+              borderColor: 'rgba(16, 185, 129, 0.5)',
+              color: '#a7f3d0',
+              fontWeight: 700
+            }}
+            title="Finish the active set, record score to set history, and advance to next set"
+          >
+            <Check size={14} color="#34d399" />
+            <span>Finish Set & Next</span>
+          </button>
+
+          <button
+            className="btn btn-sm"
+            onClick={handleArchiveMatchClick}
+            style={{
+              background: 'rgba(59, 130, 246, 0.2)',
+              borderColor: 'rgba(59, 130, 246, 0.45)',
+              color: '#bfdbfe',
+              fontWeight: 700
+            }}
+            title="Save current match stats and scores into history archive"
+          >
+            <Archive size={14} color="#60a5fa" />
+            <span>Save to History</span>
+          </button>
+
           {/* Auto-fill & Clear Actions */}
           <button className="btn btn-secondary btn-sm" onClick={handleAutoFillStarters} title="Auto-fill starting lineup with smart volleyball roles">
             <Sparkles size={14} color="#f59e0b" /> Auto-Fill Starting 6
@@ -926,6 +995,26 @@ export default function CourtView({
           </button>
         </div>
       </div>
+
+      {/* Save Success Banner */}
+      {isArchiveSuccess && (
+        <div style={{
+          background: 'linear-gradient(135deg, rgba(16, 185, 129, 0.2), rgba(15, 23, 42, 0.95))',
+          border: '1px solid #10b981',
+          borderRadius: 'var(--radius-md)',
+          padding: '0.65rem 1rem',
+          display: 'flex',
+          alignItems: 'center',
+          gap: '0.6rem',
+          color: '#a7f3d0',
+          fontSize: '0.85rem',
+          fontWeight: 700,
+          boxShadow: '0 4px 15px rgba(16, 185, 129, 0.3)'
+        }}>
+          <CheckCircle size={18} color="#34d399" />
+          <span>Match successfully saved to history archive!</span>
+        </div>
+      )}
 
       {/* Drag & Drop Active Coaching Instructions Banner */}
       {isDragDropMode && (

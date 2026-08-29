@@ -15,7 +15,8 @@ import {
   RefreshCw,
   ArrowLeftRight,
   Play,
-  Film
+  Film,
+  Archive
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
 import { FORMATIONS_62_DATA } from '../services/formations62Data';
@@ -68,7 +69,11 @@ export default function FormationsView({
   onNavigateTab,
   matchStats,
   onRallyWonByUs,
-  onRallyWonByOpponent
+  onRallyWonByOpponent,
+  onStartNewSet,
+  onArchiveMatch,
+  onResetScore,
+  onResetFullMatch
 }) {
   const [showArrows, setShowArrows] = useState(true);
   const [customPositions, setCustomPositions] = useState({});
@@ -77,6 +82,7 @@ export default function FormationsView({
   const [isSubModalOpen, setIsSubModalOpen] = useState(false);
   const [isAutoFillModalOpen, setIsAutoFillModalOpen] = useState(false);
   const [isRallyModalOpen, setIsRallyModalOpen] = useState(false);
+  const [isArchiveSuccess, setIsArchiveSuccess] = useState(false);
 
   // 6-2 System Positional Validation
   const validation62 = validate62Formation(lineup, roster);
@@ -210,6 +216,26 @@ export default function FormationsView({
 
   // Find team libero
   const teamLibero = roster.find(p => p.position === 'Libero' || p.isLibero);
+
+  // Match and Set Handlers
+  const handleFinishSetClick = () => {
+    const currentSetNum = matchStats?.setNumber || 1;
+    const ourPts = matchStats?.ourScore || 0;
+    const oppPts = matchStats?.opponentScore || 0;
+    if (window.confirm(`Finish Set ${currentSetNum} (Score: US ${ourPts} - ${oppPts} OPP) and start Set ${currentSetNum + 1}?`)) {
+      if (onStartNewSet) onStartNewSet();
+    }
+  };
+
+  const handleArchiveMatchClick = () => {
+    if (onArchiveMatch) {
+      const res = onArchiveMatch();
+      if (res) {
+        setIsArchiveSuccess(true);
+        setTimeout(() => setIsArchiveSuccess(false), 3500);
+      }
+    }
+  };
 
   /**
    * Official Volleyball Rally & Side-Out Rotation Flow:
@@ -679,6 +705,37 @@ export default function FormationsView({
             <span>{isAnimationActive ? '🎬 Rally Simulator: ON' : '🎬 Rally Simulator: OFF'}</span>
           </button>
 
+          {/* Finish Set & Save Match Actions */}
+          <button
+            className="btn btn-sm"
+            onClick={handleFinishSetClick}
+            style={{
+              background: 'linear-gradient(135deg, rgba(16, 185, 129, 0.2), rgba(5, 150, 105, 0.35))',
+              borderColor: 'rgba(16, 185, 129, 0.5)',
+              color: '#a7f3d0',
+              fontWeight: 700
+            }}
+            title="Finish the active set, record score to set history, and advance to next set"
+          >
+            <Check size={14} color="#34d399" />
+            <span>Finish Set & Next</span>
+          </button>
+
+          <button
+            className="btn btn-sm"
+            onClick={handleArchiveMatchClick}
+            style={{
+              background: 'rgba(59, 130, 246, 0.2)',
+              borderColor: 'rgba(59, 130, 246, 0.45)',
+              color: '#bfdbfe',
+              fontWeight: 700
+            }}
+            title="Save current match stats and scores into history archive"
+          >
+            <Archive size={14} color="#60a5fa" />
+            <span>Save to History</span>
+          </button>
+
           <button
             className="btn btn-secondary btn-sm"
             onClick={() => onNavigateTab && onNavigateTab('court')}
@@ -715,6 +772,26 @@ export default function FormationsView({
           </button>
         </div>
       </div>
+
+      {/* Save Success Banner */}
+      {isArchiveSuccess && (
+        <div style={{
+          background: 'linear-gradient(135deg, rgba(16, 185, 129, 0.2), rgba(15, 23, 42, 0.95))',
+          border: '1px solid #10b981',
+          borderRadius: 'var(--radius-md)',
+          padding: '0.65rem 1rem',
+          display: 'flex',
+          alignItems: 'center',
+          gap: '0.6rem',
+          color: '#a7f3d0',
+          fontSize: '0.85rem',
+          fontWeight: 700,
+          boxShadow: '0 4px 15px rgba(16, 185, 129, 0.3)'
+        }}>
+          <CheckCircle size={18} color="#34d399" />
+          <span>Match successfully saved to history archive!</span>
+        </div>
+      )}
 
       {/* 💡 6-1 Smart Substitution Tactical Prompt Banner */}
       {activeSubRec && (

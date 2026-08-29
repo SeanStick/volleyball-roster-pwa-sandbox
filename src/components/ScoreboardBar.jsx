@@ -8,7 +8,9 @@ import {
   BarChart3,
   Check,
   AlertCircle,
-  Plus
+  Plus,
+  Archive,
+  Flag
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
 import QuickPointModal from './QuickPointModal';
@@ -21,6 +23,8 @@ export default function ScoreboardBar({
   onUndoLastPoint,
   onResetScore,
   onStartNewSet,
+  onArchiveMatch,
+  onResetFullMatch,
   lineup = {},
   roster = [],
   rotation = 1,
@@ -154,6 +158,46 @@ export default function ScoreboardBar({
             <RotateCcw size={13} />
             <span>Undo</span>
           </button>
+
+          {/* Finish Set Button */}
+          <button
+            className="btn btn-secondary btn-sm"
+            onClick={() => {
+              if (window.confirm(`Finish Set ${setNumber} (${ourScore} - ${opponentScore}) and advance to Set ${setNumber + 1}?`)) {
+                onStartNewSet();
+              }
+            }}
+            style={{
+              background: 'linear-gradient(135deg, rgba(16, 185, 129, 0.2), rgba(5, 150, 105, 0.3))',
+              borderColor: 'rgba(16, 185, 129, 0.5)',
+              color: '#a7f3d0',
+              fontSize: '0.78rem',
+              fontWeight: 700
+            }}
+            title={`Finish Set ${setNumber} and start Set ${setNumber + 1}`}
+          >
+            <Check size={13} color="#34d399" />
+            <span>Finish Set</span>
+          </button>
+
+          {/* Save Match Button */}
+          {onArchiveMatch && (
+            <button
+              className="btn btn-secondary btn-sm"
+              onClick={() => onArchiveMatch()}
+              style={{
+                background: 'rgba(59, 130, 246, 0.18)',
+                borderColor: 'rgba(59, 130, 246, 0.45)',
+                color: '#bfdbfe',
+                fontSize: '0.78rem',
+                fontWeight: 700
+              }}
+              title="Save current match and score history to past games archive"
+            >
+              <Archive size={13} color="#60a5fa" />
+              <span>Save Match</span>
+            </button>
+          )}
 
           {/* Quick Score Reset Button */}
           <button

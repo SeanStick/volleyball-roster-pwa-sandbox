@@ -238,6 +238,20 @@ export default function App() {
     }
     setRotation(1);
     setPhase('serve');
+    confetti({ particleCount: 60, spread: 70, origin: { y: 0.3 } });
+  };
+
+  const handleArchiveMatch = (customOpponentName = null) => {
+    const defaultOpp = customOpponentName || matchStats?.opponentName || 'Opponent';
+    const opp = customOpponentName !== null ? customOpponentName : window.prompt('Enter Opponent Team Name for match archive:', defaultOpp);
+    if (opp !== null && opp.trim() !== '') {
+      const archived = storageService.archiveCurrentMatch(matchStats, opp.trim());
+      if (archived) {
+        confetti({ particleCount: 50, spread: 60, origin: { y: 0.3 } });
+        return true;
+      }
+    }
+    return false;
   };
 
   const handleResetFullMatch = () => {
@@ -470,6 +484,8 @@ export default function App() {
         onUndoLastPoint={handleUndoLastPoint}
         onResetScore={handleResetScore}
         onStartNewSet={handleStartNewSet}
+        onArchiveMatch={handleArchiveMatch}
+        onResetFullMatch={handleResetFullMatch}
         lineup={lineup}
         roster={roster}
         rotation={rotation}
@@ -630,6 +646,11 @@ export default function App() {
           matchStats={matchStats}
           onRallyWonByUs={handleRallyWonByUs}
           onRallyWonByOpponent={handleRallyWonByOpponent}
+          onStartNewSet={handleStartNewSet}
+          onArchiveMatch={handleArchiveMatch}
+          onResetScore={handleResetScore}
+          onResetFullMatch={handleResetFullMatch}
+          onNavigateTab={(tab) => setActiveTab(tab)}
         />
       )}
 
@@ -662,6 +683,10 @@ export default function App() {
           matchStats={matchStats}
           onRallyWonByUs={handleRallyWonByUs}
           onRallyWonByOpponent={handleRallyWonByOpponent}
+          onStartNewSet={handleStartNewSet}
+          onArchiveMatch={handleArchiveMatch}
+          onResetScore={handleResetScore}
+          onResetFullMatch={handleResetFullMatch}
         />
       )}
 

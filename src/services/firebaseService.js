@@ -1,12 +1,57 @@
 import { initializeApp, getApps, getApp } from 'firebase/app';
-import { getFirestore, doc, setDoc, getDoc, onSnapshot } from 'firebase/firestore';
+import {
+  getAuth,
+  createUserWithEmailAndPassword,
+  signInWithEmailAndPassword,
+  signInWithPopup,
+  GoogleAuthProvider,
+  signOut,
+  updateProfile,
+  sendPasswordResetEmail,
+  onAuthStateChanged
+} from 'firebase/auth';
+import {
+  getFirestore,
+  doc,
+  setDoc,
+  getDoc,
+  getDocs,
+  deleteDoc,
+  collection,
+  query,
+  orderBy,
+  onSnapshot
+} from 'firebase/firestore';
 
 const FIREBASE_CONFIG_KEY = 'gostandoverthere_firebase_config_v1';
 const LEGACY_FIREBASE_CONFIG_KEY = 'spikesync_firebase_config_v1';
+const DEMO_USER_KEY = 'gostandoverthere_demo_auth_user_v1';
+const DEMO_CLOUD_STORE_KEY = 'gostandoverthere_demo_cloud_store_v1';
 
 export const firebaseService = {
+  // -------------------------------------------------------------
+  // Firebase Configuration & Initialization
+  // -------------------------------------------------------------
   getStoredConfig() {
     try {
+      // 1. Check environment variables first (if supplied by Vite)
+      if (
+        typeof import.meta !== 'undefined' &&
+        import.meta.env &&
+        import.meta.env.VITE_FIREBASE_API_KEY &&
+        import.meta.env.VITE_FIREBASE_PROJECT_ID
+      ) {
+        return {
+          apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
+          authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN || `${import.meta.env.VITE_FIREBASE_PROJECT_ID}.firebaseapp.com`,
+          projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID,
+          storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET || `${import.meta.env.VITE_FIREBASE_PROJECT_ID}.appspot.com`,
+          messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID,
+          appId: import.meta.env.VITE_FIREBASE_APP_ID
+        };
+      }
+
+      // 2. Check localStorage
       let data = localStorage.getItem(FIREBASE_CONFIG_KEY);
       if (!data) {
         data = localStorage.getItem(LEGACY_FIREBASE_CONFIG_KEY);
@@ -16,7 +61,7 @@ export const firebaseService = {
       }
       if (data) return JSON.parse(data);
     } catch (e) {
-      console.error('Error reading Firebase config from localStorage:', e);
+      console.error('Error reading Firebase config:', e);
     }
     return null;
   },
@@ -35,7 +80,7 @@ export const firebaseService = {
 
   isConfigured() {
     const config = this.getStoredConfig();
-    return Boolean(config && config.projectId && config.apiKey);
+    return Boolean(config && config.projectId && config.apiKey && !config.apiKey.startsWith('AIzaSyDemoKey'));
   },
 
   getFirebaseApp() {
@@ -53,6 +98,334 @@ export const firebaseService = {
     }
   },
 
+  getAuthInstance() {
+    const app = this.getFirebaseApp();
+    if (!app) return null;
+    try {
+      return getAuth(app);
+    } catch (e) {
+      console.error('Firebase Auth initialization error:', e);
+      return null;
+    }
+  },
+
+  getDbInstance() {
+    const app = this.getFirebaseApp();
+    if (!app) return null;
+    try {
+      return getFirestore(app);
+    } catch (e) {
+      console.error('Firestore initialization error:', e);
+      return null;
+    }
+  },
+
+  // -------------------------------------------------------------
+  // Authentication Services (Email/Password, Google, Demo)
+  // -------------------------------------------------------------
+  async registerWithEmail(email, password, displayName = '') {
+    const auth = this.getAuthInstance();
+    if (!auth || !this.isConfigured()) {
+      // Demo / Fallback Mode
+      return this._mockRegister(email, password, displayName);
+    }
+
+    try {
+      const userCredential = await createUserWithEmailAndPassword(auth, email.trim(), password);
+      const user = userCredential.user;
+
+      if (displayName.trim()) {
+        try {
+          await updateProfile(user, { displayName: displayName.trim() });
+        } catch (profileErr) {
+          console.warn('Could not set displayName on user profile:', profileErr);
+        }
+      }
+
+      const userData = {
+        uid: user.uid,
+        email: user.email,
+        displayName: displayName.trim() || user.displayName || email.split('@')[0],
+        photoURL: user.photoURL || null,
+        providerId: 'password',
+        createdAt: new Date().toISOString()
+      };
+
+      // Save user doc in Firestore
+      await this.saveUserProfile(userData);
+      return { success: true, user: userData };
+    } catch (e) {
+      console.error('Firebase registration error:', e);
+      return { success: false, error: this._formatAuthError(e) };
+    }
+  },
+
+  async loginWithEmail(email, password) {
+    const auth = this.getAuthInstance();
+    if (!auth || !this.isConfigured()) {
+      // Demo / Fallback Mode
+      return this._mockLogin(email, password);
+    }
+
+    try {
+      const userCredential = await signInWithEmailAndPassword(auth, email.trim(), password);
+      const user = userCredential.user;
+      const userData = {
+        uid: user.uid,
+        email: user.email,
+        displayName: user.displayName || email.split('@')[0],
+        photoURL: user.photoURL || null,
+        providerId: 'password',
+        lastLoginAt: new Date().toISOString()
+      };
+
+      await this.saveUserProfile(userData);
+      return { success: true, user: userData };
+    } catch (e) {
+      console.error('Firebase login error:', e);
+      return { success: false, error: this._formatAuthError(e) };
+    }
+  },
+
+  async loginWithGoogle() {
+    const auth = this.getAuthInstance();
+    if (!auth || !this.isConfigured()) {
+      return this._mockGoogleLogin();
+    }
+
+    try {
+      const provider = new GoogleAuthProvider();
+      provider.setCustomParameters({ prompt: 'select_account' });
+      const result = await signInWithPopup(auth, provider);
+      const user = result.user;
+
+      const userData = {
+        uid: user.uid,
+        email: user.email,
+        displayName: user.displayName || user.email.split('@')[0],
+        photoURL: user.photoURL || null,
+        providerId: 'google.com',
+        lastLoginAt: new Date().toISOString()
+      };
+
+      await this.saveUserProfile(userData);
+      return { success: true, user: userData };
+    } catch (e) {
+      console.error('Firebase Google login error:', e);
+      return { success: false, error: this._formatAuthError(e) };
+    }
+  },
+
+  async resetPassword(email) {
+    const auth = this.getAuthInstance();
+    if (!auth || !this.isConfigured()) {
+      return { success: true, message: `Password reset link simulated for ${email} (Demo Mode).` };
+    }
+
+    try {
+      await sendPasswordResetEmail(auth, email.trim());
+      return { success: true, message: `Password reset email sent to ${email}.` };
+    } catch (e) {
+      console.error('Firebase reset password error:', e);
+      return { success: false, error: this._formatAuthError(e) };
+    }
+  },
+
+  async logout() {
+    const auth = this.getAuthInstance();
+    try {
+      if (auth && this.isConfigured()) {
+        await signOut(auth);
+      }
+    } catch (e) {
+      console.error('Logout error:', e);
+    }
+    localStorage.removeItem(DEMO_USER_KEY);
+    return { success: true };
+  },
+
+  onAuthChange(callback) {
+    const auth = this.getAuthInstance();
+    if (auth && this.isConfigured()) {
+      return onAuthStateChanged(auth, (firebaseUser) => {
+        if (firebaseUser) {
+          const user = {
+            uid: firebaseUser.uid,
+            email: firebaseUser.email,
+            displayName: firebaseUser.displayName || (firebaseUser.email ? firebaseUser.email.split('@')[0] : 'Coach'),
+            photoURL: firebaseUser.photoURL || null,
+            providerId: firebaseUser.providerData?.[0]?.providerId || 'firebase'
+          };
+          callback(user);
+        } else {
+          // Check if there is an active demo user session
+          const demoUser = this._getDemoUser();
+          callback(demoUser);
+        }
+      });
+    } else {
+      // Mock / Offline Auth listener
+      const demoUser = this._getDemoUser();
+      callback(demoUser);
+      return () => {};
+    }
+  },
+
+  // -------------------------------------------------------------
+  // Google Cloud Firestore — User Profile & Teams Persistence
+  // -------------------------------------------------------------
+  async saveUserProfile(userData) {
+    if (!userData || !userData.uid) return;
+    const db = this.getDbInstance();
+    if (!db || !this.isConfigured()) {
+      return;
+    }
+
+    try {
+      const userRef = doc(db, 'users', userData.uid);
+      await setDoc(userRef, {
+        ...userData,
+        updatedAt: new Date().toISOString()
+      }, { merge: true });
+    } catch (e) {
+      console.error('Error saving user profile to Firestore:', e);
+    }
+  },
+
+  async syncFullTeamToCloud(userId, teamData) {
+    if (!userId || !teamData) return { success: false, error: 'User ID and team data are required.' };
+    const teamId = teamData.teamId || teamData.id || 'default_team';
+
+    const db = this.getDbInstance();
+    if (!db || !this.isConfigured()) {
+      // Save in mock cloud storage
+      return this._mockSyncTeam(userId, teamId, teamData);
+    }
+
+    try {
+      const teamDocRef = doc(db, 'users', userId, 'teams', teamId);
+      const payload = {
+        id: teamId,
+        teamSettings: teamData.teamSettings || {},
+        roster: teamData.roster || [],
+        matchState: teamData.matchState || null,
+        matchStats: teamData.matchStats || null,
+        matchHistory: teamData.matchHistory || [],
+        updatedAt: new Date().toISOString(),
+        updatedBy: userId
+      };
+
+      await setDoc(teamDocRef, payload, { merge: true });
+
+      // Also update user's activeTeam pointer
+      const userRef = doc(db, 'users', userId);
+      await setDoc(userRef, {
+        activeTeamId: teamId,
+        lastSyncAt: new Date().toISOString()
+      }, { merge: true });
+
+      return { success: true, teamId };
+    } catch (e) {
+      console.error('Firestore team sync error:', e);
+      return { success: false, error: e.message };
+    }
+  },
+
+  async fetchUserTeamsFromCloud(userId) {
+    if (!userId) return { success: false, error: 'User ID is required' };
+
+    const db = this.getDbInstance();
+    if (!db || !this.isConfigured()) {
+      return this._mockFetchTeams(userId);
+    }
+
+    try {
+      const teamsCollRef = collection(db, 'users', userId, 'teams');
+      const q = query(teamsCollRef, orderBy('updatedAt', 'desc'));
+      const snapshot = await getDocs(q);
+
+      const teams = [];
+      snapshot.forEach((docSnap) => {
+        teams.push({ id: docSnap.id, ...docSnap.data() });
+      });
+
+      return { success: true, teams };
+    } catch (e) {
+      console.error('Firestore fetch teams error:', e);
+      return { success: false, error: e.message, teams: [] };
+    }
+  },
+
+  async fetchTeamDataFromCloud(userId, teamId) {
+    if (!userId || !teamId) return { success: false, error: 'User ID and team ID required' };
+
+    const db = this.getDbInstance();
+    if (!db || !this.isConfigured()) {
+      return this._mockFetchTeamData(userId, teamId);
+    }
+
+    try {
+      const teamDocRef = doc(db, 'users', userId, 'teams', teamId);
+      const snap = await getDoc(teamDocRef);
+      if (snap.exists()) {
+        return { success: true, data: snap.data() };
+      }
+      return { success: false, error: 'Team not found in Google Cloud Firestore' };
+    } catch (e) {
+      console.error('Firestore fetch team data error:', e);
+      return { success: false, error: e.message };
+    }
+  },
+
+  async deleteTeamFromCloud(userId, teamId) {
+    if (!userId || !teamId) return { success: false, error: 'User ID and team ID required' };
+
+    const db = this.getDbInstance();
+    if (!db || !this.isConfigured()) {
+      return this._mockDeleteTeam(userId, teamId);
+    }
+
+    try {
+      const teamDocRef = doc(db, 'users', userId, 'teams', teamId);
+      await deleteDoc(teamDocRef);
+      return { success: true };
+    } catch (e) {
+      console.error('Firestore delete team error:', e);
+      return { success: false, error: e.message };
+    }
+  },
+
+  subscribeToUserTeam(userId, teamId, onData, onError) {
+    if (!userId || !teamId) return () => {};
+
+    const db = this.getDbInstance();
+    if (!db || !this.isConfigured()) {
+      return () => {};
+    }
+
+    try {
+      const teamDocRef = doc(db, 'users', userId, 'teams', teamId);
+      return onSnapshot(
+        teamDocRef,
+        (snap) => {
+          if (snap.exists()) {
+            onData(snap.data());
+          }
+        },
+        (err) => {
+          console.error('Firestore snapshot listener error:', err);
+          if (onError) onError(err);
+        }
+      );
+    } catch (e) {
+      console.error('Error attaching Firestore team listener:', e);
+      return () => {};
+    }
+  },
+
+  // -------------------------------------------------------------
+  // Legacy Roster Handlers for Backward Compatibility
+  // -------------------------------------------------------------
   async syncRosterToCloud(roster, teamSettings, teamId = 'default_team') {
     const app = this.getFirebaseApp();
     if (!app) return { success: false, error: 'Firebase not configured' };
@@ -88,6 +461,160 @@ export const firebaseService = {
     } catch (e) {
       console.error('Firebase fetch error:', e);
       return { success: false, error: e.message };
+    }
+  },
+
+  // -------------------------------------------------------------
+  // Internal Mock / Demo Fallbacks
+  // -------------------------------------------------------------
+  _getDemoUser() {
+    try {
+      const stored = localStorage.getItem(DEMO_USER_KEY);
+      return stored ? JSON.parse(stored) : null;
+    } catch (e) {
+      return null;
+    }
+  },
+
+  _setDemoUser(user) {
+    if (user) {
+      localStorage.setItem(DEMO_USER_KEY, JSON.stringify(user));
+    } else {
+      localStorage.removeItem(DEMO_USER_KEY);
+    }
+  },
+
+  _mockRegister(email, password, displayName) {
+    const name = displayName.trim() || email.split('@')[0];
+    const user = {
+      uid: `user-local-${Date.now()}`,
+      email: email.trim().toLowerCase(),
+      displayName: name,
+      photoURL: null,
+      providerId: 'local-demo',
+      createdAt: new Date().toISOString()
+    };
+    this._setDemoUser(user);
+    return { success: true, user };
+  },
+
+  _mockLogin(email, password) {
+    const current = this._getDemoUser();
+    const user = {
+      uid: current?.uid || `user-local-${Date.now()}`,
+      email: email.trim().toLowerCase(),
+      displayName: current?.displayName || email.split('@')[0],
+      photoURL: current?.photoURL || null,
+      providerId: 'local-demo',
+      lastLoginAt: new Date().toISOString()
+    };
+    this._setDemoUser(user);
+    return { success: true, user };
+  },
+
+  _mockGoogleLogin() {
+    const user = {
+      uid: `google-user-${Date.now()}`,
+      email: 'coach.google@gmail.com',
+      displayName: 'Coach Google',
+      photoURL: null,
+      providerId: 'google.com',
+      lastLoginAt: new Date().toISOString()
+    };
+    this._setDemoUser(user);
+    return { success: true, user };
+  },
+
+  _mockSyncTeam(userId, teamId, teamData) {
+    try {
+      let store = {};
+      const raw = localStorage.getItem(DEMO_CLOUD_STORE_KEY);
+      if (raw) store = JSON.parse(raw);
+
+      if (!store[userId]) store[userId] = {};
+      store[userId][teamId] = {
+        ...teamData,
+        id: teamId,
+        updatedAt: new Date().toISOString(),
+        isDemoCloud: true
+      };
+
+      localStorage.setItem(DEMO_CLOUD_STORE_KEY, JSON.stringify(store));
+      return { success: true, teamId };
+    } catch (e) {
+      return { success: false, error: e.message };
+    }
+  },
+
+  _mockFetchTeams(userId) {
+    try {
+      const raw = localStorage.getItem(DEMO_CLOUD_STORE_KEY);
+      if (raw) {
+        const store = JSON.parse(raw);
+        if (store[userId]) {
+          const list = Object.values(store[userId]);
+          return { success: true, teams: list };
+        }
+      }
+      return { success: true, teams: [] };
+    } catch (e) {
+      return { success: false, error: e.message, teams: [] };
+    }
+  },
+
+  _mockFetchTeamData(userId, teamId) {
+    try {
+      const raw = localStorage.getItem(DEMO_CLOUD_STORE_KEY);
+      if (raw) {
+        const store = JSON.parse(raw);
+        if (store[userId] && store[userId][teamId]) {
+          return { success: true, data: store[userId][teamId] };
+        }
+      }
+      return { success: false, error: 'Team not found in demo cloud cache' };
+    } catch (e) {
+      return { success: false, error: e.message };
+    }
+  },
+
+  _mockDeleteTeam(userId, teamId) {
+    try {
+      const raw = localStorage.getItem(DEMO_CLOUD_STORE_KEY);
+      if (raw) {
+        const store = JSON.parse(raw);
+        if (store[userId] && store[userId][teamId]) {
+          delete store[userId][teamId];
+          localStorage.setItem(DEMO_CLOUD_STORE_KEY, JSON.stringify(store));
+        }
+      }
+      return { success: true };
+    } catch (e) {
+      return { success: false, error: e.message };
+    }
+  },
+
+  _formatAuthError(error) {
+    if (!error) return 'An unknown error occurred.';
+    const code = error.code || '';
+    switch (code) {
+      case 'auth/email-already-in-use':
+        return 'This email address is already registered. Please log in instead.';
+      case 'auth/invalid-email':
+        return 'Please enter a valid email address.';
+      case 'auth/weak-password':
+        return 'Password is too weak. Please use at least 6 characters.';
+      case 'auth/user-not-found':
+      case 'auth/wrong-password':
+      case 'auth/invalid-credential':
+        return 'Incorrect email or password. Please try again.';
+      case 'auth/popup-closed-by-user':
+        return 'Google Sign-In was cancelled.';
+      case 'auth/network-request-failed':
+        return 'Network error. Please check your internet connection.';
+      case 'auth/too-many-requests':
+        return 'Too many attempts. Please wait a few moments and try again.';
+      default:
+        return error.message || 'Authentication failed.';
     }
   }
 };

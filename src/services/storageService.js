@@ -4,8 +4,12 @@ const MATCH_STATE_KEY = 'gostandoverthere_match_state_v1';
 const MATCH_STATS_KEY = 'gostandoverthere_match_stats_v1';
 const MATCH_HISTORY_KEY = 'gostandoverthere_match_history_v1';
 const ACTIVE_TAB_KEY = 'gostandoverthere_active_tab_v1';
+const TEAMS_LIST_KEY = 'gostandoverthere_teams_list_v1';
+const ACTIVE_TEAM_ID_KEY = 'gostandoverthere_active_team_id_v1';
+const CACHED_USER_KEY = 'gostandoverthere_cached_user_v1';
 const LEGACY_ROSTER_KEY = 'spikesync_volleyball_roster_v1';
 const LEGACY_TEAM_KEY = 'spikesync_team_settings_v1';
+export const DEFAULT_TEAM_ID = 'team-default';
 
 export const INITIAL_MATCH_STATS = {
   ourScore: 0,
@@ -489,5 +493,115 @@ export const storageService = {
     } catch (e) {
       return { success: false, error: e.message };
     }
+  },
+
+  // -------------------------------------------------------------
+  // User Session Cache
+  // -------------------------------------------------------------
+  getCachedUser() {
+    try {
+      const data = localStorage.getItem(CACHED_USER_KEY);
+      return data ? JSON.parse(data) : null;
+    } catch (e) {
+      console.error('Error reading cached user:', e);
+      return null;
+    }
+  },
+
+  setCachedUser(user) {
+    try {
+      if (!user) {
+        localStorage.removeItem(CACHED_USER_KEY);
+      } else {
+        localStorage.setItem(CACHED_USER_KEY, JSON.stringify(user));
+      }
+    } catch (e) {
+      console.error('Error saving cached user:', e);
+    }
+  },
+
+  clearCachedUser() {
+    localStorage.removeItem(CACHED_USER_KEY);
+  },
+
+  // -------------------------------------------------------------
+  // Multi-Team Management
+  // -------------------------------------------------------------
+  getActiveTeamId() {
+    try {
+      const activeId = localStorage.getItem(ACTIVE_TEAM_ID_KEY);
+      return activeId || DEFAULT_TEAM_ID;
+    } catch (e) {
+      return DEFAULT_TEAM_ID;
+    }
+  },
+
+  setActiveTeamId(teamId) {
+    try {
+      localStorage.setItem(ACTIVE_TEAM_ID_KEY, teamId);
+    } catch (e) {
+      console.error('Error saving active team ID:', e);
+    }
+  },
+
+  getTeamsList() {
+    try {
+      const data = localStorage.getItem(TEAMS_LIST_KEY);
+      if (data) {
+        const parsed = JSON.parse(data);
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          return parsed;
+        }
+      }
+      // Initialize with default team if list is empty
+      const defaultSettings = this.getTeamSettings();
+      const initialTeams = [
+        {
+          id: DEFAULT_TEAM_ID,
+          teamName: defaultSettings.teamName || 'CVA Black - 9th',
+          season: defaultSettings.season || '2026 - 2027',
+          primaryColor: defaultSettings.primaryColor || '#ff6b35',
+          secondaryColor: defaultSettings.secondaryColor || '#1e3a8a',
+          liberoColor: defaultSettings.liberoColor || '#8b5cf6',
+          updatedAt: new Date().toISOString()
+        }
+      ];
+      this.saveTeamsList(initialTeams);
+      return initialTeams;
+    } catch (e) {
+      console.error('Error reading teams list:', e);
+      return [{ id: DEFAULT_TEAM_ID, teamName: 'My Volleyball Team', season: '2026' }];
+    }
+  },
+
+  saveTeamsList(teams) {
+    try {
+      localStorage.setItem(TEAMS_LIST_KEY, JSON.stringify(teams));
+    } catch (e) {
+      console.error('Error saving teams list:', e);
+    }
+  },
+
+  getFullTeamBundle(teamId = null) {
+    const targetId = teamId || this.getActiveTeamId();
+    return {
+      teamId: targetId,
+      teamSettings: this.getTeamSettings(),
+      roster: this.getRoster(),
+      matchState: this.getMatchState(),
+      matchStats: this.getMatchStats(),
+      matchHistory: this.getMatchHistory(),
+      updatedAt: new Date().toISOString()
+    };
+  },
+
+  loadFullTeamBundle(bundle) {
+    if (!bundle) return;
+    if (bundle.teamSettings) this.saveTeamSettings(bundle.teamSettings);
+    if (Array.isArray(bundle.roster)) this.saveRoster(bundle.roster);
+    if (bundle.matchState) this.saveMatchState(bundle.matchState);
+    if (bundle.matchStats) this.saveMatchStats(bundle.matchStats);
+    if (Array.isArray(bundle.matchHistory)) this.saveMatchHistory(bundle.matchHistory);
+    if (bundle.teamId) this.setActiveTeamId(bundle.teamId);
   }
 };

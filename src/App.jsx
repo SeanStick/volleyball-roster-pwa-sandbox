@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import {
   Users,
   Search,
@@ -11,7 +11,8 @@ import {
   Trophy,
   Sparkles,
   Compass,
-  BarChart3
+  BarChart3,
+  Cloud
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
 import Navbar from './components/Navbar';
@@ -23,13 +24,38 @@ import ScoreboardBar from './components/ScoreboardBar';
 import MatchStatsView from './components/MatchStatsView';
 import ImportExportModal from './components/ImportExportModal';
 import InstallPrompt from './components/InstallPrompt';
-import { storageService } from './services/storageService';
+import AuthModal from './components/AuthModal';
+import TeamManagerModal from './components/TeamManagerModal';
+import FirebaseSettingsModal from './components/FirebaseSettingsModal';
+import { storageService, DEFAULT_TEAM_ID } from './services/storageService';
+import { firebaseService } from './services/firebaseService';
 import { rotateLineupClockwise, checkLineupFrontRowLiberoViolation } from './services/volleyballRules';
 import './styles/court.css';
 import './styles/formations.css';
 import './styles/stats.css';
 
 export default function App() {
+  // -------------------------------------------------------------
+  // User Authentication & Cloud Sync State
+  // -------------------------------------------------------------
+  const [user, setUser] = useState(() => storageService.getCachedUser());
+  const [teams, setTeams] = useState(() => storageService.getTeamsList());
+  const [activeTeamId, setActiveTeamId] = useState(() => storageService.getActiveTeamId());
+  const [syncStatus, setSyncStatus] = useState('synced'); // 'synced' | 'syncing' | 'offline' | 'error'
+  const [lastSyncTime, setLastSyncTime] = useState('Just now');
+
+  // Modal visibility states
+  const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
+  const [authModalTab, setAuthModalTab] = useState('login');
+  const [isTeamManagerModalOpen, setIsTeamManagerModalOpen] = useState(false);
+  const [isFirebaseSettingsModalOpen, setIsFirebaseSettingsModalOpen] = useState(false);
+  const [isPlayerModalOpen, setIsPlayerModalOpen] = useState(false);
+  const [playerToEdit, setPlayerToEdit] = useState(null);
+  const [isImportExportModalOpen, setIsImportExportModalOpen] = useState(false);
+
+  // -------------------------------------------------------------
+  // Core Application Data State
+  // -------------------------------------------------------------
   const [roster, setRoster] = useState(() => storageService.getRoster());
   const [teamSettings, setTeamSettings] = useState(() => storageService.getTeamSettings());
   const [activeTab, setActiveTab] = useState(() => storageService.getActiveTab()); // 'roster' | 'court' | 'formations' | 'stats'
@@ -91,8 +117,106 @@ export default function App() {
   const [maxSubs, setMaxSubs] = useState(() => savedMatchState?.maxSubs || 12);
   const [enforcePositionLock, setEnforcePositionLock] = useState(() => savedMatchState?.enforcePositionLock || false);
 
-  // Sync matchState to localStorage
+  // Match Stats & Error Tracking State
+  const [matchStats, setMatchStats] = useState(() => storageService.getMatchStats());
+
+  // -------------------------------------------------------------
+  // Firebase Auth Lifecycle & Cloud Hydration
+  // -------------------------------------------------------------
   useEffect(() => {
+    const unsubscribe = firebaseService.onAuthChange(async (currentUser) => {
+      setUser(currentUser);
+      storageService.setCachedUser(currentUser);
+
+      if (currentUser?.uid) {
+        // Fetch user's teams from Google Cloud Firestore
+        setSyncStatus('syncing');
+        const res = await firebaseService.fetchUserTeamsFromCloud(currentUser.uid);
+        if (res.success && Array.isArray(res.teams) && res.teams.length > 0) {
+          // Sync teams list into state
+          const formattedTeams = res.teams.map(t => ({
+            id: t.id,
+            teamName: t.teamSettings?.teamName || t.teamName || 'Volleyball Team',
+            season: t.teamSettings?.season || t.season || '2026',
+            primaryColor: t.teamSettings?.primaryColor || t.primaryColor || '#ff6b35',
+            secondaryColor: t.teamSettings?.secondaryColor || t.secondaryColor || '#1e3a8a',
+            liberoColor: t.teamSettings?.liberoColor || t.liberoColor || '#8b5cf6',
+            updatedAt: t.updatedAt || new Date().toISOString()
+          }));
+          setTeams(formattedTeams);
+          storageService.saveTeamsList(formattedTeams);
+
+          // Load active team from cloud if available
+          const firstTeam = res.teams[0];
+          if (firstTeam) {
+            setActiveTeamId(firstTeam.id);
+            storageService.setActiveTeamId(firstTeam.id);
+            if (firstTeam.teamSettings) setTeamSettings(firstTeam.teamSettings);
+            if (firstTeam.roster) setRoster(firstTeam.roster);
+            if (firstTeam.matchState?.lineup) {
+              setLineup(firstTeam.matchState.lineup);
+              setStartingLineup(firstTeam.matchState.startingLineup || firstTeam.matchState.lineup);
+              setRotation(firstTeam.matchState.rotation || 1);
+              setPhase(firstTeam.matchState.phase || 'serve');
+              setLiberoExchanges(firstTeam.matchState.liberoExchanges || {});
+              setLiberoServingRotation(firstTeam.matchState.liberoServingRotation ?? null);
+              setSubHistory(firstTeam.matchState.subHistory || []);
+              setMaxSubs(firstTeam.matchState.maxSubs || 12);
+              setEnforcePositionLock(firstTeam.matchState.enforcePositionLock || false);
+            }
+            if (firstTeam.matchStats) setMatchStats(firstTeam.matchStats);
+            if (firstTeam.matchHistory) storageService.saveMatchHistory(firstTeam.matchHistory);
+          }
+          setSyncStatus('synced');
+          setLastSyncTime(new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }));
+        } else {
+          // Brand new user or first login: upload current local team bundle to cloud
+          const bundle = storageService.getFullTeamBundle(activeTeamId);
+          await firebaseService.syncFullTeamToCloud(currentUser.uid, bundle);
+          setSyncStatus('synced');
+          setLastSyncTime(new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }));
+        }
+      }
+    });
+
+    return () => {
+      if (typeof unsubscribe === 'function') unsubscribe();
+    };
+  }, []);
+
+  // -------------------------------------------------------------
+  // Real-Time Local Persistence + Debounced Google Cloud Auto-Save
+  // -------------------------------------------------------------
+  const syncTimeoutRef = useRef(null);
+
+  const performCloudAutoSync = useCallback((fullBundle) => {
+    if (!user?.uid) return;
+
+    if (syncTimeoutRef.current) {
+      clearTimeout(syncTimeoutRef.current);
+    }
+
+    setSyncStatus('syncing');
+    syncTimeoutRef.current = setTimeout(async () => {
+      try {
+        const res = await firebaseService.syncFullTeamToCloud(user.uid, fullBundle);
+        if (res.success) {
+          setSyncStatus('synced');
+          setLastSyncTime(new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }));
+        } else {
+          setSyncStatus('error');
+        }
+      } catch (err) {
+        console.error('Auto sync error:', err);
+        setSyncStatus('error');
+      }
+    }, 1200);
+  }, [user]);
+
+  // Sync state changes locally and trigger debounced cloud sync
+  useEffect(() => {
+    storageService.saveRoster(roster);
+    storageService.saveTeamSettings(teamSettings);
     storageService.saveMatchState({
       lineup,
       startingLineup,
@@ -104,16 +228,242 @@ export default function App() {
       maxSubs,
       enforcePositionLock
     });
-  }, [lineup, startingLineup, rotation, phase, liberoExchanges, liberoServingRotation, subHistory, maxSubs, enforcePositionLock]);
-
-  // Match Stats & Error Tracking State
-  const [matchStats, setMatchStats] = useState(() => storageService.getMatchStats());
-
-  // Sync matchStats to localStorage
-  useEffect(() => {
     storageService.saveMatchStats(matchStats);
-  }, [matchStats]);
 
+    const fullBundle = {
+      teamId: activeTeamId,
+      teamSettings,
+      roster,
+      matchState: {
+        lineup,
+        startingLineup,
+        rotation,
+        phase,
+        liberoExchanges,
+        liberoServingRotation,
+        subHistory,
+        maxSubs,
+        enforcePositionLock
+      },
+      matchStats,
+      matchHistory: storageService.getMatchHistory(),
+      updatedAt: new Date().toISOString()
+    };
+
+    performCloudAutoSync(fullBundle);
+  }, [
+    roster,
+    teamSettings,
+    lineup,
+    startingLineup,
+    rotation,
+    phase,
+    liberoExchanges,
+    liberoServingRotation,
+    subHistory,
+    maxSubs,
+    enforcePositionLock,
+    matchStats,
+    activeTeamId,
+    performCloudAutoSync
+  ]);
+
+  // -------------------------------------------------------------
+  // Team Management Handlers
+  // -------------------------------------------------------------
+  const handleSelectTeam = async (targetTeamId) => {
+    if (targetTeamId === activeTeamId) return;
+
+    // 1. Save current team bundle
+    const currentBundle = storageService.getFullTeamBundle(activeTeamId);
+    if (user?.uid) {
+      await firebaseService.syncFullTeamToCloud(user.uid, currentBundle);
+    }
+
+    // 2. Fetch target team data (from cloud or localStorage)
+    setActiveTeamId(targetTeamId);
+    storageService.setActiveTeamId(targetTeamId);
+
+    if (user?.uid) {
+      setSyncStatus('syncing');
+      const res = await firebaseService.fetchTeamDataFromCloud(user.uid, targetTeamId);
+      if (res.success && res.data) {
+        const d = res.data;
+        if (d.teamSettings) setTeamSettings(d.teamSettings);
+        if (d.roster) setRoster(d.roster);
+        if (d.matchState?.lineup) {
+          setLineup(d.matchState.lineup);
+          setStartingLineup(d.matchState.startingLineup || d.matchState.lineup);
+          setRotation(d.matchState.rotation || 1);
+          setPhase(d.matchState.phase || 'serve');
+          setLiberoExchanges(d.matchState.liberoExchanges || {});
+          setLiberoServingRotation(d.matchState.liberoServingRotation ?? null);
+          setSubHistory(d.matchState.subHistory || []);
+          setMaxSubs(d.matchState.maxSubs || 12);
+          setEnforcePositionLock(d.matchState.enforcePositionLock || false);
+        } else {
+          const newLineup = getDefaultLineup(d.roster || []);
+          setLineup(newLineup);
+          setStartingLineup(newLineup);
+          setRotation(1);
+          setPhase('serve');
+        }
+        if (d.matchStats) setMatchStats(d.matchStats);
+        if (d.matchHistory) storageService.saveMatchHistory(d.matchHistory);
+        setSyncStatus('synced');
+        setLastSyncTime(new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }));
+        return;
+      }
+    }
+
+    // Local fallback for target team
+    const targetTeam = teams.find(t => t.id === targetTeamId);
+    if (targetTeam) {
+      const updatedSettings = {
+        teamName: targetTeam.teamName,
+        season: targetTeam.season,
+        primaryColor: targetTeam.primaryColor || '#ff6b35',
+        secondaryColor: targetTeam.secondaryColor || '#1e3a8a',
+        liberoColor: targetTeam.liberoColor || '#8b5cf6'
+      };
+      setTeamSettings(updatedSettings);
+    }
+  };
+
+  const handleCreateTeam = async (newTeamPayload) => {
+    const newTeamId = newTeamPayload.id || `team-${Date.now()}`;
+    const newSettings = {
+      teamName: newTeamPayload.teamName,
+      season: newTeamPayload.season,
+      primaryColor: newTeamPayload.primaryColor,
+      secondaryColor: newTeamPayload.secondaryColor,
+      liberoColor: newTeamPayload.liberoColor
+    };
+
+    const initialTeamRoster = newTeamPayload.cloneRoster ? [...roster] : [];
+    const newLineup = getDefaultLineup(initialTeamRoster);
+
+    const newTeamEntry = {
+      id: newTeamId,
+      teamName: newTeamPayload.teamName,
+      season: newTeamPayload.season,
+      primaryColor: newTeamPayload.primaryColor,
+      secondaryColor: newTeamPayload.secondaryColor,
+      liberoColor: newTeamPayload.liberoColor,
+      updatedAt: new Date().toISOString()
+    };
+
+    const updatedTeams = [newTeamEntry, ...teams];
+    setTeams(updatedTeams);
+    storageService.saveTeamsList(updatedTeams);
+
+    // Set new team as active
+    setActiveTeamId(newTeamId);
+    storageService.setActiveTeamId(newTeamId);
+    setTeamSettings(newSettings);
+    setRoster(initialTeamRoster);
+    setLineup(newLineup);
+    setStartingLineup(newLineup);
+    setRotation(1);
+    setPhase('serve');
+    setLiberoExchanges({});
+    setLiberoServingRotation(null);
+    setSubHistory([]);
+    setMatchStats(storageService.resetFullMatch());
+
+    // Sync to cloud
+    if (user?.uid) {
+      const bundle = {
+        teamId: newTeamId,
+        teamSettings: newSettings,
+        roster: initialTeamRoster,
+        matchState: {
+          lineup: newLineup,
+          startingLineup: newLineup,
+          rotation: 1,
+          phase: 'serve',
+          liberoExchanges: {},
+          liberoServingRotation: null,
+          subHistory: [],
+          maxSubs: 12,
+          enforcePositionLock: false
+        },
+        matchStats: storageService.resetFullMatch(),
+        matchHistory: [],
+        updatedAt: new Date().toISOString()
+      };
+      await firebaseService.syncFullTeamToCloud(user.uid, bundle);
+    }
+  };
+
+  const handleDuplicateTeam = async (targetTeam) => {
+    const newTeamId = `team-${Date.now()}`;
+    const newTeamEntry = {
+      ...targetTeam,
+      id: newTeamId,
+      teamName: `${targetTeam.teamName} (Copy)`,
+      updatedAt: new Date().toISOString()
+    };
+
+    const updatedTeams = [newTeamEntry, ...teams];
+    setTeams(updatedTeams);
+    storageService.saveTeamsList(updatedTeams);
+
+    if (user?.uid) {
+      const bundle = storageService.getFullTeamBundle(activeTeamId);
+      await firebaseService.syncFullTeamToCloud(user.uid, {
+        ...bundle,
+        teamId: newTeamId,
+        teamSettings: {
+          ...bundle.teamSettings,
+          teamName: `${targetTeam.teamName} (Copy)`
+        }
+      });
+    }
+    confetti({ particleCount: 30, spread: 50, origin: { y: 0.5 } });
+  };
+
+  const handleDeleteTeam = async (teamIdToDelete) => {
+    const updated = teams.filter(t => t.id !== teamIdToDelete);
+    setTeams(updated);
+    storageService.saveTeamsList(updated);
+
+    if (user?.uid) {
+      await firebaseService.deleteTeamFromCloud(user.uid, teamIdToDelete);
+    }
+
+    if (activeTeamId === teamIdToDelete && updated.length > 0) {
+      handleSelectTeam(updated[0].id);
+    }
+  };
+
+  const handleManualSync = async () => {
+    if (!user?.uid) {
+      setIsAuthModalOpen(true);
+      return;
+    }
+
+    setSyncStatus('syncing');
+    const bundle = storageService.getFullTeamBundle(activeTeamId);
+    const res = await firebaseService.syncFullTeamToCloud(user.uid, bundle);
+    if (res.success) {
+      setSyncStatus('synced');
+      setLastSyncTime(new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }));
+      confetti({ particleCount: 30, spread: 40, origin: { y: 0.2 } });
+    } else {
+      setSyncStatus('error');
+    }
+  };
+
+  const handleLogout = async () => {
+    await firebaseService.logout();
+    setUser(null);
+    storageService.clearCachedUser();
+  };
+
+  // -------------------------------------------------------------
+  // Rotation & Rally Handlers
+  // -------------------------------------------------------------
   const handleUpdateRotation = (newRotation) => {
     if (newRotation === rotation) return;
     const steps = (newRotation - rotation + 6) % 6;
@@ -129,7 +479,6 @@ export default function App() {
     setRotation(newRotation);
   };
 
-  // Official Volleyball Scoring & Side-Out Rotation Handlers
   const handleRallyWonByUs = (pointDetails = {}) => {
     const newPoint = {
       id: `pt-${Date.now()}`,
@@ -147,7 +496,6 @@ export default function App() {
       pointHistory: [...(prev?.pointHistory || []), newPoint]
     }));
 
-    // Official Rule: If receiving and win rally -> Side-Out! Rotate clockwise and take serve!
     if (phase === 'receive') {
       const nextRot = rotation === 6 ? 1 : rotation + 1;
       let nextLineup = rotateLineupClockwise(lineup);
@@ -178,7 +526,6 @@ export default function App() {
       pointHistory: [...(prev?.pointHistory || []), newPoint]
     }));
 
-    // Official Rule: If serving and lose rally -> Side-Out! Switch to receive (same rotation).
     if (phase === 'serve') {
       setPhase('receive');
     }
@@ -248,6 +595,11 @@ export default function App() {
       const archived = storageService.archiveCurrentMatch(matchStats, opp.trim());
       if (archived) {
         confetti({ particleCount: 50, spread: 60, origin: { y: 0.3 } });
+        // Automatically sync updated match history
+        if (user?.uid) {
+          const bundle = storageService.getFullTeamBundle(activeTeamId);
+          firebaseService.syncFullTeamToCloud(user.uid, bundle);
+        }
         return true;
       }
     }
@@ -264,46 +616,9 @@ export default function App() {
     setPhase('serve');
   };
 
-  const handleAdvanceRally = () => {
-    if (phase === 'serve') {
-      setPhase('receive');
-    } else {
-      const nextRot = rotation === 6 ? 1 : rotation + 1;
-      let nextLineup = rotateLineupClockwise(lineup);
-      const violation = checkLineupFrontRowLiberoViolation(nextLineup, roster, liberoExchanges);
-      if (violation.hasViolation && violation.replacedPlayer) {
-        nextLineup[violation.zoneKey] = violation.replacedPlayer.id;
-      }
-      setLineup(nextLineup);
-      setRotation(nextRot);
-      setPhase('serve');
-    }
-  };
-
-  // Modals
-  const [isPlayerModalOpen, setIsPlayerModalOpen] = useState(false);
-  const [playerToEdit, setPlayerToEdit] = useState(null);
-  const [isImportExportModalOpen, setIsImportExportModalOpen] = useState(false);
-
-  // Sync to localStorage whenever roster changes
-  useEffect(() => {
-    storageService.saveRoster(roster);
-  }, [roster]);
-
-  // Handle URL params (for PWA shortcuts: ?action=add or ?tab=court)
-  useEffect(() => {
-    const params = new URLSearchParams(window.location.search);
-    if (params.get('action') === 'add') {
-      setIsPlayerModalOpen(true);
-    }
-    if (params.get('tab') === 'court') {
-      setActiveTab('court');
-    }
-    if (params.get('tab') === 'formations') {
-      setActiveTab('formations');
-    }
-  }, []);
-
+  // -------------------------------------------------------------
+  // Player Actions
+  // -------------------------------------------------------------
   const handleSavePlayer = (playerData) => {
     setRoster(prev => {
       let updatedList = playerToEdit
@@ -409,13 +724,25 @@ export default function App() {
   const startersCount = roster.filter(p => p.isStarter).length;
   const captain = roster.find(p => p.isCaptain);
   const setters = roster.filter(p => p.position === 'Setter').length;
-  const liberos = roster.filter(p => p.position === 'Libero').length;
+  const activeTeamObj = teams.find(t => t.id === activeTeamId) || { teamName: teamSettings.teamName, season: teamSettings.season, primaryColor: teamSettings.primaryColor };
 
   return (
     <div className="app-container">
       <Navbar
         onOpenAddModal={handleOpenAdd}
         onOpenImportExportModal={() => setIsImportExportModalOpen(true)}
+        user={user}
+        syncStatus={syncStatus}
+        lastSyncTime={lastSyncTime}
+        activeTeam={activeTeamObj}
+        onOpenAuthModal={(tab) => {
+          setAuthModalTab(tab || 'login');
+          setIsAuthModalOpen(true);
+        }}
+        onOpenTeamManagerModal={() => setIsTeamManagerModalOpen(true)}
+        onOpenFirebaseSettingsModal={() => setIsFirebaseSettingsModalOpen(true)}
+        onManualSync={handleManualSync}
+        onLogout={handleLogout}
       />
 
       <InstallPrompt />
@@ -707,7 +1034,41 @@ export default function App() {
         />
       )}
 
-      {/* Modals */}
+      {/* Auth Modal */}
+      <AuthModal
+        isOpen={isAuthModalOpen}
+        initialTab={authModalTab}
+        onClose={() => setIsAuthModalOpen(false)}
+        onAuthSuccess={(authUser) => {
+          setUser(authUser);
+          storageService.setCachedUser(authUser);
+        }}
+      />
+
+      {/* Team Manager Modal */}
+      <TeamManagerModal
+        isOpen={isTeamManagerModalOpen}
+        onClose={() => setIsTeamManagerModalOpen(false)}
+        teams={teams}
+        activeTeamId={activeTeamId}
+        onSelectTeam={handleSelectTeam}
+        onCreateTeam={handleCreateTeam}
+        onDuplicateTeam={handleDuplicateTeam}
+        onDeleteTeam={handleDeleteTeam}
+        user={user}
+      />
+
+      {/* Firebase Cloud Settings Modal */}
+      <FirebaseSettingsModal
+        isOpen={isFirebaseSettingsModalOpen}
+        onClose={() => setIsFirebaseSettingsModalOpen(false)}
+        onConfigSaved={() => {
+          handleManualSync();
+        }}
+        onTriggerSync={handleManualSync}
+      />
+
+      {/* Player Add/Edit Modal */}
       <PlayerModal
         isOpen={isPlayerModalOpen}
         onClose={() => {
@@ -720,6 +1081,7 @@ export default function App() {
         roster={roster}
       />
 
+      {/* Import / Export Backup Modal */}
       <ImportExportModal
         isOpen={isImportExportModalOpen}
         onClose={() => setIsImportExportModalOpen(false)}

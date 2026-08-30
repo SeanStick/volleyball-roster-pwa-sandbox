@@ -1,14 +1,15 @@
 import React, { useState, useEffect } from 'react';
-import { X, Cloud, Check, RefreshCw, Terminal, ExternalLink, ShieldCheck, AlertCircle } from 'lucide-react';
+import { X, Cloud, Check, RefreshCw, Terminal, ExternalLink, ShieldCheck, AlertCircle, Key, Database, Lock } from 'lucide-react';
 import { firebaseService } from '../services/firebaseService';
 
-export default function FirebaseSettingsModal({ isOpen, onClose, roster, teamSettings, onCloudSyncSuccess }) {
+export default function FirebaseSettingsModal({ isOpen, onClose, onConfigSaved, onTriggerSync }) {
   const [configText, setConfigText] = useState('');
   const [projectId, setProjectId] = useState('');
   const [apiKey, setApiKey] = useState('');
   const [authDomain, setAuthDomain] = useState('');
+  const [storageBucket, setStorageBucket] = useState('');
   const [statusMsg, setStatusMsg] = useState(null);
-  const [isSyncing, setIsSyncing] = useState(false);
+  const [isTesting, setIsTesting] = useState(false);
 
   useEffect(() => {
     if (isOpen) {
@@ -17,6 +18,7 @@ export default function FirebaseSettingsModal({ isOpen, onClose, roster, teamSet
         setProjectId(stored.projectId || '');
         setApiKey(stored.apiKey || '');
         setAuthDomain(stored.authDomain || '');
+        setStorageBucket(stored.storageBucket || '');
         setConfigText(JSON.stringify(stored, null, 2));
       }
       setStatusMsg(null);
@@ -28,20 +30,19 @@ export default function FirebaseSettingsModal({ isOpen, onClose, roster, teamSet
   const handleParseJsonConfig = (text) => {
     setConfigText(text);
     try {
-      // Clean up common JS object copy-pastes
       let cleaned = text.trim();
       if (cleaned.startsWith('const firebaseConfig =')) {
         cleaned = cleaned.replace(/^const\s+firebaseConfig\s*=\s*/, '').replace(/;$/, '');
       }
-      // If it has unquoted keys, attempt to parse or extract
       const parsed = Function(`'use strict'; return (${cleaned})`)();
       if (parsed && typeof parsed === 'object') {
         if (parsed.projectId) setProjectId(parsed.projectId);
         if (parsed.apiKey) setApiKey(parsed.apiKey);
         if (parsed.authDomain) setAuthDomain(parsed.authDomain);
+        if (parsed.storageBucket) setStorageBucket(parsed.storageBucket);
       }
     } catch (e) {
-      // Not a fatal error while user is typing
+      // Keep typing
     }
   };
 
@@ -52,54 +53,36 @@ export default function FirebaseSettingsModal({ isOpen, onClose, roster, teamSet
     }
 
     const config = {
-      apiKey,
-      projectId,
-      authDomain: authDomain || `${projectId}.firebaseapp.com`,
-      storageBucket: `${projectId}.appspot.com`,
+      apiKey: apiKey.trim(),
+      projectId: projectId.trim(),
+      authDomain: authDomain.trim() || `${projectId.trim()}.firebaseapp.com`,
+      storageBucket: storageBucket.trim() || `${projectId.trim()}.appspot.com`,
     };
 
     firebaseService.saveConfig(config);
-    setStatusMsg({ type: 'success', text: 'Firebase configuration saved locally!' });
+    setStatusMsg({ type: 'success', text: 'Firebase configuration saved! Authentication & Firestore are now active.' });
+    if (onConfigSaved) onConfigSaved(config);
   };
 
-  const handleCloudSync = async () => {
-    if (!firebaseService.isConfigured()) {
-      handleSaveConfig();
-    }
-    setIsSyncing(true);
-    setStatusMsg(null);
-
-    const res = await firebaseService.syncRosterToCloud(roster, teamSettings);
-    setIsSyncing(false);
-
-    if (res.success) {
-      setStatusMsg({ type: 'success', text: 'Roster successfully synced to Google Cloud Firestore!' });
-      if (onCloudSyncSuccess) onCloudSyncSuccess();
-    } else {
-      setStatusMsg({ type: 'error', text: `Sync failed: ${res.error}` });
-    }
-  };
-
-  const handleFillDemoConfig = () => {
-    const demo = {
-      apiKey: "AIzaSyDemoKeyForVolleyballRosterPWA987",
-      authDomain: "gostandoverthere-volleyball.firebaseapp.com",
-      projectId: "gostandoverthere-volleyball",
-      storageBucket: "gostandoverthere-volleyball.appspot.com"
+  const handleFillProductionConfig = () => {
+    const prod = {
+      apiKey: "AIzaSyB31G_LiveConfigExampleForVolleyball",
+      authDomain: "volleyball-d2085.firebaseapp.com",
+      projectId: "volleyball-d2085",
+      storageBucket: "volleyball-d2085.firebasestorage.app"
     };
-    setProjectId(demo.projectId);
-    setApiKey(demo.apiKey);
-    setAuthDomain(demo.authDomain);
-    setConfigText(JSON.stringify(demo, null, 2));
-    firebaseService.saveConfig(demo);
-    setStatusMsg({ type: 'success', text: 'Demo project settings applied!' });
+    setProjectId(prod.projectId);
+    setApiKey(prod.apiKey);
+    setAuthDomain(prod.authDomain);
+    setStorageBucket(prod.storageBucket);
+    setConfigText(JSON.stringify(prod, null, 2));
   };
 
   const isConfigured = firebaseService.isConfigured();
 
   return (
     <div className="modal-overlay" onClick={onClose}>
-      <div className="modal-content" style={{ maxWidth: '620px' }} onClick={(e) => e.stopPropagation()}>
+      <div className="modal-content" style={{ maxWidth: '640px' }} onClick={(e) => e.stopPropagation()}>
         <div className="modal-header">
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
             <div style={{
@@ -114,9 +97,9 @@ export default function FirebaseSettingsModal({ isOpen, onClose, roster, teamSet
               <Cloud size={20} color="#ffffff" />
             </div>
             <div>
-              <h2 className="modal-title" style={{ fontSize: '1.2rem' }}>Firebase & Cloud Hosting</h2>
+              <h2 className="modal-title" style={{ fontSize: '1.2rem' }}>Google Cloud Firebase Settings</h2>
               <p style={{ fontSize: '0.78rem', color: 'var(--text-secondary)' }}>
-                Google Cloud Firebase Hosting & Realtime Sync
+                Firebase Authentication, Firestore Database & Hosting Sync
               </p>
             </div>
           </div>
@@ -143,55 +126,59 @@ export default function FirebaseSettingsModal({ isOpen, onClose, roster, teamSet
           </div>
         )}
 
-        {/* Firebase Hosting Deployment Instructions */}
+        {/* Feature Overview Grid */}
         <div style={{
-          background: 'rgba(15, 23, 42, 0.8)',
-          border: '1px solid var(--border-glass)',
-          borderRadius: 'var(--radius-md)',
-          padding: '1rem',
+          display: 'grid',
+          gridTemplateColumns: '1fr 1fr',
+          gap: '0.75rem',
           marginBottom: '1.25rem'
         }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', marginBottom: '0.6rem', color: '#60a5fa', fontWeight: 700, fontSize: '0.88rem' }}>
-            <Terminal size={16} />
-            Deploy to Firebase Hosting (CLI)
-          </div>
-          <p style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', marginBottom: '0.6rem' }}>
-            This PWA is pre-configured with <code>firebase.json</code>. Run these commands from your terminal to deploy:
-          </p>
-          <pre style={{
-            background: '#030712',
-            padding: '0.75rem',
-            borderRadius: 'var(--radius-sm)',
-            fontSize: '0.78rem',
-            color: '#a5f3fc',
-            overflowX: 'auto',
-            fontFamily: 'monospace'
+          <div style={{
+            background: 'rgba(15, 23, 42, 0.7)',
+            border: '1px solid var(--border-glass)',
+            borderRadius: 'var(--radius-md)',
+            padding: '0.75rem'
           }}>
-{`# 1. Login to Firebase
-npx firebase-tools login
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', color: '#60a5fa', fontWeight: 700, fontSize: '0.82rem', marginBottom: '0.3rem' }}>
+              <Lock size={15} /> Firebase Authentication
+            </div>
+            <p style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', margin: 0 }}>
+              Supports Email/Password and 1-Click Google Sign-in to tie rosters and matches to coach logins.
+            </p>
+          </div>
 
-# 2. Build and deploy to Firebase Hosting
-npm run deploy`}
-          </pre>
+          <div style={{
+            background: 'rgba(15, 23, 42, 0.7)',
+            border: '1px solid var(--border-glass)',
+            borderRadius: 'var(--radius-md)',
+            padding: '0.75rem'
+          }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', color: '#34d399', fontWeight: 700, fontSize: '0.82rem', marginBottom: '0.3rem' }}>
+              <Database size={15} /> Cloud Firestore
+            </div>
+            <p style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', margin: 0 }}>
+              Real-time synchronization for multiple squads, active 6-position court lineups, and match history.
+            </p>
+          </div>
         </div>
 
         {/* Firebase SDK Config Inputs */}
         <div style={{ marginBottom: '1.25rem' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
-            <label className="form-label" style={{ margin: 0 }}>Firebase Web Config (Paste from Firebase Console)</label>
-            <button
-              type="button"
-              className="btn btn-secondary btn-sm"
-              style={{ fontSize: '0.72rem', padding: '0.2rem 0.5rem' }}
-              onClick={handleFillDemoConfig}
+            <label className="form-label" style={{ margin: 0 }}>Paste Config from Firebase Console</label>
+            <a
+              href="https://console.firebase.google.com"
+              target="_blank"
+              rel="noreferrer"
+              style={{ fontSize: '0.75rem', color: 'var(--accent-orange)', display: 'flex', alignItems: 'center', gap: '3px', textDecoration: 'none' }}
             >
-              Fill Demo Config
-            </button>
+              Firebase Console <ExternalLink size={12} />
+            </a>
           </div>
           <textarea
             rows="3"
             className="form-textarea"
-            placeholder='const firebaseConfig = { apiKey: "...", projectId: "..." };'
+            placeholder='const firebaseConfig = { apiKey: "...", projectId: "volleyball-d2085" };'
             value={configText}
             onChange={(e) => handleParseJsonConfig(e.target.value)}
             style={{ fontFamily: 'monospace', fontSize: '0.8rem' }}
@@ -222,24 +209,25 @@ npm run deploy`}
         </div>
 
         {/* Action Buttons */}
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '1.5rem', paddingTop: '1rem', borderTop: '1px solid var(--border-glass)' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '1.25rem', paddingTop: '1rem', borderTop: '1px solid var(--border-glass)' }}>
           <button
             type="button"
             className="btn btn-secondary"
             onClick={handleSaveConfig}
           >
-            <Check size={16} /> Save Config
+            <Check size={16} /> Save Configuration
           </button>
 
-          <button
-            type="button"
-            className="btn btn-primary"
-            onClick={handleCloudSync}
-            disabled={isSyncing}
-          >
-            <RefreshCw size={16} className={isSyncing ? 'animate-spin' : ''} />
-            {isSyncing ? 'Syncing...' : 'Sync Roster to Cloud'}
-          </button>
+          {onTriggerSync && (
+            <button
+              type="button"
+              className="btn btn-primary"
+              onClick={onTriggerSync}
+            >
+              <RefreshCw size={16} />
+              Sync Now
+            </button>
+          )}
         </div>
       </div>
     </div>

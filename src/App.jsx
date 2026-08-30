@@ -44,6 +44,11 @@ export default function App() {
   const [syncStatus, setSyncStatus] = useState('synced'); // 'synced' | 'syncing' | 'offline' | 'error'
   const [lastSyncTime, setLastSyncTime] = useState('Just now');
 
+  // Guards against race conditions & overwrite loops
+  const isHydratingCloudRef = useRef(false);
+  const isRemoteUpdateRef = useRef(false);
+  const syncTimeoutRef = useRef(null);
+
   // Modal visibility states
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
   const [authModalTab, setAuthModalTab] = useState('login');
@@ -121,76 +126,132 @@ export default function App() {
   const [matchStats, setMatchStats] = useState(() => storageService.getMatchStats());
 
   // -------------------------------------------------------------
-  // Firebase Auth Lifecycle & Cloud Hydration
+  // Firebase Auth Lifecycle & Cloud Hydration with Real-Time Listeners
   // -------------------------------------------------------------
   useEffect(() => {
-    const unsubscribe = firebaseService.onAuthChange(async (currentUser) => {
+    let unsubscribeSnapshot = null;
+
+    const unsubscribeAuth = firebaseService.onAuthChange(async (currentUser) => {
       setUser(currentUser);
       storageService.setCachedUser(currentUser);
 
       if (currentUser?.uid) {
-        // Fetch user's teams from Google Cloud Firestore
+        isHydratingCloudRef.current = true;
         setSyncStatus('syncing');
-        const res = await firebaseService.fetchUserTeamsFromCloud(currentUser.uid);
-        if (res.success && Array.isArray(res.teams) && res.teams.length > 0) {
-          // Sync teams list into state
-          const formattedTeams = res.teams.map(t => ({
-            id: t.id,
-            teamName: t.teamSettings?.teamName || t.teamName || 'Volleyball Team',
-            season: t.teamSettings?.season || t.season || '2026',
-            primaryColor: t.teamSettings?.primaryColor || t.primaryColor || '#ff6b35',
-            secondaryColor: t.teamSettings?.secondaryColor || t.secondaryColor || '#1e3a8a',
-            liberoColor: t.teamSettings?.liberoColor || t.liberoColor || '#8b5cf6',
-            updatedAt: t.updatedAt || new Date().toISOString()
-          }));
-          setTeams(formattedTeams);
-          storageService.saveTeamsList(formattedTeams);
 
-          // Load active team from cloud if available
-          const firstTeam = res.teams[0];
-          if (firstTeam) {
-            setActiveTeamId(firstTeam.id);
-            storageService.setActiveTeamId(firstTeam.id);
-            if (firstTeam.teamSettings) setTeamSettings(firstTeam.teamSettings);
-            if (firstTeam.roster) setRoster(firstTeam.roster);
-            if (firstTeam.matchState?.lineup) {
-              setLineup(firstTeam.matchState.lineup);
-              setStartingLineup(firstTeam.matchState.startingLineup || firstTeam.matchState.lineup);
-              setRotation(firstTeam.matchState.rotation || 1);
-              setPhase(firstTeam.matchState.phase || 'serve');
-              setLiberoExchanges(firstTeam.matchState.liberoExchanges || {});
-              setLiberoServingRotation(firstTeam.matchState.liberoServingRotation ?? null);
-              setSubHistory(firstTeam.matchState.subHistory || []);
-              setMaxSubs(firstTeam.matchState.maxSubs || 12);
-              setEnforcePositionLock(firstTeam.matchState.enforcePositionLock || false);
+        try {
+          // 1. Fetch user's teams from Google Cloud Firestore
+          const res = await firebaseService.fetchUserTeamsFromCloud(currentUser.uid);
+
+          if (res.success && Array.isArray(res.teams) && res.teams.length > 0) {
+            // User has existing squads on Google Cloud (e.g. from Device A)
+            const formattedTeams = res.teams.map(t => ({
+              id: t.id,
+              teamName: t.teamSettings?.teamName || t.teamName || 'Volleyball Team',
+              season: t.teamSettings?.season || t.season || '2026',
+              primaryColor: t.teamSettings?.primaryColor || t.primaryColor || '#ff6b35',
+              secondaryColor: t.teamSettings?.secondaryColor || t.secondaryColor || '#1e3a8a',
+              liberoColor: t.teamSettings?.liberoColor || t.liberoColor || '#8b5cf6',
+              updatedAt: t.updatedAt || new Date().toISOString()
+            }));
+
+            setTeams(formattedTeams);
+            storageService.saveTeamsList(formattedTeams);
+
+            // Find current active team or first team from cloud
+            const currentActiveId = storageService.getActiveTeamId();
+            const targetCloudTeam = res.teams.find(t => t.id === currentActiveId) || res.teams[0];
+
+            if (targetCloudTeam) {
+              setActiveTeamId(targetCloudTeam.id);
+              storageService.setActiveTeamId(targetCloudTeam.id);
+
+              if (targetCloudTeam.teamSettings) setTeamSettings(targetCloudTeam.teamSettings);
+              if (Array.isArray(targetCloudTeam.roster)) setRoster(targetCloudTeam.roster);
+
+              if (targetCloudTeam.matchState?.lineup) {
+                setLineup(targetCloudTeam.matchState.lineup);
+                setStartingLineup(targetCloudTeam.matchState.startingLineup || targetCloudTeam.matchState.lineup);
+                setRotation(targetCloudTeam.matchState.rotation || 1);
+                setPhase(targetCloudTeam.matchState.phase || 'serve');
+                setLiberoExchanges(targetCloudTeam.matchState.liberoExchanges || {});
+                setLiberoServingRotation(targetCloudTeam.matchState.liberoServingRotation ?? null);
+                setSubHistory(targetCloudTeam.matchState.subHistory || []);
+                setMaxSubs(targetCloudTeam.matchState.maxSubs || 12);
+                setEnforcePositionLock(targetCloudTeam.matchState.enforcePositionLock || false);
+              }
+              if (targetCloudTeam.matchStats) setMatchStats(targetCloudTeam.matchStats);
+              if (targetCloudTeam.matchHistory) storageService.saveMatchHistory(targetCloudTeam.matchHistory);
             }
-            if (firstTeam.matchStats) setMatchStats(firstTeam.matchStats);
-            if (firstTeam.matchHistory) storageService.saveMatchHistory(firstTeam.matchHistory);
+          } else {
+            // True first-time user login: upload initial team bundle to cloud
+            const currentBundle = storageService.getFullTeamBundle(activeTeamId);
+            await firebaseService.syncFullTeamToCloud(currentUser.uid, currentBundle);
           }
+
           setSyncStatus('synced');
           setLastSyncTime(new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }));
-        } else {
-          // Brand new user or first login: upload current local team bundle to cloud
-          const bundle = storageService.getFullTeamBundle(activeTeamId);
-          await firebaseService.syncFullTeamToCloud(currentUser.uid, bundle);
-          setSyncStatus('synced');
-          setLastSyncTime(new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }));
+        } catch (err) {
+          console.error('Error during cloud hydration:', err);
+          setSyncStatus('error');
+        } finally {
+          // Release hydration guard after initial load settles
+          setTimeout(() => {
+            isHydratingCloudRef.current = false;
+          }, 400);
         }
+
+        // 2. Attach real-time snapshot listener for multi-device sync
+        if (unsubscribeSnapshot) unsubscribeSnapshot();
+        unsubscribeSnapshot = firebaseService.subscribeToUserTeam(
+          currentUser.uid,
+          activeTeamId,
+          (cloudTeam, { hasPendingWrites }) => {
+            // Only apply if it's a remote update from another device (not our own local write in flight)
+            if (!hasPendingWrites && !isHydratingCloudRef.current && cloudTeam) {
+              isRemoteUpdateRef.current = true;
+              if (cloudTeam.teamSettings) setTeamSettings(cloudTeam.teamSettings);
+              if (Array.isArray(cloudTeam.roster)) setRoster(cloudTeam.roster);
+              if (cloudTeam.matchState?.lineup) {
+                setLineup(cloudTeam.matchState.lineup);
+                setStartingLineup(cloudTeam.matchState.startingLineup || cloudTeam.matchState.lineup);
+                setRotation(cloudTeam.matchState.rotation || 1);
+                setPhase(cloudTeam.matchState.phase || 'serve');
+                setLiberoExchanges(cloudTeam.matchState.liberoExchanges || {});
+                setLiberoServingRotation(cloudTeam.matchState.liberoServingRotation ?? null);
+                setSubHistory(cloudTeam.matchState.subHistory || []);
+                setMaxSubs(cloudTeam.matchState.maxSubs || 12);
+                setEnforcePositionLock(cloudTeam.matchState.enforcePositionLock || false);
+              }
+              if (cloudTeam.matchStats) setMatchStats(cloudTeam.matchStats);
+              if (cloudTeam.matchHistory) storageService.saveMatchHistory(cloudTeam.matchHistory);
+
+              setSyncStatus('synced');
+              setLastSyncTime(new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }));
+
+              setTimeout(() => {
+                isRemoteUpdateRef.current = false;
+              }, 150);
+            }
+          }
+        );
+      } else {
+        if (unsubscribeSnapshot) unsubscribeSnapshot();
       }
     });
 
     return () => {
-      if (typeof unsubscribe === 'function') unsubscribe();
+      if (typeof unsubscribeAuth === 'function') unsubscribeAuth();
+      if (typeof unsubscribeSnapshot === 'function') unsubscribeSnapshot();
     };
-  }, []);
+  }, [activeTeamId]);
 
   // -------------------------------------------------------------
   // Real-Time Local Persistence + Debounced Google Cloud Auto-Save
   // -------------------------------------------------------------
-  const syncTimeoutRef = useRef(null);
-
   const performCloudAutoSync = useCallback((fullBundle) => {
-    if (!user?.uid) return;
+    // Guard against syncing during initial hydration or remote snapshot updates
+    if (!user?.uid || isHydratingCloudRef.current || isRemoteUpdateRef.current) return;
 
     if (syncTimeoutRef.current) {
       clearTimeout(syncTimeoutRef.current);
@@ -210,7 +271,7 @@ export default function App() {
         console.error('Auto sync error:', err);
         setSyncStatus('error');
       }
-    }, 1200);
+    }, 800);
   }, [user]);
 
   // Sync state changes locally and trigger debounced cloud sync
@@ -274,7 +335,7 @@ export default function App() {
   const handleSelectTeam = async (targetTeamId) => {
     if (targetTeamId === activeTeamId) return;
 
-    // 1. Save current team bundle
+    // 1. Save current team bundle before switching
     const currentBundle = storageService.getFullTeamBundle(activeTeamId);
     if (user?.uid) {
       await firebaseService.syncFullTeamToCloud(user.uid, currentBundle);
@@ -289,8 +350,9 @@ export default function App() {
       const res = await firebaseService.fetchTeamDataFromCloud(user.uid, targetTeamId);
       if (res.success && res.data) {
         const d = res.data;
+        isRemoteUpdateRef.current = true;
         if (d.teamSettings) setTeamSettings(d.teamSettings);
-        if (d.roster) setRoster(d.roster);
+        if (Array.isArray(d.roster)) setRoster(d.roster);
         if (d.matchState?.lineup) {
           setLineup(d.matchState.lineup);
           setStartingLineup(d.matchState.startingLineup || d.matchState.lineup);
@@ -312,6 +374,10 @@ export default function App() {
         if (d.matchHistory) storageService.saveMatchHistory(d.matchHistory);
         setSyncStatus('synced');
         setLastSyncTime(new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }));
+
+        setTimeout(() => {
+          isRemoteUpdateRef.current = false;
+        }, 150);
         return;
       }
     }
@@ -595,7 +661,6 @@ export default function App() {
       const archived = storageService.archiveCurrentMatch(matchStats, opp.trim());
       if (archived) {
         confetti({ particleCount: 50, spread: 60, origin: { y: 0.3 } });
-        // Automatically sync updated match history
         if (user?.uid) {
           const bundle = storageService.getFullTeamBundle(activeTeamId);
           firebaseService.syncFullTeamToCloud(user.uid, bundle);

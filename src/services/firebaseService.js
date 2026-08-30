@@ -18,8 +18,6 @@ import {
   getDocs,
   deleteDoc,
   collection,
-  query,
-  orderBy,
   onSnapshot
 } from 'firebase/firestore';
 import { DEFAULT_FIREBASE_CONFIG } from './firebaseConfig';
@@ -323,19 +321,18 @@ export const firebaseService = {
           lastSyncAt: new Date().toISOString()
         }, { merge: true });
       } catch (userErr) {
-        // Non fatal
+        // Non-fatal user index write
       }
 
       return { success: true, teamId };
     } catch (e) {
-      console.warn('Firestore team sync fallback to local cache:', e.message);
-      this._mockSyncTeam(userId, teamId, teamData);
-      return { success: true, teamId, localFallback: true, warning: e.message };
+      console.warn('Firestore team sync error:', e);
+      return { success: false, error: e.message };
     }
   },
 
   async fetchUserTeamsFromCloud(userId) {
-    if (!userId) return { success: false, error: 'User ID is required' };
+    if (!userId) return { success: false, error: 'User ID is required', teams: [] };
 
     const db = this.getDbInstance();
     if (!db || !this.isConfigured()) {
@@ -344,24 +341,24 @@ export const firebaseService = {
 
     try {
       const teamsCollRef = collection(db, 'users', userId, 'teams');
-      const q = query(teamsCollRef, orderBy('updatedAt', 'desc'));
-      const snapshot = await getDocs(q);
+      const snapshot = await getDocs(teamsCollRef);
 
       const teams = [];
       snapshot.forEach((docSnap) => {
         teams.push({ id: docSnap.id, ...docSnap.data() });
       });
 
-      if (teams.length === 0) {
-        // Check mock cloud store
-        const mock = this._mockFetchTeams(userId);
-        if (mock.teams && mock.teams.length > 0) return mock;
-      }
+      // Sort in memory by updatedAt descending
+      teams.sort((a, b) => {
+        const dateA = new Date(a.updatedAt || a.teamSettings?.updatedAt || 0).getTime();
+        const dateB = new Date(b.updatedAt || b.teamSettings?.updatedAt || 0).getTime();
+        return dateB - dateA;
+      });
 
       return { success: true, teams };
     } catch (e) {
-      console.warn('Firestore fetchUserTeams notice:', e.message);
-      return this._mockFetchTeams(userId);
+      console.warn('Firestore fetchUserTeams error:', e);
+      return { success: false, error: e.message, teams: [] };
     }
   },
 
@@ -379,10 +376,10 @@ export const firebaseService = {
       if (snap.exists()) {
         return { success: true, data: snap.data() };
       }
-      return this._mockFetchTeamData(userId, teamId);
+      return { success: false, error: 'Team not found in Google Cloud Firestore' };
     } catch (e) {
-      console.warn('Firestore fetchTeamData fallback:', e.message);
-      return this._mockFetchTeamData(userId, teamId);
+      console.warn('Firestore fetchTeamData error:', e);
+      return { success: false, error: e.message };
     }
   },
 
@@ -395,7 +392,7 @@ export const firebaseService = {
         const teamDocRef = doc(db, 'users', userId, 'teams', teamId);
         await deleteDoc(teamDocRef);
       } catch (e) {
-        console.warn('Firestore deleteDoc notice:', e.message);
+        console.warn('Firestore deleteDoc error:', e.message);
       }
     }
 
@@ -407,21 +404,20 @@ export const firebaseService = {
     if (!userId || !teamId) return () => {};
 
     const db = this.getDbInstance();
-    if (!db || !this.isConfigured()) {
-      return () => {};
-    }
+    if (!db || !this.isConfigured()) return () => {};
 
     try {
       const teamDocRef = doc(db, 'users', userId, 'teams', teamId);
       return onSnapshot(
         teamDocRef,
+        { includeMetadataChanges: true },
         (snap) => {
           if (snap.exists()) {
-            onData(snap.data());
+            onData(snap.data(), { hasPendingWrites: snap.metadata.hasPendingWrites });
           }
         },
         (err) => {
-          console.warn('Firestore snapshot listener notice:', err.message);
+          console.warn('Firestore snapshot listener error:', err.message);
           if (onError) onError(err);
         }
       );
@@ -431,44 +427,30 @@ export const firebaseService = {
     }
   },
 
-  // -------------------------------------------------------------
-  // Legacy Roster Handlers for Backward Compatibility
-  // -------------------------------------------------------------
-  async syncRosterToCloud(roster, teamSettings, teamId = 'default_team') {
-    const app = this.getFirebaseApp();
-    if (!app) return { success: false, error: 'Firebase not configured' };
+  subscribeToUserTeamsList(userId, onData, onError) {
+    if (!userId) return () => {};
+
+    const db = this.getDbInstance();
+    if (!db || !this.isConfigured()) return () => {};
 
     try {
-      const db = getFirestore(app);
-      const teamDocRef = doc(db, 'volleyball_rosters', teamId);
-      await setDoc(teamDocRef, {
-        roster,
-        teamSettings,
-        updatedAt: new Date().toISOString(),
-        device: navigator.userAgent
-      }, { merge: true });
-      return { success: true };
+      const teamsCollRef = collection(db, 'users', userId, 'teams');
+      return onSnapshot(
+        teamsCollRef,
+        (snapshot) => {
+          const list = [];
+          snapshot.forEach((docSnap) => {
+            list.push({ id: docSnap.id, ...docSnap.data() });
+          });
+          list.sort((a, b) => new Date(b.updatedAt || 0) - new Date(a.updatedAt || 0));
+          onData(list);
+        },
+        (err) => {
+          if (onError) onError(err);
+        }
+      );
     } catch (e) {
-      console.warn('Firebase legacy sync notice:', e.message);
-      return { success: false, error: e.message };
-    }
-  },
-
-  async fetchRosterFromCloud(teamId = 'default_team') {
-    const app = this.getFirebaseApp();
-    if (!app) return { success: false, error: 'Firebase not configured' };
-
-    try {
-      const db = getFirestore(app);
-      const teamDocRef = doc(db, 'volleyball_rosters', teamId);
-      const snap = await getDoc(teamDocRef);
-      if (snap.exists()) {
-        return { success: true, data: snap.data() };
-      }
-      return { success: false, error: 'No roster found on cloud for this team ID' };
-    } catch (e) {
-      console.warn('Firebase legacy fetch notice:', e.message);
-      return { success: false, error: e.message };
+      return () => {};
     }
   },
 
@@ -606,7 +588,7 @@ export const firebaseService = {
     const code = error.code || '';
     switch (code) {
       case 'auth/operation-not-allowed':
-        return 'Sign-In provider is disabled in Firebase Console. Please enable Email/Password or Google in Firebase Console > Authentication > Sign-in method.';
+        return 'Google Sign-In is not enabled yet in Firebase Console. Please enable Google in Firebase Console > Authentication > Sign-in method.';
       case 'auth/unauthorized-domain':
         return 'This domain is not authorized in Firebase. Please add this domain to Firebase Console > Authentication > Settings > Authorized Domains.';
       case 'auth/email-already-in-use':

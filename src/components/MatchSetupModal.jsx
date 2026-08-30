@@ -2,70 +2,18 @@ import React, { useState, useEffect } from 'react';
 import {
   X,
   MapPin,
-  Trophy,
   Swords,
   Layers,
-  Sparkles,
   Check,
-  Calendar,
-  AlertCircle,
   Play,
   RotateCcw,
-  ArrowRight,
-  Shield
+  Sparkles,
+  Trophy
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
 
-const TOURNAMENT_PRESETS = [
-  'Midwest Qualifier',
-  'President\'s Day Classic',
-  'State Championship',
-  'Winter Power League',
-  'High School Quad',
-  'Club Dual Match',
-  'Friendly Scrimmage'
-];
-
-const COURT_PRESETS = [
-  'Court 1',
-  'Court 2',
-  'Court 3',
-  'Court 4',
-  'Court 5',
-  'Court 6',
-  'Court 7',
-  'Court 8',
-  'Center Court',
-  'Main Gym',
-  'Aux Gym'
-];
-
-const MATCH_STAGES = [
-  'Pool Play - Match 1',
-  'Pool Play - Match 2',
-  'Pool Play - Match 3',
-  'Pool Play - Match 4',
-  'Cross-Pool Match',
-  'Gold Bracket - Round of 16',
-  'Gold Bracket - Quarterfinals',
-  'Gold Bracket - Semifinals',
-  'Gold Championship Final',
-  'Silver Bracket - Semifinals',
-  'Silver Championship',
-  'Bronze Bracket',
-  'Consolation Match',
-  'Non-Conference Dual',
-  'Conference Match',
-  'Scrimmage'
-];
-
-const MATCH_FORMATS = [
-  { id: 'Best of 3 (25, 25, 15)', label: 'Best of 3 Sets', desc: 'Sets 1-2 to 25 pts, Deciding Set 3 to 15 pts (Win by 2)' },
-  { id: 'Best of 5 (25, 25, 25, 25, 15)', label: 'Best of 5 Sets', desc: 'Sets 1-4 to 25 pts, Deciding Set 5 to 15 pts (Win by 2)' },
-  { id: '2 Sets to 25', label: '2 Sets Fixed (Pool Play)', desc: 'Play exactly 2 sets to 25 pts (No 3rd set)' },
-  { id: '1 Set to 25', label: 'Single Set to 25', desc: 'Play 1 set to 25 points' },
-  { id: '1 Set to 15', label: 'Single Tiebreaker Set to 15', desc: 'Play 1 deciding set to 15 points' }
-];
+const QUICK_COURTS = ['Ct 1', 'Ct 2', 'Ct 3', 'Ct 4', 'Ct 5', 'Ct 6', 'Ct 7', 'Ct 8', 'Main Gym'];
+const QUICK_MATCHES = ['Match 1', 'Match 2', 'Match 3', 'Match 4', 'Bracket', 'Finals'];
 
 export default function MatchSetupModal({
   isOpen,
@@ -74,117 +22,102 @@ export default function MatchSetupModal({
   onUpdateMatchDetails,
   onStartFreshMatch
 }) {
-  const [tournamentName, setTournamentName] = useState('');
-  const [courtNumber, setCourtNumber] = useState('');
-  const [opponentName, setOpponentName] = useState('');
-  const [matchStage, setMatchStage] = useState('Pool Play - Match 1');
-  const [matchFormat, setMatchFormat] = useState('Best of 3 (25, 25, 15)');
-  const [targetPoints, setTargetPoints] = useState(25);
-  const [showStartWarning, setShowStartWarning] = useState(false);
+  const [court, setCourt] = useState('Court 1');
+  const [matchNumber, setMatchNumber] = useState('Match 1');
+  const [opponent, setOpponent] = useState('');
+  const [activeSet, setActiveSet] = useState(1);
+  const [showResetConfirm, setShowResetConfirm] = useState(false);
 
   useEffect(() => {
     if (isOpen && matchStats) {
-      setTournamentName(matchStats.tournamentName || 'Midwest Qualifier 2026');
-      setCourtNumber(matchStats.courtNumber || 'Court 1');
-      setOpponentName(matchStats.opponentName || 'Opponent');
-      setMatchStage(matchStats.matchStage || 'Pool Play - Match 1');
-      setMatchFormat(matchStats.matchFormat || 'Best of 3 (25, 25, 15)');
-      setTargetPoints(matchStats.targetPoints || 25);
-      setShowStartWarning(false);
+      setCourt(matchStats.courtNumber || 'Court 1');
+      setMatchNumber(matchStats.matchStage || 'Match 1');
+      setOpponent(matchStats.opponentName === 'Opponent' ? '' : (matchStats.opponentName || ''));
+      setActiveSet(matchStats.setNumber || 1);
+      setShowResetConfirm(false);
     }
   }, [isOpen, matchStats]);
 
   if (!isOpen) return null;
 
-  const handleSaveDetailsOnly = () => {
+  const handleSave = () => {
     onUpdateMatchDetails({
-      tournamentName: tournamentName.trim() || 'Tournament',
-      courtNumber: courtNumber.trim() || 'Court 1',
-      opponentName: opponentName.trim() || 'Opponent',
-      matchStage,
-      matchFormat,
-      targetPoints: Number(targetPoints) || 25
+      courtNumber: court.trim() || 'Court 1',
+      matchStage: matchNumber.trim() || 'Match 1',
+      opponentName: opponent.trim() || 'Opponent',
+      setNumber: Number(activeSet) || 1
     });
-    confetti({ particleCount: 20, spread: 40, origin: { y: 0.4 } });
+    confetti({ particleCount: 20, spread: 40, origin: { y: 0.5 } });
     onClose();
   };
 
-  const handleStartFreshMatchClick = () => {
-    const hasActiveData = matchStats?.ourScore > 0 || matchStats?.opponentScore > 0 || (matchStats?.pointHistory && matchStats.pointHistory.length > 0) || (matchStats?.setHistory && matchStats.setHistory.length > 0);
-
-    if (hasActiveData && !showStartWarning) {
-      setShowStartWarning(true);
+  const handleNewMatch = () => {
+    if (!showResetConfirm && (matchStats?.ourScore > 0 || matchStats?.opponentScore > 0 || (matchStats?.setHistory && matchStats.setHistory.length > 0))) {
+      setShowResetConfirm(true);
       return;
     }
 
     onStartFreshMatch({
-      tournamentName: tournamentName.trim() || 'Tournament',
-      courtNumber: courtNumber.trim() || 'Court 1',
-      opponentName: opponentName.trim() || 'Opponent',
-      matchStage,
-      matchFormat,
-      targetPoints: Number(targetPoints) || 25
+      courtNumber: court.trim() || 'Court 1',
+      matchStage: matchNumber.trim() || 'Match 1',
+      opponentName: opponent.trim() || 'Opponent',
+      setNumber: 1
     });
-    confetti({ particleCount: 50, spread: 60, origin: { y: 0.3 } });
+    confetti({ particleCount: 40, spread: 50, origin: { y: 0.4 } });
     onClose();
   };
 
   return (
-    <div className="modal-overlay" onClick={onClose} style={{ zIndex: 1150 }}>
+    <div
+      className="modal-overlay"
+      onClick={onClose}
+      style={{
+        zIndex: 1200,
+        padding: '12px',
+        alignItems: 'flex-start',
+        paddingTop: 'max(env(safe-area-inset-top, 20px), 25px)'
+      }}
+    >
       <div
         className="modal-content"
         onClick={(e) => e.stopPropagation()}
         style={{
-          maxWidth: '560px',
-          width: '95%',
-          background: 'linear-gradient(145deg, #131b2e 0%, #0d1322 100%)',
-          borderRadius: '20px',
+          width: '100%',
+          maxWidth: '420px',
+          background: '#0f172a',
+          borderRadius: '18px',
           border: '1px solid rgba(59, 130, 246, 0.3)',
-          boxShadow: '0 25px 60px rgba(0, 0, 0, 0.7), 0 0 35px rgba(59, 130, 246, 0.15)',
+          boxShadow: '0 20px 50px rgba(0, 0, 0, 0.8)',
           padding: '0',
           overflow: 'hidden'
         }}
       >
-        {/* Modal Header */}
+        {/* Header */}
         <div
           style={{
-            padding: '1.25rem 1.5rem',
-            background: 'linear-gradient(90deg, rgba(59, 130, 246, 0.2), rgba(16, 185, 129, 0.15))',
+            padding: '1rem 1.15rem',
+            background: 'linear-gradient(90deg, rgba(30, 58, 138, 0.5), rgba(15, 23, 42, 0.9))',
             borderBottom: '1px solid rgba(255, 255, 255, 0.08)',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'space-between'
           }}
         >
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-            <div
-              style={{
-                width: '42px',
-                height: '42px',
-                borderRadius: '12px',
-                background: 'linear-gradient(135deg, #3b82f6, #1d4ed8)',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                boxShadow: '0 4px 12px rgba(59, 130, 246, 0.4)',
-                color: '#fff'
-              }}
-            >
-              <Trophy size={22} />
-            </div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+            <span style={{ fontSize: '1.25rem' }}>🏐</span>
             <div>
-              <h2 style={{ fontSize: '1.2rem', fontWeight: 800, color: '#fff', margin: 0 }}>
-                Tournament & Match Setup
-              </h2>
-              <p style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', margin: 0 }}>
-                Align tournament location, court, match stage & format across all coaches
+              <h3 style={{ fontSize: '1.05rem', fontWeight: 800, color: '#f8fafc', margin: 0 }}>
+                Match & Set Info
+              </h3>
+              <p style={{ fontSize: '0.74rem', color: '#94a3b8', margin: 0 }}>
+                Quick mobile setup — syncs with all coaches
               </p>
             </div>
           </div>
           <button
             onClick={onClose}
             style={{
-              background: 'rgba(255, 255, 255, 0.06)',
+              background: 'rgba(255, 255, 255, 0.08)',
               border: 'none',
               borderRadius: '50%',
               width: '32px',
@@ -200,232 +133,183 @@ export default function MatchSetupModal({
           </button>
         </div>
 
-        {/* Modal Body */}
+        {/* Form Body */}
         <div
           style={{
-            padding: '1.5rem',
+            padding: '1.15rem',
             display: 'flex',
             flexDirection: 'column',
-            gap: '1.25rem',
-            maxHeight: '75vh',
-            overflowY: 'auto'
+            gap: '1rem'
           }}
         >
-          {/* Tournament / Event Name */}
-          <div className="form-group" style={{ margin: 0 }}>
-            <label style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', color: '#93c5fd', fontWeight: 700, fontSize: '0.85rem' }}>
-              <Trophy size={15} />
-              <span>Tournament / Event / League Name</span>
+          {/* 1. Opponent Team */}
+          <div>
+            <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 700, color: '#f87171', marginBottom: '0.35rem' }}>
+              Opponent Team Name
             </label>
             <input
               type="text"
               className="form-control"
-              placeholder="e.g. Midwest Qualifier, State Championship..."
-              value={tournamentName}
-              onChange={(e) => setTournamentName(e.target.value)}
-              style={{ fontSize: '0.95rem' }}
+              placeholder="e.g. Thunderbolts, West High..."
+              value={opponent}
+              onChange={(e) => setOpponent(e.target.value)}
+              style={{ fontSize: '1rem', padding: '0.65rem 0.85rem' }}
+              autoFocus
             />
-            {/* Presets */}
-            <div style={{ display: 'flex', gap: '0.35rem', flexWrap: 'wrap', marginTop: '0.35rem' }}>
-              {TOURNAMENT_PRESETS.slice(0, 4).map((preset) => (
-                <button
-                  key={preset}
-                  type="button"
-                  onClick={() => setTournamentName(preset)}
-                  style={{
-                    fontSize: '0.72rem',
-                    padding: '0.2rem 0.55rem',
-                    borderRadius: '6px',
-                    border: '1px solid rgba(59, 130, 246, 0.25)',
-                    background: tournamentName === preset ? 'rgba(59, 130, 246, 0.25)' : 'rgba(255, 255, 255, 0.03)',
-                    color: tournamentName === preset ? '#93c5fd' : 'var(--text-secondary)',
-                    cursor: 'pointer'
-                  }}
-                >
-                  {preset}
-                </button>
-              ))}
-            </div>
           </div>
 
-          {/* Court / Venue Location */}
-          <div className="form-group" style={{ margin: 0 }}>
-            <label style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', color: '#93c5fd', fontWeight: 700, fontSize: '0.85rem' }}>
-              <MapPin size={15} />
-              <span>Court Number / Venue Gym</span>
+          {/* 2. Current Set Selector (1-tap Big Buttons) */}
+          <div>
+            <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 700, color: '#34d399', marginBottom: '0.35rem' }}>
+              Current Set Playing
             </label>
-            <input
-              type="text"
-              className="form-control"
-              placeholder="e.g. Court 4, Center Court, Main Gym..."
-              value={courtNumber}
-              onChange={(e) => setCourtNumber(e.target.value)}
-              style={{ fontSize: '0.95rem' }}
-            />
-            {/* Court Presets */}
-            <div style={{ display: 'flex', gap: '0.35rem', flexWrap: 'wrap', marginTop: '0.35rem' }}>
-              {COURT_PRESETS.slice(0, 6).map((court) => (
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: '0.4rem' }}>
+              {[1, 2, 3, 4, 5].map((sNum) => (
                 <button
-                  key={court}
+                  key={sNum}
                   type="button"
-                  onClick={() => setCourtNumber(court)}
+                  onClick={() => setActiveSet(sNum)}
                   style={{
-                    fontSize: '0.72rem',
-                    padding: '0.2rem 0.55rem',
-                    borderRadius: '6px',
-                    border: '1px solid rgba(59, 130, 246, 0.25)',
-                    background: courtNumber === court ? 'rgba(59, 130, 246, 0.25)' : 'rgba(255, 255, 255, 0.03)',
-                    color: courtNumber === court ? '#93c5fd' : 'var(--text-secondary)',
-                    cursor: 'pointer'
-                  }}
-                >
-                  {court}
-                </button>
-              ))}
-            </div>
-          </div>
-
-          {/* Opponent & Match Stage Grid */}
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '1rem' }}>
-            {/* Opponent Name */}
-            <div className="form-group" style={{ margin: 0 }}>
-              <label style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', color: '#f87171', fontWeight: 700, fontSize: '0.85rem' }}>
-                <Swords size={15} />
-                <span>Opponent Team Name</span>
-              </label>
-              <input
-                type="text"
-                className="form-control"
-                placeholder="e.g. Thunderbolts 16-1"
-                value={opponentName}
-                onChange={(e) => setOpponentName(e.target.value)}
-                style={{ fontSize: '0.95rem' }}
-              />
-            </div>
-
-            {/* Match Stage */}
-            <div className="form-group" style={{ margin: 0 }}>
-              <label style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', color: '#34d399', fontWeight: 700, fontSize: '0.85rem' }}>
-                <Calendar size={15} />
-                <span>Match Stage</span>
-              </label>
-              <select
-                className="form-control"
-                value={matchStage}
-                onChange={(e) => setMatchStage(e.target.value)}
-                style={{ fontSize: '0.88rem' }}
-              >
-                {MATCH_STAGES.map((stage) => (
-                  <option key={stage} value={stage}>{stage}</option>
-                ))}
-              </select>
-            </div>
-          </div>
-
-          {/* Match Format & Sets Rules */}
-          <div className="form-group" style={{ margin: 0 }}>
-            <label style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', color: '#c084fc', fontWeight: 700, fontSize: '0.85rem' }}>
-              <Layers size={15} />
-              <span>Match Format & Set Rules</span>
-            </label>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', marginTop: '0.35rem' }}>
-              {MATCH_FORMATS.map((fmt) => (
-                <div
-                  key={fmt.id}
-                  onClick={() => setMatchFormat(fmt.id)}
-                  style={{
-                    padding: '0.75rem 1rem',
+                    padding: '0.6rem 0',
                     borderRadius: '10px',
-                    border: matchFormat === fmt.id ? '1.5px solid #a855f7' : '1px solid rgba(255, 255, 255, 0.07)',
-                    background: matchFormat === fmt.id ? 'rgba(168, 85, 247, 0.12)' : 'rgba(255, 255, 255, 0.03)',
-                    cursor: 'pointer',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'space-between',
-                    transition: 'all 0.2s ease'
+                    border: activeSet === sNum ? '2px solid #10b981' : '1px solid rgba(255, 255, 255, 0.1)',
+                    background: activeSet === sNum ? 'rgba(16, 185, 129, 0.25)' : 'rgba(255, 255, 255, 0.04)',
+                    color: activeSet === sNum ? '#6ee7b7' : '#cbd5e1',
+                    fontSize: '0.95rem',
+                    fontWeight: 800,
+                    cursor: 'pointer'
                   }}
                 >
-                  <div>
-                    <div style={{ fontSize: '0.88rem', fontWeight: 700, color: matchFormat === fmt.id ? '#f3e8ff' : '#cbd5e1' }}>
-                      {fmt.label}
-                    </div>
-                    <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>
-                      {fmt.desc}
-                    </div>
-                  </div>
-                  {matchFormat === fmt.id && (
-                    <div style={{ width: '22px', height: '22px', borderRadius: '50%', background: '#a855f7', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff' }}>
-                      <Check size={14} />
-                    </div>
-                  )}
-                </div>
+                  Set {sNum}
+                </button>
               ))}
             </div>
           </div>
 
-          {/* Warning Confirmation when starting fresh match */}
-          {showStartWarning && (
+          {/* 3. Match / Stage Selector */}
+          <div>
+            <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 700, color: '#60a5fa', marginBottom: '0.35rem' }}>
+              Match # / Stage
+            </label>
+            <div style={{ display: 'flex', gap: '0.35rem', flexWrap: 'wrap' }}>
+              {QUICK_MATCHES.map((m) => (
+                <button
+                  key={m}
+                  type="button"
+                  onClick={() => setMatchNumber(m)}
+                  style={{
+                    padding: '0.4rem 0.75rem',
+                    borderRadius: '8px',
+                    border: matchNumber === m ? '1.5px solid #3b82f6' : '1px solid rgba(255, 255, 255, 0.08)',
+                    background: matchNumber === m ? 'rgba(59, 130, 246, 0.3)' : 'rgba(255, 255, 255, 0.03)',
+                    color: matchNumber === m ? '#93c5fd' : '#94a3b8',
+                    fontSize: '0.82rem',
+                    fontWeight: 700,
+                    cursor: 'pointer'
+                  }}
+                >
+                  {m}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* 4. Court / Gym Location */}
+          <div>
+            <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 700, color: '#c084fc', marginBottom: '0.35rem' }}>
+              Court Location
+            </label>
+            <div style={{ display: 'flex', gap: '0.35rem', flexWrap: 'wrap', marginBottom: '0.4rem' }}>
+              {QUICK_COURTS.map((c) => (
+                <button
+                  key={c}
+                  type="button"
+                  onClick={() => setCourt(c.startsWith('Ct') ? `Court ${c.replace('Ct ', '')}` : c)}
+                  style={{
+                    padding: '0.35rem 0.65rem',
+                    borderRadius: '8px',
+                    border: (court === c || court === `Court ${c.replace('Ct ', '')}`) ? '1.5px solid #a855f7' : '1px solid rgba(255, 255, 255, 0.08)',
+                    background: (court === c || court === `Court ${c.replace('Ct ', '')}`) ? 'rgba(168, 85, 247, 0.3)' : 'rgba(255, 255, 255, 0.03)',
+                    color: (court === c || court === `Court ${c.replace('Ct ', '')}`) ? '#f3e8ff' : '#94a3b8',
+                    fontSize: '0.8rem',
+                    fontWeight: 700,
+                    cursor: 'pointer'
+                  }}
+                >
+                  {c}
+                </button>
+              ))}
+            </div>
+            <input
+              type="text"
+              className="form-control"
+              placeholder="Or type court name (e.g. Aux Gym Court B)..."
+              value={court}
+              onChange={(e) => setCourt(e.target.value)}
+              style={{ fontSize: '0.85rem' }}
+            />
+          </div>
+
+          {/* Warning when tapping New Match */}
+          {showResetConfirm && (
             <div
               style={{
                 background: 'rgba(245, 158, 11, 0.15)',
                 border: '1px solid rgba(245, 158, 11, 0.4)',
-                borderRadius: '12px',
-                padding: '0.9rem 1rem',
-                display: 'flex',
-                alignItems: 'flex-start',
-                gap: '0.75rem'
+                borderRadius: '10px',
+                padding: '0.75rem',
+                fontSize: '0.8rem',
+                color: '#fef3c7'
               }}
             >
-              <AlertCircle size={20} color="#fbbf24" style={{ flexShrink: 0, marginTop: '2px' }} />
-              <div>
-                <div style={{ fontSize: '0.85rem', fontWeight: 700, color: '#fef3c7' }}>
-                  Start New Tournament Match?
-                </div>
-                <div style={{ fontSize: '0.78rem', color: '#fde68a', marginTop: '0.2rem' }}>
-                  Starting a new match will save the current match to history, reset scores to 0-0, reset set count to Set 1, and alert all connected co-coaches.
-                </div>
-              </div>
+              <strong>Start New Match?</strong> Current match will be saved to history and score reset to 0-0 (Set 1).
             </div>
           )}
         </div>
 
-        {/* Modal Footer */}
+        {/* Mobile Action Buttons */}
         <div
           style={{
-            padding: '1.15rem 1.5rem',
-            background: 'rgba(0, 0, 0, 0.35)',
+            padding: '1rem 1.15rem',
+            background: 'rgba(0, 0, 0, 0.4)',
             borderTop: '1px solid rgba(255, 255, 255, 0.08)',
             display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'space-between',
-            gap: '0.75rem',
-            flexWrap: 'wrap'
+            gap: '0.65rem'
           }}
         >
           <button
+            type="button"
             className="btn btn-secondary"
-            onClick={handleSaveDetailsOnly}
-            title="Update Tournament & Opponent details without resetting the active set score"
-            style={{ fontSize: '0.85rem' }}
+            onClick={handleNewMatch}
+            style={{
+              flex: '1',
+              padding: '0.75rem',
+              fontSize: '0.85rem',
+              fontWeight: 700,
+              background: showResetConfirm ? 'rgba(245, 158, 11, 0.25)' : 'rgba(255, 255, 255, 0.05)',
+              borderColor: showResetConfirm ? '#f59e0b' : 'rgba(255, 255, 255, 0.15)',
+              color: showResetConfirm ? '#fbbf24' : '#cbd5e1'
+            }}
           >
-            <Check size={16} />
-            <span>Update Details Only</span>
+            {showResetConfirm ? 'Confirm New Match' : 'New Match (0-0)'}
           </button>
 
           <button
+            type="button"
             className="btn btn-primary"
-            onClick={handleStartFreshMatchClick}
+            onClick={handleSave}
             style={{
+              flex: '1.4',
+              padding: '0.75rem',
+              fontSize: '0.9rem',
+              fontWeight: 800,
               background: 'linear-gradient(135deg, #10b981, #059669)',
               borderColor: '#10b981',
-              boxShadow: '0 4px 15px rgba(16, 185, 129, 0.35)',
-              fontSize: '0.88rem',
-              fontWeight: 800
+              boxShadow: '0 4px 15px rgba(16, 185, 129, 0.35)'
             }}
-            title="Save current game to history and start a fresh tournament match"
           >
-            <Play size={16} fill="currentColor" />
-            <span>{showStartWarning ? 'Confirm & Start Match 1' : 'Start New Match (Set 1)'}</span>
+            <Check size={16} />
+            <span>Save & Sync</span>
           </button>
         </div>
       </div>

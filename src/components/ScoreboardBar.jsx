@@ -1,22 +1,15 @@
 import React, { useState } from 'react';
 import {
-  Trophy,
   RotateCcw,
   RefreshCw,
   Sliders,
-  Sparkles,
   BarChart3,
   Check,
-  AlertCircle,
   Plus,
   Archive,
-  Flag,
   MapPin,
   Swords,
-  Layers,
-  Settings,
-  ArrowRight,
-  Play
+  Edit3
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
 import QuickPointModal from './QuickPointModal';
@@ -42,12 +35,9 @@ export default function ScoreboardBar({
   const [scoringTeam, setScoringTeam] = useState('us'); // 'us' | 'opponent'
 
   const {
-    tournamentName = 'Tournament',
     courtNumber = 'Court 1',
     opponentName = 'Opponent',
-    matchStage = 'Pool Play - Match 1',
-    matchFormat = 'Best of 3 (25, 25, 15)',
-    targetPoints = 25,
+    matchStage = 'Match 1',
     ourScore = 0,
     opponentScore = 0,
     setNumber = 1,
@@ -110,141 +100,94 @@ export default function ScoreboardBar({
 
   const handleFinishSetClick = () => {
     const isOurLead = ourScore > opponentScore;
-    const confirmMsg = `Finish Set ${setNumber} (${ourScore} - ${opponentScore})?\n\nWinner: ${isOurLead ? 'Our Squad (US)' : opponentName || 'Opponent'}\n\nThis will record Set ${setNumber}, reset the score to 0 - 0, and advance to Set ${setNumber + 1}.`;
+    const confirmMsg = `Finish Set ${setNumber} (${ourScore} - ${opponentScore})?\n\nWinner: ${isOurLead ? 'US' : opponentName || 'Opponent'}\n\nAdvance to Set ${setNumber + 1} (0-0)?`;
     if (window.confirm(confirmMsg)) {
       onStartNewSet();
     }
   };
 
-  // Target points for current set (25 for sets 1-2, 15 for deciding 3rd/5th set)
-  const currentSetTarget = (setNumber === 3 && matchFormat.includes('Best of 3')) || (setNumber === 5 && matchFormat.includes('Best of 5'))
-    ? 15
-    : (targetPoints || 25);
-
   return (
     <>
-      {/* Tournament Location & Match Alignment Header Ribbon */}
+      {/* 📱 Super Simple Mobile Match & Set Bar (Tap anywhere to edit / clarify) */}
       <div
+        onClick={onOpenMatchSetup}
         style={{
-          background: 'linear-gradient(90deg, rgba(30, 41, 59, 0.95), rgba(15, 23, 42, 0.95))',
-          borderBottom: '1px solid rgba(59, 130, 246, 0.25)',
-          padding: '0.45rem 1rem',
+          background: 'linear-gradient(90deg, #1e293b 0%, #0f172a 100%)',
+          borderBottom: '1px solid rgba(59, 130, 246, 0.3)',
+          padding: '0.45rem 0.85rem',
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'space-between',
-          flexWrap: 'wrap',
-          gap: '0.5rem',
-          fontSize: '0.8rem',
-          boxShadow: '0 2px 8px rgba(0, 0, 0, 0.3)'
+          cursor: 'pointer',
+          userSelect: 'none'
         }}
+        title="Tap to change Court, Match, Opponent, or Set"
       >
-        {/* Left: Tournament Name, Court #, Stage */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap' }}>
-          {/* Location Badge */}
-          <div
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap', minWidth: 0 }}>
+          {/* Location Chip */}
+          <span
             style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: '0.35rem',
-              background: 'rgba(59, 130, 246, 0.15)',
-              border: '1px solid rgba(59, 130, 246, 0.35)',
-              padding: '0.2rem 0.55rem',
-              borderRadius: '999px',
+              background: 'rgba(59, 130, 246, 0.2)',
+              border: '1px solid rgba(59, 130, 246, 0.4)',
               color: '#93c5fd',
-              fontWeight: 700
-            }}
-          >
-            <MapPin size={12} color="#60a5fa" />
-            <span>{tournamentName}</span>
-            <span style={{ opacity: 0.6 }}>•</span>
-            <span style={{ color: '#fff' }}>{courtNumber}</span>
-          </div>
-
-          {/* Match Stage & Opponent Badge */}
-          <div
-            style={{
+              padding: '0.15rem 0.45rem',
+              borderRadius: '6px',
+              fontSize: '0.75rem',
+              fontWeight: 800,
               display: 'flex',
               alignItems: 'center',
-              gap: '0.35rem',
-              background: 'rgba(239, 68, 68, 0.12)',
-              border: '1px solid rgba(239, 68, 68, 0.3)',
-              padding: '0.2rem 0.55rem',
-              borderRadius: '999px',
-              color: '#fca5a5',
-              fontWeight: 700
+              gap: '0.25rem'
             }}
           >
-            <Swords size={12} color="#f87171" />
-            <span>{matchStage}</span>
-            <span style={{ opacity: 0.6 }}>vs</span>
-            <span style={{ color: '#fff' }}>{opponentName}</span>
-          </div>
+            <MapPin size={11} />
+            {courtNumber}
+          </span>
 
-          {/* Finished Sets Summary Badges */}
+          {/* Match & Opponent */}
+          <span style={{ fontSize: '0.8rem', fontWeight: 700, color: '#f8fafc', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+            <span style={{ color: '#60a5fa' }}>{matchStage}</span> vs <span style={{ color: '#fca5a5' }}>{opponentName || 'Opponent'}</span>
+          </span>
+
+          {/* Set Badge */}
+          <span
+            style={{
+              background: 'rgba(16, 185, 129, 0.2)',
+              border: '1px solid rgba(16, 185, 129, 0.4)',
+              color: '#6ee7b7',
+              padding: '0.15rem 0.45rem',
+              borderRadius: '6px',
+              fontSize: '0.75rem',
+              fontWeight: 800
+            }}
+          >
+            Set {setNumber}
+          </span>
+
+          {/* Past Set Scores in Current Match */}
           {setHistory && setHistory.length > 0 && (
-            <div style={{ display: 'flex', alignItems: 'center', gap: '0.3rem' }}>
-              {setHistory.map((s, idx) => (
-                <span
-                  key={idx}
-                  style={{
-                    fontSize: '0.72rem',
-                    padding: '0.15rem 0.45rem',
-                    borderRadius: '6px',
-                    background: s.winner === 'us' ? 'rgba(16, 185, 129, 0.2)' : 'rgba(239, 68, 68, 0.2)',
-                    border: s.winner === 'us' ? '1px solid rgba(16, 185, 129, 0.4)' : '1px solid rgba(239, 68, 68, 0.4)',
-                    color: s.winner === 'us' ? '#6ee7b7' : '#fca5a5',
-                    fontWeight: 700
-                  }}
-                  title={`Set ${s.setNumber || idx + 1}: ${s.ourScore} - ${s.opponentScore} (${s.winner === 'us' ? 'Won' : 'Lost'})`}
-                >
-                  S{s.setNumber || idx + 1}: {s.ourScore}-{s.opponentScore}
-                </span>
-              ))}
-            </div>
+            <span style={{ fontSize: '0.72rem', color: '#94a3b8' }}>
+              ({setHistory.map(s => `${s.ourScore}-${s.opponentScore}`).join(', ')})
+            </span>
           )}
         </div>
 
-        {/* Right: Match Format & Edit Tournament Settings Button */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-          <span style={{ fontSize: '0.74rem', color: '#94a3b8' }}>
-            {matchFormat.split('(')[0]} • Target: <strong style={{ color: '#fbbf24' }}>{currentSetTarget} pts</strong>
-          </span>
-
-          {onOpenMatchSetup && (
-            <button
-              onClick={onOpenMatchSetup}
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: '0.3rem',
-                background: 'rgba(255, 255, 255, 0.08)',
-                border: '1px solid rgba(255, 255, 255, 0.15)',
-                padding: '0.2rem 0.55rem',
-                borderRadius: '6px',
-                color: '#e2e8f0',
-                fontSize: '0.74rem',
-                fontWeight: 700,
-                cursor: 'pointer'
-              }}
-              title="Edit tournament name, court #, opponent, or start a new tournament match"
-            >
-              <Settings size={12} />
-              <span>Match Info</span>
-            </button>
-          )}
+        {/* Tap to Edit Indicator */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.3rem', color: '#94a3b8', fontSize: '0.72rem', flexShrink: 0 }}>
+          <Edit3 size={12} />
+          <span>Edit</span>
         </div>
       </div>
 
       {/* Main Scoreboard Ribbon */}
       <div className="scoreboard-ribbon">
         {/* Left: Set & Match Status */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: '0.65rem', flexWrap: 'wrap' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.65rem' }}>
           <div className="scoreboard-set-badge">
             SET {setNumber}
           </div>
 
           <div style={{ fontSize: '0.78rem', color: 'var(--text-secondary)', display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
-            <span>Sets Won:</span>
+            <span>Sets:</span>
             <strong style={{ color: '#10b981', fontSize: '0.9rem' }}>{ourSetsWon}</strong>
             <span>-</span>
             <strong style={{ color: '#f87171', fontSize: '0.9rem' }}>{opponentSetsWon}</strong>
@@ -278,18 +221,18 @@ export default function ScoreboardBar({
               <Plus size={16} /> <span>OPP</span>
             </button>
             <div className="scoreboard-digit opp">{opponentScore}</div>
-            <span className="scoreboard-team-label">{opponentName.slice(0, 5)}</span>
+            <span className="scoreboard-team-label">{(opponentName || 'OPP').slice(0, 5)}</span>
           </div>
         </div>
 
-        {/* Right: Quick Controls (Undo, Finish Set, Save Match, Stats View, Settings) */}
+        {/* Right: Quick Controls */}
         <div className="scoreboard-action-group">
           {/* Undo Button */}
           <button
             className="btn btn-secondary btn-sm"
             onClick={onUndoLastPoint}
             disabled={pointHistory.length === 0}
-            title={pointHistory.length > 0 ? 'Undo last rally point and restore rotation' : 'No points recorded yet'}
+            title={pointHistory.length > 0 ? 'Undo last rally point' : 'No points recorded yet'}
             style={{ fontSize: '0.78rem' }}
           >
             <RotateCcw size={13} />
@@ -310,7 +253,7 @@ export default function ScoreboardBar({
             title={`Finish Set ${setNumber} (${ourScore}-${opponentScore}) and advance to Set ${setNumber + 1}`}
           >
             <Check size={13} color="#34d399" />
-            <span>Finish Set {setNumber}</span>
+            <span>Next Set</span>
           </button>
 
           {/* Save Match Button */}
@@ -325,7 +268,7 @@ export default function ScoreboardBar({
                 fontSize: '0.78rem',
                 fontWeight: 700
               }}
-              title="Save current match and score history to past tournament games archive"
+              title="Save current match to history"
             >
               <Archive size={13} color="#60a5fa" />
               <span>Save Match</span>
@@ -337,7 +280,7 @@ export default function ScoreboardBar({
             className="btn btn-secondary btn-sm"
             onClick={() => {
               if (ourScore === 0 && opponentScore === 0) return;
-              if (window.confirm('Reset current set score back to 0 - 0? (Point history will be preserved in summary).')) {
+              if (window.confirm('Reset current set score back to 0 - 0?')) {
                 onResetScore();
               }
             }}
@@ -345,7 +288,7 @@ export default function ScoreboardBar({
             style={{ fontSize: '0.78rem' }}
           >
             <RefreshCw size={13} />
-            <span>Reset</span>
+            <span>0-0</span>
           </button>
 
           {/* Stats Mode Toggle (ON / OFF) */}
@@ -358,7 +301,7 @@ export default function ScoreboardBar({
               color: '#93c5fd',
               fontSize: '0.76rem'
             } : { fontSize: '0.76rem', color: 'var(--text-muted)' }}
-            title={isTrackingEnabled ? 'Detailed Error Logging is ON (Tap to use fast score-only mode)' : 'Error Logging is OFF (Fast 1-tap mode active)'}
+            title={isTrackingEnabled ? 'Error logging is ON' : 'Fast 1-tap score only'}
           >
             <Sliders size={13} />
             <span>{isTrackingEnabled ? 'Errors: ON' : 'Errors: OFF'}</span>
@@ -370,10 +313,10 @@ export default function ScoreboardBar({
               className="btn btn-secondary btn-sm"
               onClick={() => onNavigateTab('stats')}
               style={{ fontSize: '0.78rem', borderColor: 'rgba(168, 85, 247, 0.4)', color: '#c084fc' }}
-              title="Jump to Match Stats & Error Summary tab"
+              title="Jump to Match Stats"
             >
               <BarChart3 size={13} />
-              <span>Stats & PDF</span>
+              <span>Stats</span>
             </button>
           )}
         </div>

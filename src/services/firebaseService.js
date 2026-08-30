@@ -37,37 +37,18 @@ export const firebaseService = {
     try {
       // 1. Check user override in localStorage
       let data = localStorage.getItem(FIREBASE_CONFIG_KEY);
-      if (!data) {
-        data = localStorage.getItem(LEGACY_FIREBASE_CONFIG_KEY);
-        if (data) {
-          localStorage.setItem(FIREBASE_CONFIG_KEY, data);
-        }
-      }
       if (data) {
         const parsed = JSON.parse(data);
-        if (parsed && parsed.apiKey && parsed.projectId) {
-          return parsed;
+        if (parsed && parsed.apiKey && parsed.projectId === DEFAULT_FIREBASE_CONFIG.projectId) {
+          return {
+            ...DEFAULT_FIREBASE_CONFIG,
+            ...parsed,
+            authDomain: DEFAULT_FIREBASE_CONFIG.authDomain
+          };
         }
       }
 
-      // 2. Check environment variables (if supplied by Vite)
-      if (
-        typeof import.meta !== 'undefined' &&
-        import.meta.env &&
-        import.meta.env.VITE_FIREBASE_API_KEY &&
-        import.meta.env.VITE_FIREBASE_PROJECT_ID
-      ) {
-        return {
-          apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
-          authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN || `${import.meta.env.VITE_FIREBASE_PROJECT_ID}.firebaseapp.com`,
-          projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID,
-          storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET || `${import.meta.env.VITE_FIREBASE_PROJECT_ID}.appspot.com`,
-          messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID,
-          appId: import.meta.env.VITE_FIREBASE_APP_ID
-        };
-      }
-
-      // 3. Built-in dedicated project configuration
+      // 2. Built-in dedicated project configuration
       if (DEFAULT_FIREBASE_CONFIG && DEFAULT_FIREBASE_CONFIG.apiKey) {
         return DEFAULT_FIREBASE_CONFIG;
       }

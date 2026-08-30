@@ -3,7 +3,7 @@
 
 export const DEFAULT_FIREBASE_CONFIG = {
   apiKey: "AIzaSyC7jPVGwXmamjc6XnZHcwPlw-5IvkpLSJs",
-  authDomain: "volleyball-sandbox-app.firebaseapp.com",
+  authDomain: "volleyball-roster-sandbo-ea2b6.firebaseapp.com",
   projectId: "volleyball-roster-sandbox",
   storageBucket: "volleyball-roster-sandbox.firebasestorage.app",
   messagingSenderId: "175887972084",

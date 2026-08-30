@@ -1,16 +1,7 @@
 {
   "projects": {
-    "default": "volleyball-d2085",
-    "Volleyball Prod": "volleyball-d2085"
+    "default": "volleyball-roster-sandbox"
   },
-  "targets": {
-    "volleyball-d2085": {
-      "hosting": {
-        "sandbox": [
-          "volleyball-roster-pwa-sandbox"
-        ]
-      }
-    }
-  },
+  "targets": {},
   "etags": {}
 }

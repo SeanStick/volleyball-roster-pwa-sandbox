@@ -38,9 +38,10 @@ Open your browser at `http://localhost:3000`.
 
 ## ☁️ Deploying to Google Cloud Firebase Hosting
 
-### 🌐 Live Environments:
-- **Sandbox / Preview Environment (New)**: [https://volleyball-roster-pwa-sandbox.web.app](https://volleyball-roster-pwa-sandbox.web.app)
-- **Production Environment**: [https://volleyball-d2085.web.app](https://volleyball-d2085.web.app)
+### 🌐 Live Deployment Environment:
+- **Live URL**: [https://volleyball-roster-sandbox.web.app](https://volleyball-roster-sandbox.web.app)
+- **Alternate Domain**: [https://volleyball-roster-sandbox.firebaseapp.com](https://volleyball-roster-sandbox.firebaseapp.com)
+- **Google Cloud / Firebase Project ID**: `volleyball-roster-sandbox`
 
 ### Step 1: Install Firebase CLI
 ```bash
@@ -53,12 +54,11 @@ npm install -g firebase-tools
 npx firebase-tools login
 ```
 
-### Step 3: Deploy to Sandbox
+### Step 3: Deploy to Firebase Hosting
 ```bash
 npm run deploy
-# or: npm run deploy:sandbox
 ```
-This builds the bundle into `dist/` and deploys it immediately to the isolated `volleyball-roster-sandbox` Firebase site.
+This builds the production bundle into `dist/` and deploys it immediately to the `volleyball-roster-sandbox` Firebase Project.
 
 ---
 

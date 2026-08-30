@@ -7,8 +7,8 @@
     "dev": "vite",
     "build": "vite build",
     "preview": "vite preview",
-    "deploy": "vite build && npx firebase-tools deploy --only hosting:sandbox",
-    "deploy:sandbox": "vite build && npx firebase-tools deploy --only hosting:sandbox"
+    "deploy": "vite build && npx firebase-tools deploy --only hosting",
+    "deploy:sandbox": "vite build && npx firebase-tools deploy --only hosting"
   },
   "dependencies": {
     "canvas-confetti": "^1.9.4",

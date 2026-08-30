@@ -39,9 +39,10 @@ Open your browser at `http://localhost:3000`.
 ## ☁️ Deploying to Google Cloud Firebase Hosting
 
 ### 🌐 Live Deployment Environment:
-- **Live URL**: [https://volleyball-roster-sandbox.web.app](https://volleyball-roster-sandbox.web.app)
-- **Alternate Domain**: [https://volleyball-roster-sandbox.firebaseapp.com](https://volleyball-roster-sandbox.firebaseapp.com)
-- **Google Cloud / Firebase Project ID**: `volleyball-roster-sandbox`
+- **Primary Live URL**: [https://volleyball-sandbox-app.web.app](https://volleyball-sandbox-app.web.app)
+- **Alternate Domain**: [https://volleyball-sandbox-app.firebaseapp.com](https://volleyball-sandbox-app.firebaseapp.com)
+- **Google Cloud / Firebase Project Instance**: `volleyball-roster-sandbox`
+- **Firebase Console**: [https://console.firebase.google.com/project/volleyball-roster-sandbox/overview](https://console.firebase.google.com/project/volleyball-roster-sandbox/overview)
 
 ### Step 1: Install Firebase CLI
 ```bash

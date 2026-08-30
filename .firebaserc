@@ -2,6 +2,14 @@
   "projects": {
     "default": "volleyball-roster-sandbox"
   },
-  "targets": {},
+  "targets": {
+    "volleyball-roster-sandbox": {
+      "hosting": {
+        "app": [
+          "volleyball-sandbox-app"
+        ]
+      }
+    }
+  },
   "etags": {}
 }

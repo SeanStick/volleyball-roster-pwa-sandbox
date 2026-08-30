@@ -3,6 +3,14 @@
     "default": "volleyball-d2085",
     "Volleyball Prod": "volleyball-d2085"
   },
-  "targets": {},
+  "targets": {
+    "volleyball-d2085": {
+      "hosting": {
+        "sandbox": [
+          "volleyball-roster-sandbox"
+        ]
+      }
+    }
+  },
   "etags": {}
 }

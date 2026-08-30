@@ -46,10 +46,13 @@ export default function App() {
   const [syncStatus, setSyncStatus] = useState('synced'); // 'synced' | 'syncing' | 'offline' | 'error'
   const [lastSyncTime, setLastSyncTime] = useState('Just now');
 
+  // Unique session device ID to differentiate multiple tabs/devices under the same or shared account
+  const deviceIdRef = useRef(`dev-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`);
+  const currentDeviceId = deviceIdRef.current;
+
   // Guards against race conditions & overwrite loops
   const isHydratingCloudRef = useRef(false);
   const isApplyingRemoteUpdateRef = useRef(false);
-  const lastCloudUpdatedAtRef = useRef(null);
   const syncTimeoutRef = useRef(null);
 
   // Modal visibility states
@@ -132,6 +135,58 @@ export default function App() {
   const [matchHistory, setMatchHistory] = useState(() => storageService.getMatchHistory());
 
   // -------------------------------------------------------------
+  // Instant Cloud Sync Function for Game Events (Scores, Points, Rotations)
+  // -------------------------------------------------------------
+  const syncCloudImmediately = useCallback((bundleOverrides = {}) => {
+    if (!user?.uid || isHydratingCloudRef.current || isApplyingRemoteUpdateRef.current) return;
+
+    if (syncTimeoutRef.current) {
+      clearTimeout(syncTimeoutRef.current);
+    }
+
+    const activeTeamObj = teams.find(t => t.id === activeTeamId);
+    const now = new Date().toISOString();
+
+    const fullBundle = {
+      teamId: activeTeamId,
+      shareCode: activeTeamObj?.shareCode || '',
+      ownerId: activeTeamObj?.ownerId || user.uid,
+      ownerName: activeTeamObj?.ownerName || user.displayName || 'Coach',
+      teamSettings,
+      roster,
+      matchState: {
+        lineup,
+        startingLineup,
+        rotation,
+        phase,
+        liberoExchanges,
+        liberoServingRotation,
+        subHistory,
+        maxSubs,
+        enforcePositionLock
+      },
+      matchStats,
+      matchHistory,
+      updatedAt: now,
+      updatedByDeviceId: currentDeviceId,
+      ...bundleOverrides
+    };
+
+    setSyncStatus('syncing');
+    firebaseService.syncFullTeamToCloud(user.uid, fullBundle, user, currentDeviceId).then((res) => {
+      if (res.success) {
+        setSyncStatus('synced');
+        setLastSyncTime(new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }));
+      } else {
+        setSyncStatus('error');
+      }
+    }).catch((err) => {
+      console.error('Immediate sync error:', err);
+      setSyncStatus('error');
+    });
+  }, [user, activeTeamId, teams, teamSettings, roster, lineup, startingLineup, rotation, phase, liberoExchanges, liberoServingRotation, subHistory, maxSubs, enforcePositionLock, matchStats, matchHistory, currentDeviceId]);
+
+  // -------------------------------------------------------------
   // Check URL Join Invite Parameter on Startup (?join=VB-CODE)
   // -------------------------------------------------------------
   useEffect(() => {
@@ -155,7 +210,6 @@ export default function App() {
   // -------------------------------------------------------------
   useEffect(() => {
     let unsubscribeSnapshot = null;
-    let unsubscribeTeamsList = null;
 
     const unsubscribeAuth = firebaseService.onAuthChange(async (currentUser) => {
       setUser(currentUser);
@@ -224,7 +278,7 @@ export default function App() {
           } else {
             // True first-time user login: upload initial team bundle to cloud
             const currentBundle = storageService.getFullTeamBundle(activeTeamId);
-            await firebaseService.syncFullTeamToCloud(currentUser.uid, currentBundle, currentUser);
+            await firebaseService.syncFullTeamToCloud(currentUser.uid, currentBundle, currentUser, currentDeviceId);
           }
 
           setSyncStatus('synced');
@@ -246,29 +300,21 @@ export default function App() {
           (cloudTeam, { hasPendingWrites }) => {
             if (hasPendingWrites || isHydratingCloudRef.current || !cloudTeam) return;
 
-            // Ignore if this write originated locally from this same account
-            if (cloudTeam.updatedBy && cloudTeam.updatedBy === currentUser.uid) {
+            // Ignore update only if it was written by this EXACT same browser session
+            if (cloudTeam.updatedByDeviceId && cloudTeam.updatedByDeviceId === currentDeviceId) {
               return;
             }
 
-            // Check if cloud update is strictly newer
-            const incomingTimestamp = cloudTeam.updatedAt || '';
-            if (incomingTimestamp && lastCloudUpdatedAtRef.current && incomingTimestamp <= lastCloudUpdatedAtRef.current) {
-              return;
-            }
-            lastCloudUpdatedAtRef.current = incomingTimestamp;
-
-            // Mark that we are applying remote updates (prevents echo back)
+            // Mark that we are applying remote updates (prevents echo loop)
             isApplyingRemoteUpdateRef.current = true;
 
-            if (cloudTeam.teamSettings) {
-              setTeamSettings(cloudTeam.teamSettings);
-              storageService.saveTeamSettings(cloudTeam.teamSettings);
+            // 1. Live Match Score & Stats
+            if (cloudTeam.matchStats) {
+              setMatchStats(cloudTeam.matchStats);
+              storageService.saveMatchStats(cloudTeam.matchStats);
             }
-            if (Array.isArray(cloudTeam.roster)) {
-              setRoster(cloudTeam.roster);
-              storageService.saveRoster(cloudTeam.roster);
-            }
+
+            // 2. Match State (Lineups, Rotations, Subs, Liberos)
             if (cloudTeam.matchState) {
               const ms = cloudTeam.matchState;
               if (ms.lineup) setLineup(ms.lineup);
@@ -282,14 +328,26 @@ export default function App() {
               if (ms.enforcePositionLock !== undefined) setEnforcePositionLock(ms.enforcePositionLock);
               storageService.saveMatchState(ms);
             }
-            if (cloudTeam.matchStats) {
-              setMatchStats(cloudTeam.matchStats);
-              storageService.saveMatchStats(cloudTeam.matchStats);
+
+            // 3. Team Settings
+            if (cloudTeam.teamSettings) {
+              setTeamSettings(cloudTeam.teamSettings);
+              storageService.saveTeamSettings(cloudTeam.teamSettings);
             }
+
+            // 4. Player Roster
+            if (Array.isArray(cloudTeam.roster)) {
+              setRoster(cloudTeam.roster);
+              storageService.saveRoster(cloudTeam.roster);
+            }
+
+            // 5. Match History
             if (Array.isArray(cloudTeam.matchHistory)) {
               setMatchHistory(cloudTeam.matchHistory);
               storageService.saveMatchHistory(cloudTeam.matchHistory);
             }
+
+            // 6. Share Code & Members
             if (cloudTeam.shareCode) {
               setTeams(prevTeams => prevTeams.map(t => t.id === cloudTeam.id ? { ...t, shareCode: cloudTeam.shareCode, members: cloudTeam.members || t.members } : t));
             }
@@ -300,19 +358,17 @@ export default function App() {
         );
       } else {
         if (unsubscribeSnapshot) unsubscribeSnapshot();
-        if (unsubscribeTeamsList) unsubscribeTeamsList();
       }
     });
 
     return () => {
       if (typeof unsubscribeAuth === 'function') unsubscribeAuth();
       if (typeof unsubscribeSnapshot === 'function') unsubscribeSnapshot();
-      if (typeof unsubscribeTeamsList === 'function') unsubscribeTeamsList();
     };
-  }, [activeTeamId]);
+  }, [activeTeamId, currentDeviceId]);
 
   // -------------------------------------------------------------
-  // Real-Time Local Persistence + Google Cloud Auto-Save
+  // Real-Time Local Persistence + Google Cloud Auto-Save (Debounced)
   // -------------------------------------------------------------
   const performCloudAutoSync = useCallback((fullBundle) => {
     if (!user?.uid || isHydratingCloudRef.current || isApplyingRemoteUpdateRef.current) return;
@@ -324,7 +380,7 @@ export default function App() {
     setSyncStatus('syncing');
     syncTimeoutRef.current = setTimeout(async () => {
       try {
-        const res = await firebaseService.syncFullTeamToCloud(user.uid, fullBundle, user);
+        const res = await firebaseService.syncFullTeamToCloud(user.uid, fullBundle, user, currentDeviceId);
         if (res.success) {
           setSyncStatus('synced');
           setLastSyncTime(new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }));
@@ -336,9 +392,9 @@ export default function App() {
         setSyncStatus('error');
       }
     }, 400);
-  }, [user]);
+  }, [user, currentDeviceId]);
 
-  // Sync state changes locally and trigger cloud sync
+  // Sync state changes locally and trigger debounced cloud sync
   useEffect(() => {
     storageService.saveRoster(roster);
     storageService.saveTeamSettings(teamSettings);
@@ -384,7 +440,8 @@ export default function App() {
       },
       matchStats,
       matchHistory,
-      updatedAt: new Date().toISOString()
+      updatedAt: new Date().toISOString(),
+      updatedByDeviceId: currentDeviceId
     };
 
     performCloudAutoSync(fullBundle);
@@ -403,7 +460,8 @@ export default function App() {
     matchStats,
     matchHistory,
     activeTeamId,
-    performCloudAutoSync
+    performCloudAutoSync,
+    currentDeviceId
   ]);
 
   // -------------------------------------------------------------
@@ -415,7 +473,7 @@ export default function App() {
     // 1. Save current team bundle before switching
     const currentBundle = storageService.getFullTeamBundle(activeTeamId);
     if (user?.uid) {
-      await firebaseService.syncFullTeamToCloud(user.uid, currentBundle, user);
+      await firebaseService.syncFullTeamToCloud(user.uid, currentBundle, user, currentDeviceId);
     }
 
     // 2. Fetch target team data
@@ -538,9 +596,10 @@ export default function App() {
         },
         matchStats: storageService.resetFullMatch(),
         matchHistory: [],
-        updatedAt: new Date().toISOString()
+        updatedAt: new Date().toISOString(),
+        updatedByDeviceId: currentDeviceId
       };
-      await firebaseService.syncFullTeamToCloud(user.uid, bundle, user);
+      await firebaseService.syncFullTeamToCloud(user.uid, bundle, user, currentDeviceId);
     }
   };
 
@@ -640,7 +699,7 @@ export default function App() {
           ...bundle.teamSettings,
           teamName: `${targetTeam.teamName} (Copy)`
         }
-      }, user);
+      }, user, currentDeviceId);
     }
     confetti({ particleCount: 30, spread: 50, origin: { y: 0.5 } });
   };
@@ -666,7 +725,7 @@ export default function App() {
 
     if (user?.uid) {
       const currentBundle = storageService.getFullTeamBundle(target.id || activeTeamId);
-      await firebaseService.syncFullTeamToCloud(user.uid, currentBundle, user);
+      await firebaseService.syncFullTeamToCloud(user.uid, currentBundle, user, currentDeviceId);
     }
   };
 
@@ -678,7 +737,7 @@ export default function App() {
 
     setSyncStatus('syncing');
     const bundle = storageService.getFullTeamBundle(activeTeamId);
-    const res = await firebaseService.syncFullTeamToCloud(user.uid, bundle, user);
+    const res = await firebaseService.syncFullTeamToCloud(user.uid, bundle, user, currentDeviceId);
     if (res.success) {
       setSyncStatus('synced');
       setLastSyncTime(new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }));
@@ -695,7 +754,7 @@ export default function App() {
   };
 
   // -------------------------------------------------------------
-  // Rotation & Rally Handlers
+  // Rotation & Rally Handlers (With 0ms Instant Cloud Sync)
   // -------------------------------------------------------------
   const handleUpdateRotation = (newRotation) => {
     if (newRotation === rotation) return;
@@ -710,6 +769,21 @@ export default function App() {
     }
     setLineup(current);
     setRotation(newRotation);
+
+    // Sync rotation change immediately to collaborators
+    syncCloudImmediately({
+      matchState: {
+        lineup: current,
+        startingLineup,
+        rotation: newRotation,
+        phase,
+        liberoExchanges,
+        liberoServingRotation,
+        subHistory,
+        maxSubs,
+        enforcePositionLock
+      }
+    });
   };
 
   const handleRallyWonByUs = (pointDetails = {}) => {
@@ -723,23 +797,46 @@ export default function App() {
       ...pointDetails
     };
 
-    setMatchStats(prev => ({
-      ...prev,
-      ourScore: (prev?.ourScore || 0) + 1,
-      pointHistory: [...(prev?.pointHistory || []), newPoint]
-    }));
+    const nextStats = {
+      ...matchStats,
+      ourScore: (matchStats?.ourScore || 0) + 1,
+      pointHistory: [...(matchStats?.pointHistory || []), newPoint]
+    };
+
+    let nextRot = rotation;
+    let nextPhase = phase;
+    let nextLineup = lineup;
 
     if (phase === 'receive') {
-      const nextRot = rotation === 6 ? 1 : rotation + 1;
-      let nextLineup = rotateLineupClockwise(lineup);
+      nextRot = rotation === 6 ? 1 : rotation + 1;
+      nextLineup = rotateLineupClockwise(lineup);
       const violation = checkLineupFrontRowLiberoViolation(nextLineup, roster, liberoExchanges);
       if (violation.hasViolation && violation.replacedPlayer) {
         nextLineup[violation.zoneKey] = violation.replacedPlayer.id;
       }
+      nextPhase = 'serve';
       setLineup(nextLineup);
       setRotation(nextRot);
-      setPhase('serve');
+      setPhase(nextPhase);
     }
+
+    setMatchStats(nextStats);
+
+    // Push score update to cloud IMMEDIATELY (0ms delay)
+    syncCloudImmediately({
+      matchStats: nextStats,
+      matchState: {
+        lineup: nextLineup,
+        startingLineup,
+        rotation: nextRot,
+        phase: nextPhase,
+        liberoExchanges,
+        liberoServingRotation,
+        subHistory,
+        maxSubs,
+        enforcePositionLock
+      }
+    });
   };
 
   const handleRallyWonByOpponent = (pointDetails = {}) => {
@@ -753,45 +850,89 @@ export default function App() {
       ...pointDetails
     };
 
-    setMatchStats(prev => ({
-      ...prev,
-      opponentScore: (prev?.opponentScore || 0) + 1,
-      pointHistory: [...(prev?.pointHistory || []), newPoint]
-    }));
+    const nextStats = {
+      ...matchStats,
+      opponentScore: (matchStats?.opponentScore || 0) + 1,
+      pointHistory: [...(matchStats?.pointHistory || []), newPoint]
+    };
 
+    let nextPhase = phase;
     if (phase === 'serve') {
+      nextPhase = 'receive';
       setPhase('receive');
     }
+
+    setMatchStats(nextStats);
+
+    // Push opponent score update to cloud IMMEDIATELY (0ms delay)
+    syncCloudImmediately({
+      matchStats: nextStats,
+      matchState: {
+        lineup,
+        startingLineup,
+        rotation,
+        phase: nextPhase,
+        liberoExchanges,
+        liberoServingRotation,
+        subHistory,
+        maxSubs,
+        enforcePositionLock
+      }
+    });
   };
 
   const handleUndoLastPoint = () => {
     if (!matchStats?.pointHistory || matchStats.pointHistory.length === 0) return;
     const lastPoint = matchStats.pointHistory[matchStats.pointHistory.length - 1];
 
-    setMatchStats(prev => {
-      const updatedHistory = prev.pointHistory.slice(0, -1);
-      return {
-        ...prev,
-        ourScore: lastPoint.pointWonBy === 'us' ? Math.max(0, prev.ourScore - 1) : prev.ourScore,
-        opponentScore: lastPoint.pointWonBy === 'opponent' ? Math.max(0, prev.opponentScore - 1) : prev.opponentScore,
-        pointHistory: updatedHistory
-      };
-    });
+    const updatedHistory = matchStats.pointHistory.slice(0, -1);
+    const nextStats = {
+      ...matchStats,
+      ourScore: lastPoint.pointWonBy === 'us' ? Math.max(0, matchStats.ourScore - 1) : matchStats.ourScore,
+      opponentScore: lastPoint.pointWonBy === 'opponent' ? Math.max(0, matchStats.opponentScore - 1) : matchStats.opponentScore,
+      pointHistory: updatedHistory
+    };
 
+    setMatchStats(nextStats);
+
+    let nextRot = rotation;
+    let nextPhase = phase;
     if (lastPoint.rotation && lastPoint.rotation !== rotation) {
+      nextRot = lastPoint.rotation;
       handleUpdateRotation(lastPoint.rotation);
     }
     if (lastPoint.phase && lastPoint.phase !== phase) {
+      nextPhase = lastPoint.phase;
       setPhase(lastPoint.phase);
     }
+
+    syncCloudImmediately({
+      matchStats: nextStats,
+      matchState: {
+        lineup,
+        startingLineup,
+        rotation: nextRot,
+        phase: nextPhase,
+        liberoExchanges,
+        liberoServingRotation,
+        subHistory,
+        maxSubs,
+        enforcePositionLock
+      }
+    });
   };
 
   const handleResetScore = () => {
-    setMatchStats(prev => ({
-      ...prev,
+    const nextStats = {
+      ...matchStats,
       ourScore: 0,
       opponentScore: 0
-    }));
+    };
+    setMatchStats(nextStats);
+
+    syncCloudImmediately({
+      matchStats: nextStats
+    });
   };
 
   const handleStartNewSet = () => {
@@ -803,15 +944,17 @@ export default function App() {
       winner: isOurSet ? 'us' : 'opponent'
     };
 
-    setMatchStats(prev => ({
-      ...prev,
+    const nextStats = {
+      ...matchStats,
       ourScore: 0,
       opponentScore: 0,
-      setNumber: (prev?.setNumber || 1) + 1,
-      ourSetsWon: isOurSet ? (prev?.ourSetsWon || 0) + 1 : (prev?.ourSetsWon || 0),
-      opponentSetsWon: !isOurSet ? (prev?.opponentSetsWon || 0) + 1 : (prev?.opponentSetsWon || 0),
-      setHistory: [...(prev?.setHistory || []), completedSet]
-    }));
+      setNumber: (matchStats?.setNumber || 1) + 1,
+      ourSetsWon: isOurSet ? (matchStats?.ourSetsWon || 0) + 1 : (matchStats?.ourSetsWon || 0),
+      opponentSetsWon: !isOurSet ? (matchStats?.opponentSetsWon || 0) + 1 : (matchStats?.opponentSetsWon || 0),
+      setHistory: [...(matchStats?.setHistory || []), completedSet]
+    };
+
+    setMatchStats(nextStats);
 
     if (startingLineup) {
       setLineup(startingLineup);
@@ -819,6 +962,21 @@ export default function App() {
     setRotation(1);
     setPhase('serve');
     confetti({ particleCount: 60, spread: 70, origin: { y: 0.3 } });
+
+    syncCloudImmediately({
+      matchStats: nextStats,
+      matchState: {
+        lineup: startingLineup || lineup,
+        startingLineup,
+        rotation: 1,
+        phase: 'serve',
+        liberoExchanges,
+        liberoServingRotation,
+        subHistory: [],
+        maxSubs,
+        enforcePositionLock
+      }
+    });
   };
 
   const handleArchiveMatch = (customOpponentName = null) => {
@@ -827,8 +985,13 @@ export default function App() {
     if (opp !== null && opp.trim() !== '') {
       const archived = storageService.archiveCurrentMatch(matchStats, opp.trim());
       if (archived) {
-        setMatchHistory(storageService.getMatchHistory());
+        const nextHistory = storageService.getMatchHistory();
+        setMatchHistory(nextHistory);
         confetti({ particleCount: 50, spread: 60, origin: { y: 0.3 } });
+
+        syncCloudImmediately({
+          matchHistory: nextHistory
+        });
         return true;
       }
     }
@@ -838,6 +1001,10 @@ export default function App() {
   const handleDeleteMatchHistory = (matchId) => {
     const updated = storageService.deleteMatchFromHistory(matchId);
     setMatchHistory(updated);
+
+    syncCloudImmediately({
+      matchHistory: updated
+    });
   };
 
   const handleResetFullMatch = () => {
@@ -848,12 +1015,28 @@ export default function App() {
     }
     setRotation(1);
     setPhase('serve');
+
+    syncCloudImmediately({
+      matchStats: fresh,
+      matchState: {
+        lineup: startingLineup || lineup,
+        startingLineup,
+        rotation: 1,
+        phase: 'serve',
+        liberoExchanges: {},
+        liberoServingRotation: null,
+        subHistory: [],
+        maxSubs,
+        enforcePositionLock
+      }
+    });
   };
 
   // -------------------------------------------------------------
   // Player Actions
   // -------------------------------------------------------------
   const handleSavePlayer = (playerData) => {
+    let nextRoster;
     setRoster(prev => {
       let updatedList = playerToEdit
         ? prev.map(p => p.id === playerData.id ? playerData : p)
@@ -862,45 +1045,64 @@ export default function App() {
       if (playerData.isFirstServer) {
         updatedList = updatedList.map(p => p.id === playerData.id ? p : { ...p, isFirstServer: false });
       }
+      nextRoster = updatedList;
       return updatedList;
     });
+
     if (!playerToEdit) {
       confetti({ particleCount: 35, spread: 50, origin: { y: 0.6 } });
     }
     setIsPlayerModalOpen(false);
     setPlayerToEdit(null);
+
+    if (nextRoster) {
+      syncCloudImmediately({ roster: nextRoster });
+    }
   };
 
   const handleDeletePlayer = (id) => {
     if (window.confirm('Are you sure you want to remove this player from the roster?')) {
-      setRoster(prev => prev.filter(p => p.id !== id));
-      setLineup(prev => {
-        const next = { ...prev };
-        Object.keys(next).forEach(k => {
-          if (next[k] === id) next[k] = null;
-        });
-        return next;
+      const nextRoster = roster.filter(p => p.id !== id);
+      setRoster(nextRoster);
+
+      const nextLineup = { ...lineup };
+      Object.keys(nextLineup).forEach(k => {
+        if (nextLineup[k] === id) nextLineup[k] = null;
       });
-      setStartingLineup(prev => {
-        const next = { ...prev };
-        Object.keys(next).forEach(k => {
-          if (next[k] === id) next[k] = null;
-        });
-        return next;
+      setLineup(nextLineup);
+
+      const nextStartingLineup = { ...startingLineup };
+      Object.keys(nextStartingLineup).forEach(k => {
+        if (nextStartingLineup[k] === id) nextStartingLineup[k] = null;
       });
-      setLiberoExchanges(prev => {
-        const next = { ...prev };
-        delete next[id];
-        Object.keys(next).forEach(k => {
-          if (next[k] === id) delete next[k];
-        });
-        return next;
+      setStartingLineup(nextStartingLineup);
+
+      const nextExchanges = { ...liberoExchanges };
+      delete nextExchanges[id];
+      Object.keys(nextExchanges).forEach(k => {
+        if (nextExchanges[k] === id) delete nextExchanges[k];
+      });
+      setLiberoExchanges(nextExchanges);
+
+      syncCloudImmediately({
+        roster: nextRoster,
+        matchState: {
+          lineup: nextLineup,
+          startingLineup: nextStartingLineup,
+          rotation,
+          phase,
+          liberoExchanges: nextExchanges,
+          liberoServingRotation,
+          subHistory,
+          maxSubs,
+          enforcePositionLock
+        }
       });
     }
   };
 
   const handleUpdatePlayerPosition = (playerId, targetPosition) => {
-    setRoster(prev => prev.map(p => {
+    const nextRoster = roster.map(p => {
       if (p.id === playerId) {
         return {
           ...p,
@@ -909,7 +1111,9 @@ export default function App() {
         };
       }
       return p;
-    }));
+    });
+    setRoster(nextRoster);
+    syncCloudImmediately({ roster: nextRoster });
   };
 
   const handleDuplicatePlayer = (player) => {
@@ -921,7 +1125,9 @@ export default function App() {
       number: nextNumber,
       isCaptain: false
     };
-    setRoster(prev => [newPlayer, ...prev]);
+    const nextRoster = [newPlayer, ...roster];
+    setRoster(nextRoster);
+    syncCloudImmediately({ roster: nextRoster });
   };
 
   const handleOpenAdd = () => {
@@ -1068,6 +1274,16 @@ export default function App() {
         </div>
 
         <div className="stat-card">
+          <div className="stat-icon-wrapper" style={{ background: 'rgba(168, 85, 247, 0.15)', color: '#c084fc' }}>
+            <Shield size={22} />
+          </div>
+          <div>
+            <div className="stat-val">{captain ? `#${captain.number}` : 'None'}</div>
+            <div className="stat-label">Captain: {captain?.name ? captain.name.split(' ')[0] : '—'}</div>
+          </div>
+        </div>
+
+        <div className="stat-card">
           <div className="stat-icon-wrapper" style={{ background: 'rgba(16, 185, 129, 0.15)', color: '#34d399' }}>
             <Trophy size={22} />
           </div>
@@ -1084,16 +1300,6 @@ export default function App() {
           <div>
             <div className="stat-val">{setters}</div>
             <div className="stat-label">Setters</div>
-          </div>
-        </div>
-
-        <div className="stat-card">
-          <div className="stat-icon-wrapper" style={{ background: 'rgba(168, 85, 247, 0.15)', color: '#c084fc' }}>
-            <Shield size={22} />
-          </div>
-          <div>
-            <div className="stat-val">{captain ? `#${captain.number}` : 'None'}</div>
-            <div className="stat-label">Captain: {captain?.name ? captain.name.split(' ')[0] : '—'}</div>
           </div>
         </div>
       </div>

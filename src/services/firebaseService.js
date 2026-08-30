@@ -326,7 +326,7 @@ export const firebaseService = {
     }
   },
 
-  async syncFullTeamToCloud(userId, teamData, userProfile = null) {
+  async syncFullTeamToCloud(userId, teamData, userProfile = null, deviceId = null) {
     if (!userId || !teamData) return { success: false, error: 'User ID and team data are required.' };
     const teamId = teamData.teamId || teamData.id || 'default_team';
 
@@ -386,6 +386,7 @@ export const firebaseService = {
         matchHistory: teamData.matchHistory || [],
         updatedAt: new Date().toISOString(),
         updatedBy: userId,
+        updatedByDeviceId: deviceId || teamData.updatedByDeviceId || null,
         updatedByName: userDisplayName
       };
 

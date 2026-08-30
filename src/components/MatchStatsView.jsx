@@ -50,21 +50,28 @@ export default function MatchStatsView({
   onNavigateTab,
   matchHistory = [],
   onArchiveMatch,
-  onDeleteMatchHistory
+  onDeleteMatchHistory,
+  onOpenMatchSetup
 }) {
   const [selectedSetFilter, setSelectedSetFilter] = useState('ALL');
   const [suggestionFilter, setSuggestionFilter] = useState('ALL'); // 'ALL' | 'CRITICAL' | 'TACTICAL' | 'ROTATION' | 'HISTORICAL'
   const [tableSortKey, setTableSortKey] = useState('totalErrors');
   const [tableSortAsc, setTableSortAsc] = useState(false);
   const [isArchiveSuccess, setIsArchiveSuccess] = useState(false);
+  const [tournamentFilter, setTournamentFilter] = useState('ALL');
 
   const {
+    tournamentName = 'Tournament',
+    courtNumber = 'Court 1',
+    opponentName = 'Opponent',
+    matchStage = 'Pool Play - Match 1',
+    matchFormat = 'Best of 3 (25, 25, 15)',
+    targetPoints = 25,
     ourScore = 0,
     opponentScore = 0,
     setNumber = 1,
     ourSetsWon = 0,
     opponentSetsWon = 0,
-    opponentName = 'Opponent',
     pointHistory = [],
     setHistory = []
   } = matchStats || {};
@@ -199,19 +206,53 @@ export default function MatchStatsView({
         <h1 style={{ margin: 0, fontSize: '1.8rem', color: '#000000' }}>
           {teamSettings?.teamName || 'Volleyball Team'} — Match Error & Performance Report
         </h1>
-        <div style={{ fontSize: '0.9rem', color: '#555555', marginTop: '0.25rem' }}>
-          Date: {new Date().toLocaleDateString()} • Opponent: {opponentName} • Final Score: {ourSetsWon} - {opponentSetsWon} Sets
+        <div style={{ fontSize: '0.95rem', color: '#333333', marginTop: '0.35rem', fontWeight: 600 }}>
+          📍 {tournamentName} • {courtNumber} | 🆚 {matchStage} vs {opponentName}
+        </div>
+        <div style={{ fontSize: '0.85rem', color: '#666666', marginTop: '0.2rem' }}>
+          Date: {new Date().toLocaleDateString()} • Format: {matchFormat} • Final: {ourSetsWon} - {opponentSetsWon} Sets
+          {setHistory && setHistory.length > 0 && ` (${setHistory.map(s => `${s.ourScore}-${s.opponentScore}`).join(', ')})`}
         </div>
       </div>
 
       {/* Top Hero Banner & Controls */}
       <div className="stats-hero-banner">
         <div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', marginBottom: '0.25rem' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', marginBottom: '0.25rem', flexWrap: 'wrap' }}>
             <Trophy size={24} color="#f59e0b" />
             <h2 style={{ margin: 0, fontSize: '1.35rem', color: '#f8fafc', fontWeight: 800 }}>
               Match Stats & Tactical Analysis
             </h2>
+
+            {/* Tournament & Location Pill */}
+            <span
+              style={{
+                fontSize: '0.75rem',
+                fontWeight: 700,
+                padding: '0.2rem 0.6rem',
+                borderRadius: '999px',
+                background: 'rgba(59, 130, 246, 0.2)',
+                border: '1px solid rgba(59, 130, 246, 0.4)',
+                color: '#93c5fd'
+              }}
+            >
+              📍 {tournamentName} • {courtNumber}
+            </span>
+
+            {/* Match Stage & Opponent Pill */}
+            <span
+              style={{
+                fontSize: '0.75rem',
+                fontWeight: 700,
+                padding: '0.2rem 0.6rem',
+                borderRadius: '999px',
+                background: 'rgba(239, 68, 68, 0.15)',
+                border: '1px solid rgba(239, 68, 68, 0.35)',
+                color: '#fca5a5'
+              }}
+            >
+              🆚 {matchStage} vs {opponentName}
+            </span>
           </div>
           <p style={{ margin: 0, fontSize: '0.84rem', color: 'var(--text-secondary)' }}>
             Real-time tracking of team errors, 6-2 tactical adjustments, and multi-game historical trends.
@@ -220,6 +261,18 @@ export default function MatchStatsView({
 
         {/* Action Buttons: Print PDF, Save to Archive & New Set */}
         <div className="no-print stats-actions-bar">
+          {onOpenMatchSetup && (
+            <button
+              className="btn btn-secondary"
+              onClick={onOpenMatchSetup}
+              title="Edit tournament name, court #, opponent, or set format"
+              style={{ borderColor: 'rgba(59, 130, 246, 0.4)', color: '#93c5fd' }}
+            >
+              <Settings size={15} />
+              <span>Match Info</span>
+            </button>
+          )}
+
           <button
             className="btn btn-primary"
             onClick={handlePrintPDF}
@@ -900,6 +953,120 @@ export default function MatchStatsView({
                 </div>
               );
             })}
+          </div>
+        )}
+      </div>
+
+      {/* =========================================================================
+          🏆 TOURNAMENT PAST MATCHES & GAME ARCHIVE
+         ========================================================================= */}
+      <div className="error-leaderboard-card no-print" style={{ marginTop: '1.5rem' }}>
+        <div className="leaderboard-title-row" style={{ flexWrap: 'wrap', gap: '0.5rem' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+            <Trophy size={20} color="#f59e0b" />
+            <h3 style={{ margin: 0, fontSize: '1.1rem', color: '#f8fafc', fontWeight: 800 }}>
+              Tournament Matches Archive ({matchHistory.length} matches)
+            </h3>
+          </div>
+
+          {/* Tournament Filter */}
+          {matchHistory.length > 0 && (
+            <select
+              className="filter-select"
+              value={tournamentFilter}
+              onChange={(e) => setTournamentFilter(e.target.value)}
+              style={{ fontSize: '0.78rem', padding: '0.3rem 0.6rem' }}
+            >
+              <option value="ALL">All Tournaments & Events</option>
+              {[...new Set(matchHistory.map(m => m.tournamentName).filter(Boolean))].map(tName => (
+                <option key={tName} value={tName}>{tName}</option>
+              ))}
+            </select>
+          )}
+        </div>
+
+        {matchHistory.length === 0 ? (
+          <div style={{ textAlign: 'center', padding: '2rem 1rem', color: 'var(--text-muted)', fontSize: '0.85rem' }}>
+            No completed matches in history yet. Click <strong>"Save Match"</strong> on the scoreboard to archive finished tournament matches.
+          </div>
+        ) : (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.65rem' }}>
+            {matchHistory
+              .filter(m => tournamentFilter === 'ALL' || m.tournamentName === tournamentFilter)
+              .map((pastMatch) => {
+                const isWin = pastMatch.result === 'WON' || pastMatch.ourSetsWon > pastMatch.opponentSetsWon;
+
+                return (
+                  <div
+                    key={pastMatch.id}
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'space-between',
+                      padding: '0.9rem 1.1rem',
+                      background: 'rgba(255, 255, 255, 0.03)',
+                      border: `1px solid ${isWin ? 'rgba(16, 185, 129, 0.25)' : 'rgba(239, 68, 68, 0.25)'}`,
+                      borderRadius: '12px',
+                      flexWrap: 'wrap',
+                      gap: '0.75rem'
+                    }}
+                  >
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.85rem' }}>
+                      <span
+                        style={{
+                          fontSize: '0.75rem',
+                          fontWeight: 800,
+                          padding: '0.25rem 0.6rem',
+                          borderRadius: '6px',
+                          background: isWin ? 'rgba(16, 185, 129, 0.2)' : 'rgba(239, 68, 68, 0.2)',
+                          color: isWin ? '#34d399' : '#f87171',
+                          border: `1px solid ${isWin ? 'rgba(16, 185, 129, 0.4)' : 'rgba(239, 68, 68, 0.4)'}`
+                        }}
+                      >
+                        {isWin ? 'WON' : 'LOST'} ({pastMatch.ourSetsWon || 0} - {pastMatch.opponentSetsWon || 0})
+                      </span>
+
+                      <div>
+                        <div style={{ fontSize: '0.92rem', fontWeight: 700, color: '#f8fafc' }}>
+                          vs {pastMatch.opponentName || 'Opponent'}
+                        </div>
+                        <div style={{ fontSize: '0.76rem', color: '#94a3b8', display: 'flex', alignItems: 'center', gap: '0.4rem', marginTop: '0.15rem', flexWrap: 'wrap' }}>
+                          {pastMatch.tournamentName && (
+                            <span>📍 {pastMatch.tournamentName} {pastMatch.courtNumber ? `• ${pastMatch.courtNumber}` : ''}</span>
+                          )}
+                          {pastMatch.matchStage && (
+                            <span>• {pastMatch.matchStage}</span>
+                          )}
+                          <span>• {new Date(pastMatch.date).toLocaleDateString()}</span>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Set Scores Breakdown & Delete */}
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                      <div style={{ textAlign: 'right' }}>
+                        <div style={{ fontSize: '0.85rem', fontWeight: 700, color: '#e2e8f0', fontFamily: 'monospace' }}>
+                          {pastMatch.finalScore || (pastMatch.setScores ? pastMatch.setScores.map(s => `${s.ourScore}-${s.opponentScore}`).join(', ') : 'Match Complete')}
+                        </div>
+                        {pastMatch.setScores && pastMatch.setScores.length > 0 && (
+                          <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)' }}>
+                            {pastMatch.setScores.length} Sets Played
+                          </div>
+                        )}
+                      </div>
+
+                      <button
+                        className="btn-icon btn-sm"
+                        onClick={() => handleDeleteArchivedMatch(pastMatch.id)}
+                        title="Delete match from history"
+                        style={{ color: '#64748b', padding: '0.35rem' }}
+                      >
+                        <Trash2 size={15} />
+                      </button>
+                    </div>
+                  </div>
+                );
+              })}
           </div>
         )}
       </div>

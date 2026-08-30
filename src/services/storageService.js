@@ -12,12 +12,17 @@ const LEGACY_TEAM_KEY = 'spikesync_team_settings_v1';
 export const DEFAULT_TEAM_ID = 'team-default';
 
 export const INITIAL_MATCH_STATS = {
+  tournamentName: 'Midwest Qualifier 2026',
+  courtNumber: 'Court 1',
+  opponentName: 'Opponent',
+  matchStage: 'Pool Play - Match 1',
+  matchFormat: 'Best of 3 (25, 25, 15)',
+  targetPoints: 25,
   ourScore: 0,
   opponentScore: 0,
   setNumber: 1,
   ourSetsWon: 0,
   opponentSetsWon: 0,
-  opponentName: 'Opponent',
   isTrackingEnabled: true,
   pointHistory: [],
   setHistory: []
@@ -26,6 +31,10 @@ export const INITIAL_MATCH_STATS = {
 export const SAMPLE_MATCH_HISTORY = [
   {
     id: 'match-past-1',
+    tournamentName: 'Midwest Qualifier 2026',
+    courtNumber: 'Court 4',
+    matchStage: 'Pool Play - Match 1',
+    matchFormat: 'Best of 3 (25, 25, 15)',
     opponentName: 'Thunderbolts VC',
     date: '2026-08-22T18:30:00.000Z',
     result: 'WON',
@@ -350,9 +359,9 @@ export const storageService = {
     }
   },
 
-  archiveCurrentMatch(currentMatchStats, opponentNameParam = null) {
+  archiveCurrentMatch(currentMatchStats, opponentNameParam = null, tournamentOverrides = {}) {
     try {
-      if (!currentMatchStats || (currentMatchStats.ourScore === 0 && currentMatchStats.opponentScore === 0 && currentMatchStats.pointHistory.length === 0)) {
+      if (!currentMatchStats || (currentMatchStats.ourScore === 0 && currentMatchStats.opponentScore === 0 && (!currentMatchStats.pointHistory || currentMatchStats.pointHistory.length === 0) && (!currentMatchStats.setHistory || currentMatchStats.setHistory.length === 0))) {
         return null;
       }
 
@@ -363,14 +372,20 @@ export const storageService = {
 
       const archivedMatch = {
         id: `match-${Date.now()}`,
+        tournamentName: tournamentOverrides.tournamentName || currentMatchStats.tournamentName || 'Tournament',
+        courtNumber: tournamentOverrides.courtNumber || currentMatchStats.courtNumber || 'Court 1',
+        matchStage: tournamentOverrides.matchStage || currentMatchStats.matchStage || 'Match',
+        matchFormat: tournamentOverrides.matchFormat || currentMatchStats.matchFormat || 'Best of 3',
         opponentName: oppName,
         date: new Date().toISOString(),
         result: isWon ? 'WON' : 'LOST',
         ourSetsWon: setsWon,
         opponentSetsWon: oppSetsWon,
-        finalScore: `${currentMatchStats.ourScore}-${currentMatchStats.opponentScore}`,
+        finalScore: currentMatchStats.setHistory?.length > 0
+          ? currentMatchStats.setHistory.map(s => `${s.ourScore}-${s.opponentScore}`).join(', ')
+          : `${currentMatchStats.ourScore}-${currentMatchStats.opponentScore}`,
         setScores: currentMatchStats.setHistory?.length > 0 ? currentMatchStats.setHistory : [
-          { setNumber: currentMatchStats.setNumber || 1, ourScore: currentMatchStats.ourScore, opponentScore: currentMatchStats.opponentScore }
+          { setNumber: currentMatchStats.setNumber || 1, ourScore: currentMatchStats.ourScore, opponentScore: currentMatchStats.opponentScore, winner: currentMatchStats.ourScore > currentMatchStats.opponentScore ? 'us' : 'opponent' }
         ],
         pointHistory: [...(currentMatchStats.pointHistory || [])]
       };

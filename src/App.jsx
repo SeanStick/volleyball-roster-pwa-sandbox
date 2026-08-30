@@ -28,6 +28,8 @@ import InstallPrompt from './components/InstallPrompt';
 import AuthModal from './components/AuthModal';
 import TeamManagerModal from './components/TeamManagerModal';
 import ShareTeamModal from './components/ShareTeamModal';
+import MatchSetupModal from './components/MatchSetupModal';
+import TournamentSyncToast from './components/TournamentSyncToast';
 import FirebaseSettingsModal from './components/FirebaseSettingsModal';
 import { storageService, DEFAULT_TEAM_ID } from './services/storageService';
 import { firebaseService } from './services/firebaseService';
@@ -45,6 +47,7 @@ export default function App() {
   const [activeTeamId, setActiveTeamId] = useState(() => storageService.getActiveTeamId());
   const [syncStatus, setSyncStatus] = useState('synced'); // 'synced' | 'syncing' | 'offline' | 'error'
   const [lastSyncTime, setLastSyncTime] = useState('Just now');
+  const [syncToast, setSyncToast] = useState(null);
 
   // Unique session device ID to differentiate multiple tabs/devices under the same or shared account
   const deviceIdRef = useRef(`dev-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`);
@@ -61,6 +64,7 @@ export default function App() {
   const [isTeamManagerModalOpen, setIsTeamManagerModalOpen] = useState(false);
   const [isShareModalOpen, setIsShareModalOpen] = useState(false);
   const [teamToShare, setTeamToShare] = useState(null);
+  const [isMatchSetupModalOpen, setIsMatchSetupModalOpen] = useState(false);
   const [isFirebaseSettingsModalOpen, setIsFirebaseSettingsModalOpen] = useState(false);
   const [isPlayerModalOpen, setIsPlayerModalOpen] = useState(false);
   const [playerToEdit, setPlayerToEdit] = useState(null);
@@ -135,7 +139,7 @@ export default function App() {
   const [matchHistory, setMatchHistory] = useState(() => storageService.getMatchHistory());
 
   // -------------------------------------------------------------
-  // Instant Cloud Sync Function for Game Events (Scores, Points, Rotations)
+  // Instant Cloud Sync Function for Game Events (Scores, Points, Rotations, Tournament Setup)
   // -------------------------------------------------------------
   const syncCloudImmediately = useCallback((bundleOverrides = {}) => {
     if (!user?.uid || isHydratingCloudRef.current || isApplyingRemoteUpdateRef.current) return;
@@ -319,6 +323,15 @@ export default function App() {
 
         // 1. Live Match Score & Stats
         if (cloudTeam.matchStats) {
+          // Detect set changes or tournament context changes to display friendly toast
+          if (cloudTeam.matchStats.setNumber && cloudTeam.matchStats.setNumber !== matchStats?.setNumber) {
+            setSyncToast({
+              title: `🏐 Set ${cloudTeam.matchStats.setNumber} Started`,
+              message: `Co-coach advanced match to Set ${cloudTeam.matchStats.setNumber}`,
+              type: 'new_set'
+            });
+          }
+
           setMatchStats(cloudTeam.matchStats);
           storageService.saveMatchStats(cloudTeam.matchStats);
         }
@@ -371,7 +384,7 @@ export default function App() {
         unsubscribeSnapshot();
       }
     };
-  }, [user?.uid, activeTeamId, currentDeviceId]);
+  }, [user?.uid, activeTeamId, currentDeviceId, matchStats?.setNumber]);
 
   // -------------------------------------------------------------
   // Real-Time Local Persistence + Google Cloud Auto-Save (Debounced)
@@ -469,6 +482,85 @@ export default function App() {
     performCloudAutoSync,
     currentDeviceId
   ]);
+
+  // -------------------------------------------------------------
+  // Tournament & Match Setup Handlers
+  // -------------------------------------------------------------
+  const handleUpdateMatchDetails = (details) => {
+    const nextStats = {
+      ...matchStats,
+      ...details
+    };
+    setMatchStats(nextStats);
+
+    setSyncToast({
+      title: '📍 Match Details Updated',
+      message: `${details.tournamentName || 'Tournament'} • ${details.courtNumber || 'Court 1'} (vs ${details.opponentName || 'Opponent'})`,
+      type: 'court_change'
+    });
+
+    syncCloudImmediately({
+      matchStats: nextStats
+    });
+  };
+
+  const handleStartFreshMatch = (newMatchPayload) => {
+    // 1. If previous match had scores or sets, archive it
+    if ((matchStats?.ourScore > 0 || matchStats?.opponentScore > 0 || (matchStats?.setHistory && matchStats.setHistory.length > 0))) {
+      storageService.archiveCurrentMatch(matchStats, matchStats.opponentName);
+      const nextHistory = storageService.getMatchHistory();
+      setMatchHistory(nextHistory);
+    }
+
+    const freshStats = {
+      ...storageService.resetFullMatch(),
+      tournamentName: newMatchPayload.tournamentName || matchStats.tournamentName || 'Tournament',
+      courtNumber: newMatchPayload.courtNumber || matchStats.courtNumber || 'Court 1',
+      opponentName: newMatchPayload.opponentName || 'Opponent',
+      matchStage: newMatchPayload.matchStage || 'Pool Play - Match 1',
+      matchFormat: newMatchPayload.matchFormat || 'Best of 3 (25, 25, 15)',
+      targetPoints: newMatchPayload.targetPoints || 25,
+      setNumber: 1,
+      ourScore: 0,
+      opponentScore: 0,
+      ourSetsWon: 0,
+      opponentSetsWon: 0,
+      pointHistory: [],
+      setHistory: []
+    };
+
+    const newLineup = startingLineup || getDefaultLineup(roster);
+
+    setMatchStats(freshStats);
+    setLineup(newLineup);
+    setRotation(1);
+    setPhase('serve');
+    setLiberoExchanges({});
+    setLiberoServingRotation(null);
+    setSubHistory([]);
+
+    setSyncToast({
+      title: '🏆 New Match Started',
+      message: `${freshStats.matchStage} vs ${freshStats.opponentName} at ${freshStats.courtNumber} (Set 1)`,
+      type: 'new_match'
+    });
+
+    syncCloudImmediately({
+      matchStats: freshStats,
+      matchHistory: storageService.getMatchHistory(),
+      matchState: {
+        lineup: newLineup,
+        startingLineup: newLineup,
+        rotation: 1,
+        phase: 'serve',
+        liberoExchanges: {},
+        liberoServingRotation: null,
+        subHistory: [],
+        maxSubs: 12,
+        enforcePositionLock: false
+      }
+    });
+  };
 
   // -------------------------------------------------------------
   // Team Management & Sharing Handlers
@@ -950,29 +1042,36 @@ export default function App() {
       winner: isOurSet ? 'us' : 'opponent'
     };
 
+    const nextSetNumber = (matchStats?.setNumber || 1) + 1;
     const nextStats = {
       ...matchStats,
       ourScore: 0,
       opponentScore: 0,
-      setNumber: (matchStats?.setNumber || 1) + 1,
+      setNumber: nextSetNumber,
       ourSetsWon: isOurSet ? (matchStats?.ourSetsWon || 0) + 1 : (matchStats?.ourSetsWon || 0),
       opponentSetsWon: !isOurSet ? (matchStats?.opponentSetsWon || 0) + 1 : (matchStats?.opponentSetsWon || 0),
       setHistory: [...(matchStats?.setHistory || []), completedSet]
     };
 
-    setMatchStats(nextStats);
+    const newLineup = startingLineup || lineup;
 
-    if (startingLineup) {
-      setLineup(startingLineup);
-    }
+    setMatchStats(nextStats);
+    setLineup(newLineup);
     setRotation(1);
     setPhase('serve');
+    setSubHistory([]);
     confetti({ particleCount: 60, spread: 70, origin: { y: 0.3 } });
+
+    setSyncToast({
+      title: `🏐 Set ${nextSetNumber} Started`,
+      message: `Set ${matchStats?.setNumber || 1} finished (${completedSet.ourScore}-${completedSet.opponentScore}). Starting Set ${nextSetNumber} (0-0).`,
+      type: 'new_set'
+    });
 
     syncCloudImmediately({
       matchStats: nextStats,
       matchState: {
-        lineup: startingLineup || lineup,
+        lineup: newLineup,
         startingLineup,
         rotation: 1,
         phase: 'serve',
@@ -989,11 +1088,22 @@ export default function App() {
     const defaultOpp = customOpponentName || matchStats?.opponentName || 'Opponent';
     const opp = customOpponentName !== null ? customOpponentName : window.prompt('Enter Opponent Team Name for match archive:', defaultOpp);
     if (opp !== null && opp.trim() !== '') {
-      const archived = storageService.archiveCurrentMatch(matchStats, opp.trim());
+      const archived = storageService.archiveCurrentMatch(matchStats, opp.trim(), {
+        tournamentName: matchStats?.tournamentName,
+        courtNumber: matchStats?.courtNumber,
+        matchStage: matchStats?.matchStage,
+        matchFormat: matchStats?.matchFormat
+      });
       if (archived) {
         const nextHistory = storageService.getMatchHistory();
         setMatchHistory(nextHistory);
         confetti({ particleCount: 50, spread: 60, origin: { y: 0.3 } });
+
+        setSyncToast({
+          title: '🏆 Match Saved to Archive',
+          message: `Saved vs ${opp.trim()} (${matchStats.tournamentName || 'Tournament'} • ${matchStats.courtNumber || 'Court 1'})`,
+          type: 'new_match'
+        });
 
         syncCloudImmediately({
           matchHistory: nextHistory
@@ -1194,6 +1304,9 @@ export default function App() {
 
       <InstallPrompt />
 
+      {/* Floating Tournament Sync Notification Toast */}
+      <TournamentSyncToast toast={syncToast} onDismiss={() => setSyncToast(null)} />
+
       {/* Navigation Tabs: Roster vs Lineup vs 6-2 vs Match Stats */}
       <div className="tabs-bar" role="tablist" aria-label="Main Navigation">
         <button
@@ -1249,7 +1362,7 @@ export default function App() {
         </button>
       </div>
 
-      {/* Floating In-Game Scoreboard Ribbon */}
+      {/* Floating In-Game Scoreboard Ribbon with Tournament Context Header */}
       <ScoreboardBar
         matchStats={matchStats}
         setMatchStats={setMatchStats}
@@ -1260,6 +1373,7 @@ export default function App() {
         onStartNewSet={handleStartNewSet}
         onArchiveMatch={handleArchiveMatch}
         onResetFullMatch={handleResetFullMatch}
+        onOpenMatchSetup={() => setIsMatchSetupModalOpen(true)}
         lineup={lineup}
         roster={roster}
         rotation={rotation}
@@ -1478,6 +1592,7 @@ export default function App() {
           matchHistory={matchHistory}
           onArchiveMatch={handleArchiveMatch}
           onDeleteMatchHistory={handleDeleteMatchHistory}
+          onOpenMatchSetup={() => setIsMatchSetupModalOpen(true)}
         />
       )}
 
@@ -1517,6 +1632,15 @@ export default function App() {
         activeTeam={teamToShare || activeTeamObj}
         user={user}
         onShareCodeGenerated={handleShareCodeGenerated}
+      />
+
+      {/* Tournament & Match Setup Modal */}
+      <MatchSetupModal
+        isOpen={isMatchSetupModalOpen}
+        onClose={() => setIsMatchSetupModalOpen(false)}
+        matchStats={matchStats}
+        onUpdateMatchDetails={handleUpdateMatchDetails}
+        onStartFreshMatch={handleStartFreshMatch}
       />
 
       {/* Firebase Cloud Settings Modal */}

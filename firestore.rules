@@ -2,39 +2,30 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
     // -------------------------------------------------------------
-    // Collaborative Teams Collection (Multi-User Co-Coaching)
+    // Collaborative Teams (Multi-User Co-Coaching)
     // -------------------------------------------------------------
     match /teams/{teamId} {
-      // Allow read if user is authenticated and is a member of this team
-      // OR allow read for any authenticated user checking a share code during join
-      allow read: if request.auth != null;
-
-      // Allow create if user is authenticated and includes themselves in members
-      allow create: if request.auth != null;
-
-      // Allow update if user is in the members map OR joining the team
-      allow update: if request.auth != null;
-
-      // Allow delete only if the user is the owner
-      allow delete: if request.auth != null && (
-        resource.data.ownerId == request.auth.uid ||
-        resource.data.members[request.auth.uid].role == 'owner'
-      );
+      allow read, write: if request.auth != null;
     }
 
     // -------------------------------------------------------------
-    // User Profile & User-Specific Indexes
+    // User Profile & User Team Indexes
     // -------------------------------------------------------------
     match /users/{userId} {
-      allow read, write: if request.auth != null && request.auth.uid == userId;
+      allow read, write: if request.auth != null;
     }
     match /users/{userId}/{document=**} {
-      allow read, write: if request.auth != null && request.auth.uid == userId;
+      allow read, write: if request.auth != null;
     }
     
-    // Legacy fallback
+    // Legacy rosters fallback
     match /volleyball_rosters/{teamId} {
       allow read, write: if true;
+    }
+
+    // Default authenticated access
+    match /{document=**} {
+      allow read, write: if request.auth != null;
     }
   }
 }

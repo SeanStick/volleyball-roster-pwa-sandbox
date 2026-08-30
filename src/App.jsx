@@ -143,7 +143,6 @@ export default function App() {
           }
         });
       } else {
-        // Open Auth modal with registration or login
         setIsAuthModalOpen(true);
       }
     }
@@ -243,6 +242,11 @@ export default function App() {
           activeTeamId,
           (cloudTeam, { hasPendingWrites }) => {
             if (!hasPendingWrites && !isHydratingCloudRef.current && cloudTeam) {
+              // Ignore if this write originated from this user
+              if (cloudTeam.updatedBy && cloudTeam.updatedBy === currentUser.uid) {
+                return;
+              }
+
               isRemoteUpdateRef.current = true;
               if (cloudTeam.teamSettings) setTeamSettings(cloudTeam.teamSettings);
               if (Array.isArray(cloudTeam.roster)) setRoster(cloudTeam.roster);
@@ -265,7 +269,7 @@ export default function App() {
 
               setTimeout(() => {
                 isRemoteUpdateRef.current = false;
-              }, 150);
+              }, 1200);
             }
           }
         );
@@ -574,6 +578,13 @@ export default function App() {
     return res;
   };
 
+  const handleShareCodeGenerated = (teamId, code) => {
+    setTeams(prev => prev.map(t => t.id === teamId ? { ...t, shareCode: code } : t));
+    const currentTeams = storageService.getTeamsList();
+    const updated = currentTeams.map(t => t.id === teamId ? { ...t, shareCode: code } : t);
+    storageService.saveTeamsList(updated);
+  };
+
   const handleDuplicateTeam = async (targetTeam) => {
     const newTeamId = `team-${Date.now()}`;
     const newTeamEntry = {
@@ -620,9 +631,15 @@ export default function App() {
     }
   };
 
-  const handleOpenShare = (team) => {
-    setTeamToShare(team || activeTeamObj);
+  const handleOpenShare = async (team) => {
+    const target = team || activeTeamObj;
+    setTeamToShare(target);
     setIsShareModalOpen(true);
+
+    if (user?.uid) {
+      const currentBundle = storageService.getFullTeamBundle(target.id || activeTeamId);
+      await firebaseService.syncFullTeamToCloud(user.uid, currentBundle, user);
+    }
   };
 
   const handleManualSync = async () => {
@@ -911,7 +928,7 @@ export default function App() {
   const startersCount = roster.filter(p => p.isStarter).length;
   const captain = roster.find(p => p.isCaptain);
   const setters = roster.filter(p => p.position === 'Setter').length;
-  const activeTeamObj = teams.find(t => t.id === activeTeamId) || { teamName: teamSettings.teamName, season: teamSettings.season, primaryColor: teamSettings.primaryColor };
+  const activeTeamObj = teams.find(t => t.id === activeTeamId) || { teamName: teamSettings.teamName, season: teamSettings.season, primaryColor: teamSettings.primaryColor, shareCode: '' };
 
   return (
     <div className="app-container">
@@ -1254,6 +1271,7 @@ export default function App() {
         }}
         activeTeam={teamToShare || activeTeamObj}
         user={user}
+        onShareCodeGenerated={handleShareCodeGenerated}
       />
 
       {/* Firebase Cloud Settings Modal */}

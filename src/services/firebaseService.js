@@ -298,6 +298,34 @@ export const firebaseService = {
     }
   },
 
+  async ensureTeamShareCode(user, teamId, teamData) {
+    if (!user || !user.uid || !teamId) return null;
+    const db = this.getDbInstance();
+    if (!db || !this.isConfigured()) return teamData?.shareCode || this.generateShareCode();
+
+    try {
+      const teamDocRef = doc(db, 'teams', teamId);
+      const snap = await getDoc(teamDocRef);
+
+      if (snap.exists() && snap.data().shareCode) {
+        return snap.data().shareCode;
+      }
+
+      // Generate and persist new shareCode
+      const newCode = teamData?.shareCode || this.generateShareCode();
+      await this.syncFullTeamToCloud(user.uid, {
+        ...teamData,
+        id: teamId,
+        shareCode: newCode
+      }, user);
+
+      return newCode;
+    } catch (e) {
+      console.warn('ensureTeamShareCode notice:', e.message);
+      return teamData?.shareCode || this.generateShareCode();
+    }
+  },
+
   async syncFullTeamToCloud(userId, teamData, userProfile = null) {
     if (!userId || !teamData) return { success: false, error: 'User ID and team data are required.' };
     const teamId = teamData.teamId || teamData.id || 'default_team';
@@ -311,7 +339,7 @@ export const firebaseService = {
       const userDisplayName = userProfile?.displayName || teamData.ownerName || 'Coach';
       const userEmail = userProfile?.email || '';
 
-      // 1. Write to collaborative shared collection /teams/{teamId}
+      // 1. Check existing shared collection /teams/{teamId}
       const sharedTeamDocRef = doc(db, 'teams', teamId);
       const existingSnap = await getDoc(sharedTeamDocRef);
       
@@ -332,7 +360,7 @@ export const firebaseService = {
         }
       }
 
-      // Ensure current user is in members
+      // Ensure current user is registered in members map
       const role = (ownerId === userId) ? 'owner' : (existingMembers[userId]?.role || 'coach');
       const updatedMembers = {
         ...existingMembers,
@@ -361,9 +389,10 @@ export const firebaseService = {
         updatedByName: userDisplayName
       };
 
+      // Write full collaborative squad to /teams/{teamId}
       await setDoc(sharedTeamDocRef, payload, { merge: true });
 
-      // 2. Also update user index under /users/{userId}/teams/{teamId}
+      // 2. Also index under /users/{userId}/teams/{teamId}
       try {
         const userTeamIndexRef = doc(db, 'users', userId, 'teams', teamId);
         await setDoc(userTeamIndexRef, {
@@ -414,7 +443,7 @@ export const firebaseService = {
         teamSummaries.push({ id: docSnap.id, ...docSnap.data() });
       });
 
-      // 2. Hydrate full team docs from /teams/{teamId}
+      // 2. Hydrate full squad documents from /teams/{teamId}
       const teams = [];
       for (const summary of teamSummaries) {
         try {
@@ -453,7 +482,6 @@ export const firebaseService = {
     }
 
     try {
-      // Check shared /teams/{teamId}
       const teamDocRef = doc(db, 'teams', teamId);
       const snap = await getDoc(teamDocRef);
       if (snap.exists()) {
@@ -470,26 +498,48 @@ export const firebaseService = {
     if (!user || !user.uid) return { success: false, error: 'Please sign in to join a team.' };
     if (!shareCode || !shareCode.trim()) return { success: false, error: 'Please enter a valid Team Share Code.' };
 
-    const cleanCode = shareCode.trim().toUpperCase();
+    let cleanCode = shareCode.trim().toUpperCase();
+    if (!cleanCode.startsWith('VB-') && cleanCode.length === 4) {
+      cleanCode = `VB-${cleanCode}`;
+    }
+
     const db = this.getDbInstance();
     if (!db || !this.isConfigured()) {
       return { success: false, error: 'Cloud service not available.' };
     }
 
     try {
+      // 1. Query /teams by shareCode
       const teamsCollRef = collection(db, 'teams');
       const q = query(teamsCollRef, where('shareCode', '==', cleanCode));
-      const querySnap = await getDocs(q);
+      let querySnap = await getDocs(q);
 
-      if (querySnap.empty) {
-        return { success: false, error: `No team found matching share code "${cleanCode}". Check the code and try again.` };
+      let targetTeamDoc = null;
+      if (!querySnap.empty) {
+        targetTeamDoc = querySnap.docs[0];
+      } else {
+        // Fallback: search all teams in collection if index pending
+        const allTeamsSnap = await getDocs(teamsCollRef);
+        allTeamsSnap.forEach(docSnap => {
+          const data = docSnap.data();
+          if (
+            (data.shareCode && data.shareCode.toUpperCase() === cleanCode) ||
+            docSnap.id.toUpperCase() === cleanCode ||
+            (data.shareCode && data.shareCode.replace('VB-', '') === cleanCode.replace('VB-', ''))
+          ) {
+            targetTeamDoc = docSnap;
+          }
+        });
       }
 
-      const teamDocSnap = querySnap.docs[0];
-      const teamData = teamDocSnap.data();
-      const teamId = teamDocSnap.id;
+      if (!targetTeamDoc) {
+        return { success: false, error: `No team found matching share code "${cleanCode}". Please verify the code with your head coach.` };
+      }
 
-      // Add user to team's members
+      const teamData = targetTeamDoc.data();
+      const teamId = targetTeamDoc.id;
+
+      // Add user to team's members list
       const updatedMembers = {
         ...(teamData.members || {}),
         [user.uid]: {
@@ -507,7 +557,7 @@ export const firebaseService = {
         updatedAt: new Date().toISOString()
       }, { merge: true });
 
-      // Add to user's team index
+      // Save to user's team index
       await setDoc(doc(db, 'users', user.uid, 'teams', teamId), {
         id: teamId,
         teamName: teamData.teamSettings?.teamName || 'Volleyball Team',
@@ -543,11 +593,9 @@ export const firebaseService = {
     const db = this.getDbInstance();
     if (db && this.isConfigured()) {
       try {
-        // Delete from user index
         const userIndexRef = doc(db, 'users', userId, 'teams', teamId);
         await deleteDoc(userIndexRef);
 
-        // Delete from shared teams if user is owner
         const sharedTeamRef = doc(db, 'teams', teamId);
         const snap = await getDoc(sharedTeamRef);
         if (snap.exists() && snap.data().ownerId === userId) {

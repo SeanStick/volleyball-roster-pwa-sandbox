@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   X,
   Share2,
@@ -10,23 +10,48 @@ import {
   Link,
   Sparkles,
   Crown,
-  UserCheck
+  UserCheck,
+  RefreshCw
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
+import { firebaseService } from '../services/firebaseService';
 
 export default function ShareTeamModal({
   isOpen,
   onClose,
   activeTeam,
   user,
-  onRegenerateCode
+  onShareCodeGenerated
 }) {
   const [copiedCode, setCopiedCode] = useState(false);
   const [copiedLink, setCopiedLink] = useState(false);
+  const [verifiedCode, setVerifiedCode] = useState(activeTeam?.shareCode || '');
+  const [isVerifying, setIsVerifying] = useState(false);
+
+  useEffect(() => {
+    if (isOpen && activeTeam && user?.uid) {
+      let isMounted = true;
+      setIsVerifying(true);
+
+      firebaseService.ensureTeamShareCode(user, activeTeam.id, activeTeam).then((code) => {
+        if (isMounted && code) {
+          setVerifiedCode(code);
+          setIsVerifying(false);
+          if (onShareCodeGenerated) {
+            onShareCodeGenerated(activeTeam.id, code);
+          }
+        }
+      });
+
+      return () => {
+        isMounted = false;
+      };
+    }
+  }, [isOpen, activeTeam?.id, user?.uid]);
 
   if (!isOpen || !activeTeam) return null;
 
-  const shareCode = activeTeam.shareCode || 'VB-CODE';
+  const shareCode = verifiedCode || activeTeam.shareCode || 'VB-CODE';
   const inviteLink = `${window.location.origin}/?join=${encodeURIComponent(shareCode)}`;
 
   const handleCopyCode = () => {
@@ -147,8 +172,9 @@ export default function ShareTeamModal({
               position: 'relative'
             }}
           >
-            <div style={{ fontSize: '0.8rem', fontWeight: 700, color: 'var(--accent-orange)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '0.35rem' }}>
-              Team Share Code
+            <div style={{ fontSize: '0.8rem', fontWeight: 700, color: 'var(--accent-orange)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '0.35rem', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '5px' }}>
+              <span>Team Share Code</span>
+              {isVerifying && <RefreshCw size={12} className="animate-spin" />}
             </div>
             <div
               style={{

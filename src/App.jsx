@@ -206,11 +206,9 @@ export default function App() {
   }, [user?.uid]);
 
   // -------------------------------------------------------------
-  // Firebase Auth Lifecycle & Cloud Hydration with Real-Time Listeners
+  // Hook 1: Firebase Auth Lifecycle & Initial Cloud Hydration
   // -------------------------------------------------------------
   useEffect(() => {
-    let unsubscribeSnapshot = null;
-
     const unsubscribeAuth = firebaseService.onAuthChange(async (currentUser) => {
       setUser(currentUser);
       storageService.setCachedUser(currentUser);
@@ -291,81 +289,89 @@ export default function App() {
             isHydratingCloudRef.current = false;
           }, 300);
         }
-
-        // 2. Attach real-time snapshot listener for collaborative multi-user live sync
-        if (unsubscribeSnapshot) unsubscribeSnapshot();
-        unsubscribeSnapshot = firebaseService.subscribeToUserTeam(
-          currentUser.uid,
-          activeTeamId,
-          (cloudTeam, { hasPendingWrites }) => {
-            if (hasPendingWrites || isHydratingCloudRef.current || !cloudTeam) return;
-
-            // Ignore update only if it was written by this EXACT same browser session
-            if (cloudTeam.updatedByDeviceId && cloudTeam.updatedByDeviceId === currentDeviceId) {
-              return;
-            }
-
-            // Mark that we are applying remote updates (prevents echo loop)
-            isApplyingRemoteUpdateRef.current = true;
-
-            // 1. Live Match Score & Stats
-            if (cloudTeam.matchStats) {
-              setMatchStats(cloudTeam.matchStats);
-              storageService.saveMatchStats(cloudTeam.matchStats);
-            }
-
-            // 2. Match State (Lineups, Rotations, Subs, Liberos)
-            if (cloudTeam.matchState) {
-              const ms = cloudTeam.matchState;
-              if (ms.lineup) setLineup(ms.lineup);
-              if (ms.startingLineup) setStartingLineup(ms.startingLineup);
-              if (typeof ms.rotation === 'number') setRotation(ms.rotation);
-              if (ms.phase) setPhase(ms.phase);
-              if (ms.liberoExchanges) setLiberoExchanges(ms.liberoExchanges);
-              if (ms.liberoServingRotation !== undefined) setLiberoServingRotation(ms.liberoServingRotation);
-              if (Array.isArray(ms.subHistory)) setSubHistory(ms.subHistory);
-              if (ms.maxSubs !== undefined) setMaxSubs(ms.maxSubs);
-              if (ms.enforcePositionLock !== undefined) setEnforcePositionLock(ms.enforcePositionLock);
-              storageService.saveMatchState(ms);
-            }
-
-            // 3. Team Settings
-            if (cloudTeam.teamSettings) {
-              setTeamSettings(cloudTeam.teamSettings);
-              storageService.saveTeamSettings(cloudTeam.teamSettings);
-            }
-
-            // 4. Player Roster
-            if (Array.isArray(cloudTeam.roster)) {
-              setRoster(cloudTeam.roster);
-              storageService.saveRoster(cloudTeam.roster);
-            }
-
-            // 5. Match History
-            if (Array.isArray(cloudTeam.matchHistory)) {
-              setMatchHistory(cloudTeam.matchHistory);
-              storageService.saveMatchHistory(cloudTeam.matchHistory);
-            }
-
-            // 6. Share Code & Members
-            if (cloudTeam.shareCode) {
-              setTeams(prevTeams => prevTeams.map(t => t.id === cloudTeam.id ? { ...t, shareCode: cloudTeam.shareCode, members: cloudTeam.members || t.members } : t));
-            }
-
-            setSyncStatus('synced');
-            setLastSyncTime(new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }));
-          }
-        );
-      } else {
-        if (unsubscribeSnapshot) unsubscribeSnapshot();
       }
     });
 
     return () => {
       if (typeof unsubscribeAuth === 'function') unsubscribeAuth();
-      if (typeof unsubscribeSnapshot === 'function') unsubscribeSnapshot();
     };
-  }, [activeTeamId, currentDeviceId]);
+  }, []);
+
+  // -------------------------------------------------------------
+  // Hook 2: Dedicated Real-Time Collaborative Listener on Active Squad
+  // -------------------------------------------------------------
+  useEffect(() => {
+    if (!user?.uid || !activeTeamId) return;
+
+    const unsubscribeSnapshot = firebaseService.subscribeToUserTeam(
+      user.uid,
+      activeTeamId,
+      (cloudTeam, { hasPendingWrites }) => {
+        if (hasPendingWrites || isHydratingCloudRef.current || !cloudTeam) return;
+
+        // Ignore update only if it was written by this EXACT same browser session
+        if (cloudTeam.updatedByDeviceId && cloudTeam.updatedByDeviceId === currentDeviceId) {
+          return;
+        }
+
+        // Mark that we are applying remote updates (prevents echo loop)
+        isApplyingRemoteUpdateRef.current = true;
+
+        // 1. Live Match Score & Stats
+        if (cloudTeam.matchStats) {
+          setMatchStats(cloudTeam.matchStats);
+          storageService.saveMatchStats(cloudTeam.matchStats);
+        }
+
+        // 2. Match State (Lineups, Rotations, Subs, Liberos)
+        if (cloudTeam.matchState) {
+          const ms = cloudTeam.matchState;
+          if (ms.lineup) setLineup(ms.lineup);
+          if (ms.startingLineup) setStartingLineup(ms.startingLineup);
+          if (typeof ms.rotation === 'number') setRotation(ms.rotation);
+          if (ms.phase) setPhase(ms.phase);
+          if (ms.liberoExchanges) setLiberoExchanges(ms.liberoExchanges);
+          if (ms.liberoServingRotation !== undefined) setLiberoServingRotation(ms.liberoServingRotation);
+          if (Array.isArray(ms.subHistory)) setSubHistory(ms.subHistory);
+          if (ms.maxSubs !== undefined) setMaxSubs(ms.maxSubs);
+          if (ms.enforcePositionLock !== undefined) setEnforcePositionLock(ms.enforcePositionLock);
+          storageService.saveMatchState(ms);
+        }
+
+        // 3. Team Settings
+        if (cloudTeam.teamSettings) {
+          setTeamSettings(cloudTeam.teamSettings);
+          storageService.saveTeamSettings(cloudTeam.teamSettings);
+        }
+
+        // 4. Player Roster
+        if (Array.isArray(cloudTeam.roster)) {
+          setRoster(cloudTeam.roster);
+          storageService.saveRoster(cloudTeam.roster);
+        }
+
+        // 5. Match History
+        if (Array.isArray(cloudTeam.matchHistory)) {
+          setMatchHistory(cloudTeam.matchHistory);
+          storageService.saveMatchHistory(cloudTeam.matchHistory);
+        }
+
+        // 6. Share Code & Members
+        if (cloudTeam.shareCode) {
+          setTeams(prevTeams => prevTeams.map(t => t.id === cloudTeam.id ? { ...t, shareCode: cloudTeam.shareCode, members: cloudTeam.members || t.members } : t));
+        }
+
+        setSyncStatus('synced');
+        setLastSyncTime(new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }));
+      }
+    );
+
+    return () => {
+      if (typeof unsubscribeSnapshot === 'function') {
+        unsubscribeSnapshot();
+      }
+    };
+  }, [user?.uid, activeTeamId, currentDeviceId]);
 
   // -------------------------------------------------------------
   // Real-Time Local Persistence + Google Cloud Auto-Save (Debounced)

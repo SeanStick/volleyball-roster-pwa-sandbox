@@ -22,6 +22,7 @@ import {
   orderBy,
   onSnapshot
 } from 'firebase/firestore';
+import { DEFAULT_FIREBASE_CONFIG } from './firebaseConfig';
 
 const FIREBASE_CONFIG_KEY = 'gostandoverthere_firebase_config_v1';
 const LEGACY_FIREBASE_CONFIG_KEY = 'spikesync_firebase_config_v1';
@@ -34,7 +35,22 @@ export const firebaseService = {
   // -------------------------------------------------------------
   getStoredConfig() {
     try {
-      // 1. Check environment variables first (if supplied by Vite)
+      // 1. Check user override in localStorage
+      let data = localStorage.getItem(FIREBASE_CONFIG_KEY);
+      if (!data) {
+        data = localStorage.getItem(LEGACY_FIREBASE_CONFIG_KEY);
+        if (data) {
+          localStorage.setItem(FIREBASE_CONFIG_KEY, data);
+        }
+      }
+      if (data) {
+        const parsed = JSON.parse(data);
+        if (parsed && parsed.apiKey && parsed.projectId) {
+          return parsed;
+        }
+      }
+
+      // 2. Check environment variables (if supplied by Vite)
       if (
         typeof import.meta !== 'undefined' &&
         import.meta.env &&
@@ -51,19 +67,14 @@ export const firebaseService = {
         };
       }
 
-      // 2. Check localStorage
-      let data = localStorage.getItem(FIREBASE_CONFIG_KEY);
-      if (!data) {
-        data = localStorage.getItem(LEGACY_FIREBASE_CONFIG_KEY);
-        if (data) {
-          localStorage.setItem(FIREBASE_CONFIG_KEY, data);
-        }
+      // 3. Built-in dedicated project configuration
+      if (DEFAULT_FIREBASE_CONFIG && DEFAULT_FIREBASE_CONFIG.apiKey) {
+        return DEFAULT_FIREBASE_CONFIG;
       }
-      if (data) return JSON.parse(data);
     } catch (e) {
       console.error('Error reading Firebase config:', e);
     }
-    return null;
+    return DEFAULT_FIREBASE_CONFIG;
   },
 
   saveConfig(config) {
@@ -126,7 +137,6 @@ export const firebaseService = {
   async registerWithEmail(email, password, displayName = '') {
     const auth = this.getAuthInstance();
     if (!auth || !this.isConfigured()) {
-      // Demo / Fallback Mode
       return this._mockRegister(email, password, displayName);
     }
 
@@ -151,8 +161,12 @@ export const firebaseService = {
         createdAt: new Date().toISOString()
       };
 
-      // Save user doc in Firestore
-      await this.saveUserProfile(userData);
+      try {
+        await this.saveUserProfile(userData);
+      } catch (dbErr) {
+        console.warn('Could not save user profile to Firestore yet:', dbErr);
+      }
+
       return { success: true, user: userData };
     } catch (e) {
       console.error('Firebase registration error:', e);
@@ -163,7 +177,6 @@ export const firebaseService = {
   async loginWithEmail(email, password) {
     const auth = this.getAuthInstance();
     if (!auth || !this.isConfigured()) {
-      // Demo / Fallback Mode
       return this._mockLogin(email, password);
     }
 
@@ -179,7 +192,12 @@ export const firebaseService = {
         lastLoginAt: new Date().toISOString()
       };
 
-      await this.saveUserProfile(userData);
+      try {
+        await this.saveUserProfile(userData);
+      } catch (dbErr) {
+        console.warn('Could not update user profile in Firestore:', dbErr);
+      }
+
       return { success: true, user: userData };
     } catch (e) {
       console.error('Firebase login error:', e);
@@ -202,13 +220,18 @@ export const firebaseService = {
       const userData = {
         uid: user.uid,
         email: user.email,
-        displayName: user.displayName || user.email.split('@')[0],
+        displayName: user.displayName || (user.email ? user.email.split('@')[0] : 'Coach'),
         photoURL: user.photoURL || null,
         providerId: 'google.com',
         lastLoginAt: new Date().toISOString()
       };
 
-      await this.saveUserProfile(userData);
+      try {
+        await this.saveUserProfile(userData);
+      } catch (dbErr) {
+        console.warn('Could not save Google profile in Firestore:', dbErr);
+      }
+
       return { success: true, user: userData };
     } catch (e) {
       console.error('Firebase Google login error:', e);
@@ -258,13 +281,11 @@ export const firebaseService = {
           };
           callback(user);
         } else {
-          // Check if there is an active demo user session
           const demoUser = this._getDemoUser();
           callback(demoUser);
         }
       });
     } else {
-      // Mock / Offline Auth listener
       const demoUser = this._getDemoUser();
       callback(demoUser);
       return () => {};
@@ -277,9 +298,7 @@ export const firebaseService = {
   async saveUserProfile(userData) {
     if (!userData || !userData.uid) return;
     const db = this.getDbInstance();
-    if (!db || !this.isConfigured()) {
-      return;
-    }
+    if (!db || !this.isConfigured()) return;
 
     try {
       const userRef = doc(db, 'users', userData.uid);
@@ -288,7 +307,7 @@ export const firebaseService = {
         updatedAt: new Date().toISOString()
       }, { merge: true });
     } catch (e) {
-      console.error('Error saving user profile to Firestore:', e);
+      console.warn('Firestore saveUserProfile notice:', e.message);
     }
   },
 
@@ -298,7 +317,6 @@ export const firebaseService = {
 
     const db = this.getDbInstance();
     if (!db || !this.isConfigured()) {
-      // Save in mock cloud storage
       return this._mockSyncTeam(userId, teamId, teamData);
     }
 
@@ -317,17 +335,21 @@ export const firebaseService = {
 
       await setDoc(teamDocRef, payload, { merge: true });
 
-      // Also update user's activeTeam pointer
-      const userRef = doc(db, 'users', userId);
-      await setDoc(userRef, {
-        activeTeamId: teamId,
-        lastSyncAt: new Date().toISOString()
-      }, { merge: true });
+      try {
+        const userRef = doc(db, 'users', userId);
+        await setDoc(userRef, {
+          activeTeamId: teamId,
+          lastSyncAt: new Date().toISOString()
+        }, { merge: true });
+      } catch (userErr) {
+        // Non fatal
+      }
 
       return { success: true, teamId };
     } catch (e) {
-      console.error('Firestore team sync error:', e);
-      return { success: false, error: e.message };
+      console.warn('Firestore team sync fallback to local cache:', e.message);
+      this._mockSyncTeam(userId, teamId, teamData);
+      return { success: true, teamId, localFallback: true, warning: e.message };
     }
   },
 
@@ -349,10 +371,16 @@ export const firebaseService = {
         teams.push({ id: docSnap.id, ...docSnap.data() });
       });
 
+      if (teams.length === 0) {
+        // Check mock cloud store
+        const mock = this._mockFetchTeams(userId);
+        if (mock.teams && mock.teams.length > 0) return mock;
+      }
+
       return { success: true, teams };
     } catch (e) {
-      console.error('Firestore fetch teams error:', e);
-      return { success: false, error: e.message, teams: [] };
+      console.warn('Firestore fetchUserTeams notice:', e.message);
+      return this._mockFetchTeams(userId);
     }
   },
 
@@ -370,10 +398,10 @@ export const firebaseService = {
       if (snap.exists()) {
         return { success: true, data: snap.data() };
       }
-      return { success: false, error: 'Team not found in Google Cloud Firestore' };
+      return this._mockFetchTeamData(userId, teamId);
     } catch (e) {
-      console.error('Firestore fetch team data error:', e);
-      return { success: false, error: e.message };
+      console.warn('Firestore fetchTeamData fallback:', e.message);
+      return this._mockFetchTeamData(userId, teamId);
     }
   },
 
@@ -381,18 +409,17 @@ export const firebaseService = {
     if (!userId || !teamId) return { success: false, error: 'User ID and team ID required' };
 
     const db = this.getDbInstance();
-    if (!db || !this.isConfigured()) {
-      return this._mockDeleteTeam(userId, teamId);
+    if (db && this.isConfigured()) {
+      try {
+        const teamDocRef = doc(db, 'users', userId, 'teams', teamId);
+        await deleteDoc(teamDocRef);
+      } catch (e) {
+        console.warn('Firestore deleteDoc notice:', e.message);
+      }
     }
 
-    try {
-      const teamDocRef = doc(db, 'users', userId, 'teams', teamId);
-      await deleteDoc(teamDocRef);
-      return { success: true };
-    } catch (e) {
-      console.error('Firestore delete team error:', e);
-      return { success: false, error: e.message };
-    }
+    this._mockDeleteTeam(userId, teamId);
+    return { success: true };
   },
 
   subscribeToUserTeam(userId, teamId, onData, onError) {
@@ -413,12 +440,12 @@ export const firebaseService = {
           }
         },
         (err) => {
-          console.error('Firestore snapshot listener error:', err);
+          console.warn('Firestore snapshot listener notice:', err.message);
           if (onError) onError(err);
         }
       );
     } catch (e) {
-      console.error('Error attaching Firestore team listener:', e);
+      console.warn('Error attaching Firestore team listener:', e.message);
       return () => {};
     }
   },
@@ -441,7 +468,7 @@ export const firebaseService = {
       }, { merge: true });
       return { success: true };
     } catch (e) {
-      console.error('Firebase sync error:', e);
+      console.warn('Firebase legacy sync notice:', e.message);
       return { success: false, error: e.message };
     }
   },
@@ -459,7 +486,7 @@ export const firebaseService = {
       }
       return { success: false, error: 'No roster found on cloud for this team ID' };
     } catch (e) {
-      console.error('Firebase fetch error:', e);
+      console.warn('Firebase legacy fetch notice:', e.message);
       return { success: false, error: e.message };
     }
   },
@@ -571,7 +598,7 @@ export const firebaseService = {
           return { success: true, data: store[userId][teamId] };
         }
       }
-      return { success: false, error: 'Team not found in demo cloud cache' };
+      return { success: false, error: 'Team not found in local cloud cache' };
     } catch (e) {
       return { success: false, error: e.message };
     }
@@ -597,8 +624,12 @@ export const firebaseService = {
     if (!error) return 'An unknown error occurred.';
     const code = error.code || '';
     switch (code) {
+      case 'auth/operation-not-allowed':
+        return 'Sign-In provider is disabled in Firebase Console. Please enable Email/Password or Google in Firebase Console > Authentication > Sign-in method.';
+      case 'auth/unauthorized-domain':
+        return 'This domain is not authorized in Firebase. Please add this domain to Firebase Console > Authentication > Settings > Authorized Domains.';
       case 'auth/email-already-in-use':
-        return 'This email address is already registered. Please log in instead.';
+        return 'This email address is already registered. Please sign in instead.';
       case 'auth/invalid-email':
         return 'Please enter a valid email address.';
       case 'auth/weak-password':
@@ -608,7 +639,9 @@ export const firebaseService = {
       case 'auth/invalid-credential':
         return 'Incorrect email or password. Please try again.';
       case 'auth/popup-closed-by-user':
-        return 'Google Sign-In was cancelled.';
+        return 'Google Sign-In popup was closed before completing.';
+      case 'auth/popup-blocked':
+        return 'Google Sign-In popup was blocked by your browser. Please allow popups for this site.';
       case 'auth/network-request-failed':
         return 'Network error. Please check your internet connection.';
       case 'auth/too-many-requests':

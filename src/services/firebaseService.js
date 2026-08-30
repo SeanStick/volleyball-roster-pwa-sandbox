@@ -18,12 +18,13 @@ import {
   getDocs,
   deleteDoc,
   collection,
+  query,
+  where,
   onSnapshot
 } from 'firebase/firestore';
 import { DEFAULT_FIREBASE_CONFIG } from './firebaseConfig';
 
 const FIREBASE_CONFIG_KEY = 'gostandoverthere_firebase_config_v1';
-const LEGACY_FIREBASE_CONFIG_KEY = 'spikesync_firebase_config_v1';
 const DEMO_USER_KEY = 'gostandoverthere_demo_auth_user_v1';
 const DEMO_CLOUD_STORE_KEY = 'gostandoverthere_demo_cloud_store_v1';
 
@@ -33,7 +34,6 @@ export const firebaseService = {
   // -------------------------------------------------------------
   getStoredConfig() {
     try {
-      // 1. Check user override in localStorage
       let data = localStorage.getItem(FIREBASE_CONFIG_KEY);
       if (data) {
         const parsed = JSON.parse(data);
@@ -46,7 +46,6 @@ export const firebaseService = {
         }
       }
 
-      // 2. Built-in dedicated project configuration
       if (DEFAULT_FIREBASE_CONFIG && DEFAULT_FIREBASE_CONFIG.apiKey) {
         return DEFAULT_FIREBASE_CONFIG;
       }
@@ -111,7 +110,7 @@ export const firebaseService = {
   },
 
   // -------------------------------------------------------------
-  // Authentication Services (Email/Password, Google, Demo)
+  // Authentication Services
   // -------------------------------------------------------------
   async registerWithEmail(email, password, displayName = '') {
     const auth = this.getAuthInstance();
@@ -272,8 +271,17 @@ export const firebaseService = {
   },
 
   // -------------------------------------------------------------
-  // Google Cloud Firestore — User Profile & Teams Persistence
+  // Multi-User Collaborative Teams & Real-Time Sync
   // -------------------------------------------------------------
+  generateShareCode() {
+    const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+    let code = 'VB-';
+    for (let i = 0; i < 4; i++) {
+      code += chars.charAt(Math.floor(Math.random() * chars.length));
+    }
+    return code;
+  },
+
   async saveUserProfile(userData) {
     if (!userData || !userData.uid) return;
     const db = this.getDbInstance();
@@ -290,7 +298,7 @@ export const firebaseService = {
     }
   },
 
-  async syncFullTeamToCloud(userId, teamData) {
+  async syncFullTeamToCloud(userId, teamData, userProfile = null) {
     if (!userId || !teamData) return { success: false, error: 'User ID and team data are required.' };
     const teamId = teamData.teamId || teamData.id || 'default_team';
 
@@ -300,33 +308,90 @@ export const firebaseService = {
     }
 
     try {
-      const teamDocRef = doc(db, 'users', userId, 'teams', teamId);
+      const userDisplayName = userProfile?.displayName || teamData.ownerName || 'Coach';
+      const userEmail = userProfile?.email || '';
+
+      // 1. Write to collaborative shared collection /teams/{teamId}
+      const sharedTeamDocRef = doc(db, 'teams', teamId);
+      const existingSnap = await getDoc(sharedTeamDocRef);
+      
+      let existingMembers = {};
+      let existingShareCode = teamData.shareCode;
+      let ownerId = userId;
+      let ownerName = userDisplayName;
+
+      if (existingSnap.exists()) {
+        const d = existingSnap.data();
+        existingMembers = d.members || {};
+        existingShareCode = d.shareCode || existingShareCode || this.generateShareCode();
+        ownerId = d.ownerId || ownerId;
+        ownerName = d.ownerName || ownerName;
+      } else {
+        if (!existingShareCode) {
+          existingShareCode = this.generateShareCode();
+        }
+      }
+
+      // Ensure current user is in members
+      const role = (ownerId === userId) ? 'owner' : (existingMembers[userId]?.role || 'coach');
+      const updatedMembers = {
+        ...existingMembers,
+        [userId]: {
+          uid: userId,
+          role,
+          email: userEmail,
+          displayName: userDisplayName,
+          lastActiveAt: new Date().toISOString()
+        }
+      };
+
       const payload = {
         id: teamId,
+        shareCode: existingShareCode,
+        ownerId,
+        ownerName,
+        members: updatedMembers,
         teamSettings: teamData.teamSettings || {},
         roster: teamData.roster || [],
         matchState: teamData.matchState || null,
         matchStats: teamData.matchStats || null,
         matchHistory: teamData.matchHistory || [],
         updatedAt: new Date().toISOString(),
-        updatedBy: userId
+        updatedBy: userId,
+        updatedByName: userDisplayName
       };
 
-      await setDoc(teamDocRef, payload, { merge: true });
+      await setDoc(sharedTeamDocRef, payload, { merge: true });
 
+      // 2. Also update user index under /users/{userId}/teams/{teamId}
       try {
+        const userTeamIndexRef = doc(db, 'users', userId, 'teams', teamId);
+        await setDoc(userTeamIndexRef, {
+          id: teamId,
+          teamName: teamData.teamSettings?.teamName || 'Volleyball Team',
+          season: teamData.teamSettings?.season || '2026',
+          primaryColor: teamData.teamSettings?.primaryColor || '#ff6b35',
+          secondaryColor: teamData.teamSettings?.secondaryColor || '#1e3a8a',
+          liberoColor: teamData.teamSettings?.liberoColor || '#8b5cf6',
+          shareCode: existingShareCode,
+          role,
+          ownerId,
+          ownerName,
+          updatedAt: new Date().toISOString()
+        }, { merge: true });
+
         const userRef = doc(db, 'users', userId);
         await setDoc(userRef, {
           activeTeamId: teamId,
           lastSyncAt: new Date().toISOString()
         }, { merge: true });
-      } catch (userErr) {
-        // Non-fatal user index write
+      } catch (indexErr) {
+        // Non-fatal index write
       }
 
-      return { success: true, teamId };
+      return { success: true, teamId, shareCode: existingShareCode, members: updatedMembers };
     } catch (e) {
-      console.warn('Firestore team sync error:', e);
+      console.warn('Firestore collaborative team sync error:', e);
       return { success: false, error: e.message };
     }
   },
@@ -340,13 +405,30 @@ export const firebaseService = {
     }
 
     try {
-      const teamsCollRef = collection(db, 'users', userId, 'teams');
-      const snapshot = await getDocs(teamsCollRef);
+      // 1. Fetch user's indexed teams
+      const userTeamsRef = collection(db, 'users', userId, 'teams');
+      const snapshot = await getDocs(userTeamsRef);
 
-      const teams = [];
+      const teamSummaries = [];
       snapshot.forEach((docSnap) => {
-        teams.push({ id: docSnap.id, ...docSnap.data() });
+        teamSummaries.push({ id: docSnap.id, ...docSnap.data() });
       });
+
+      // 2. Hydrate full team docs from /teams/{teamId}
+      const teams = [];
+      for (const summary of teamSummaries) {
+        try {
+          const teamDocRef = doc(db, 'teams', summary.id);
+          const snap = await getDoc(teamDocRef);
+          if (snap.exists()) {
+            teams.push({ id: snap.id, ...snap.data() });
+          } else {
+            teams.push(summary);
+          }
+        } catch (err) {
+          teams.push(summary);
+        }
+      }
 
       // Sort in memory by updatedAt descending
       teams.sort((a, b) => {
@@ -363,7 +445,7 @@ export const firebaseService = {
   },
 
   async fetchTeamDataFromCloud(userId, teamId) {
-    if (!userId || !teamId) return { success: false, error: 'User ID and team ID required' };
+    if (!teamId) return { success: false, error: 'Team ID required' };
 
     const db = this.getDbInstance();
     if (!db || !this.isConfigured()) {
@@ -371,7 +453,8 @@ export const firebaseService = {
     }
 
     try {
-      const teamDocRef = doc(db, 'users', userId, 'teams', teamId);
+      // Check shared /teams/{teamId}
+      const teamDocRef = doc(db, 'teams', teamId);
       const snap = await getDoc(teamDocRef);
       if (snap.exists()) {
         return { success: true, data: snap.data() };
@@ -383,14 +466,93 @@ export const firebaseService = {
     }
   },
 
+  async joinTeamWithCode(user, shareCode) {
+    if (!user || !user.uid) return { success: false, error: 'Please sign in to join a team.' };
+    if (!shareCode || !shareCode.trim()) return { success: false, error: 'Please enter a valid Team Share Code.' };
+
+    const cleanCode = shareCode.trim().toUpperCase();
+    const db = this.getDbInstance();
+    if (!db || !this.isConfigured()) {
+      return { success: false, error: 'Cloud service not available.' };
+    }
+
+    try {
+      const teamsCollRef = collection(db, 'teams');
+      const q = query(teamsCollRef, where('shareCode', '==', cleanCode));
+      const querySnap = await getDocs(q);
+
+      if (querySnap.empty) {
+        return { success: false, error: `No team found matching share code "${cleanCode}". Check the code and try again.` };
+      }
+
+      const teamDocSnap = querySnap.docs[0];
+      const teamData = teamDocSnap.data();
+      const teamId = teamDocSnap.id;
+
+      // Add user to team's members
+      const updatedMembers = {
+        ...(teamData.members || {}),
+        [user.uid]: {
+          uid: user.uid,
+          role: teamData.ownerId === user.uid ? 'owner' : 'coach',
+          email: user.email || '',
+          displayName: user.displayName || 'Coach',
+          joinedAt: new Date().toISOString(),
+          lastActiveAt: new Date().toISOString()
+        }
+      };
+
+      await setDoc(doc(db, 'teams', teamId), {
+        members: updatedMembers,
+        updatedAt: new Date().toISOString()
+      }, { merge: true });
+
+      // Add to user's team index
+      await setDoc(doc(db, 'users', user.uid, 'teams', teamId), {
+        id: teamId,
+        teamName: teamData.teamSettings?.teamName || 'Volleyball Team',
+        season: teamData.teamSettings?.season || '2026',
+        primaryColor: teamData.teamSettings?.primaryColor || '#ff6b35',
+        secondaryColor: teamData.teamSettings?.secondaryColor || '#1e3a8a',
+        liberoColor: teamData.teamSettings?.liberoColor || '#8b5cf6',
+        shareCode: cleanCode,
+        role: teamData.ownerId === user.uid ? 'owner' : 'coach',
+        ownerId: teamData.ownerId,
+        ownerName: teamData.ownerName || 'Head Coach',
+        joinedAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString()
+      }, { merge: true });
+
+      return {
+        success: true,
+        team: {
+          id: teamId,
+          ...teamData,
+          members: updatedMembers
+        }
+      };
+    } catch (e) {
+      console.error('Join team with code error:', e);
+      return { success: false, error: e.message || 'Failed to join team.' };
+    }
+  },
+
   async deleteTeamFromCloud(userId, teamId) {
     if (!userId || !teamId) return { success: false, error: 'User ID and team ID required' };
 
     const db = this.getDbInstance();
     if (db && this.isConfigured()) {
       try {
-        const teamDocRef = doc(db, 'users', userId, 'teams', teamId);
-        await deleteDoc(teamDocRef);
+        // Delete from user index
+        const userIndexRef = doc(db, 'users', userId, 'teams', teamId);
+        await deleteDoc(userIndexRef);
+
+        // Delete from shared teams if user is owner
+        const sharedTeamRef = doc(db, 'teams', teamId);
+        const snap = await getDoc(sharedTeamRef);
+        if (snap.exists() && snap.data().ownerId === userId) {
+          await deleteDoc(sharedTeamRef);
+        }
       } catch (e) {
         console.warn('Firestore deleteDoc error:', e.message);
       }
@@ -401,13 +563,13 @@ export const firebaseService = {
   },
 
   subscribeToUserTeam(userId, teamId, onData, onError) {
-    if (!userId || !teamId) return () => {};
+    if (!teamId) return () => {};
 
     const db = this.getDbInstance();
     if (!db || !this.isConfigured()) return () => {};
 
     try {
-      const teamDocRef = doc(db, 'users', userId, 'teams', teamId);
+      const teamDocRef = doc(db, 'teams', teamId);
       return onSnapshot(
         teamDocRef,
         { includeMetadataChanges: true },
@@ -417,39 +579,12 @@ export const firebaseService = {
           }
         },
         (err) => {
-          console.warn('Firestore snapshot listener error:', err.message);
+          console.warn('Firestore collaborative team listener error:', err.message);
           if (onError) onError(err);
         }
       );
     } catch (e) {
       console.warn('Error attaching Firestore team listener:', e.message);
-      return () => {};
-    }
-  },
-
-  subscribeToUserTeamsList(userId, onData, onError) {
-    if (!userId) return () => {};
-
-    const db = this.getDbInstance();
-    if (!db || !this.isConfigured()) return () => {};
-
-    try {
-      const teamsCollRef = collection(db, 'users', userId, 'teams');
-      return onSnapshot(
-        teamsCollRef,
-        (snapshot) => {
-          const list = [];
-          snapshot.forEach((docSnap) => {
-            list.push({ id: docSnap.id, ...docSnap.data() });
-          });
-          list.sort((a, b) => new Date(b.updatedAt || 0) - new Date(a.updatedAt || 0));
-          onData(list);
-        },
-        (err) => {
-          if (onError) onError(err);
-        }
-      );
-    } catch (e) {
       return () => {};
     }
   },
@@ -525,12 +660,13 @@ export const firebaseService = {
       store[userId][teamId] = {
         ...teamData,
         id: teamId,
+        shareCode: teamData.shareCode || this.generateShareCode(),
         updatedAt: new Date().toISOString(),
         isDemoCloud: true
       };
 
       localStorage.setItem(DEMO_CLOUD_STORE_KEY, JSON.stringify(store));
-      return { success: true, teamId };
+      return { success: true, teamId, shareCode: store[userId][teamId].shareCode };
     } catch (e) {
       return { success: false, error: e.message };
     }

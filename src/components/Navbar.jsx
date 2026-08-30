@@ -1,5 +1,5 @@
 import React from 'react';
-import { Plus, Database, Volleyball, Layers } from 'lucide-react';
+import { Plus, Database, Volleyball, Layers, Share2 } from 'lucide-react';
 import UserMenu from './UserMenu';
 
 export default function Navbar({
@@ -11,6 +11,7 @@ export default function Navbar({
   activeTeam,
   onOpenAuthModal,
   onOpenTeamManagerModal,
+  onOpenShareModal,
   onOpenFirebaseSettingsModal,
   onManualSync,
   onLogout
@@ -30,7 +31,7 @@ export default function Navbar({
               type="button"
               onClick={onOpenTeamManagerModal}
               className="navbar-team-badge"
-              title="Click to manage or switch teams"
+              title="Click to manage, share or switch squads"
               style={{
                 background: 'none',
                 border: 'none',
@@ -67,6 +68,19 @@ export default function Navbar({
       </div>
 
       <div className="header-actions">
+        {/* Share Squad Quick Action */}
+        {activeTeam && onOpenShareModal && (
+          <button
+            className="btn-icon"
+            onClick={() => onOpenShareModal(activeTeam)}
+            title="Share Squad & Invite Co-Coaches"
+            aria-label="Share Squad"
+            style={{ color: 'var(--accent-orange)' }}
+          >
+            <Share2 size={18} />
+          </button>
+        )}
+
         {/* Import / Export Modal Trigger */}
         <button
           className="btn-icon"
@@ -91,6 +105,7 @@ export default function Navbar({
           activeTeam={activeTeam}
           onOpenAuthModal={onOpenAuthModal}
           onOpenTeamManagerModal={onOpenTeamManagerModal}
+          onOpenShareModal={onOpenShareModal}
           onOpenFirebaseSettingsModal={onOpenFirebaseSettingsModal}
           onManualSync={onManualSync}
           onLogout={onLogout}

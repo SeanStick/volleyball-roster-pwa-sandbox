@@ -7,11 +7,12 @@ import {
   Trash2,
   Copy,
   Users,
-  Calendar,
-  Palette,
-  Cloud,
-  Shield,
-  AlertCircle
+  Share2,
+  Sparkles,
+  AlertCircle,
+  KeyRound,
+  Crown,
+  UserCheck
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
 
@@ -24,16 +25,23 @@ export default function TeamManagerModal({
   onCreateTeam,
   onDuplicateTeam,
   onDeleteTeam,
+  onJoinTeam,
+  onOpenShareModal,
   user
 }) {
-  const [view, setView] = useState('list'); // 'list' | 'create'
+  const [view, setView] = useState('list'); // 'list' | 'create' | 'join'
   const [newTeamName, setNewTeamName] = useState('');
   const [newSeason, setNewSeason] = useState('2026 - 2027');
   const [newPrimaryColor, setNewPrimaryColor] = useState('#ff6b35');
   const [newSecondaryColor, setNewSecondaryColor] = useState('#1e3a8a');
   const [newLiberoColor, setNewLiberoColor] = useState('#8b5cf6');
   const [cloneCurrentRoster, setCloneCurrentRoster] = useState(true);
+
+  // Join state
+  const [joinCodeInput, setJoinCodeInput] = useState('');
+  const [isJoining, setIsJoining] = useState(false);
   const [errorMsg, setErrorMsg] = useState(null);
+  const [successMsg, setSuccessMsg] = useState(null);
 
   if (!isOpen) return null;
 
@@ -64,11 +72,46 @@ export default function TeamManagerModal({
     setErrorMsg(null);
   };
 
+  const handleJoinSubmit = async (e) => {
+    e.preventDefault();
+    if (!joinCodeInput.trim()) {
+      setErrorMsg('Please enter a valid Team Share Code.');
+      return;
+    }
+
+    if (!user?.uid) {
+      setErrorMsg('Please sign in with your Google account to join a shared squad.');
+      return;
+    }
+
+    setIsJoining(true);
+    setErrorMsg(null);
+    setSuccessMsg(null);
+
+    if (onJoinTeam) {
+      const res = await onJoinTeam(joinCodeInput.trim());
+      setIsJoining(false);
+      if (res.success) {
+        setSuccessMsg(`Joined "${res.team?.teamSettings?.teamName || res.team?.teamName || 'Volleyball Squad'}" successfully!`);
+        confetti({ particleCount: 50, spread: 70, origin: { y: 0.5 } });
+        setJoinCodeInput('');
+        setTimeout(() => {
+          setView('list');
+          setSuccessMsg(null);
+        }, 1200);
+      } else {
+        setErrorMsg(res.error || 'Could not find team with this share code.');
+      }
+    } else {
+      setIsJoining(false);
+    }
+  };
+
   return (
     <div className="modal-overlay" onClick={onClose}>
       <div
         className="modal-content"
-        style={{ maxWidth: '580px', padding: '1.75rem' }}
+        style={{ maxWidth: '600px', padding: '1.75rem' }}
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
@@ -92,7 +135,7 @@ export default function TeamManagerModal({
                 Manage Volleyball Squads
               </h2>
               <p style={{ fontSize: '0.78rem', color: 'var(--text-secondary)' }}>
-                {user ? `Tied to ${user.email} on Google Cloud` : 'Manage and switch between your teams'}
+                {user ? `Tied to ${user.email} on Google Cloud` : 'Manage, share, and switch between your teams'}
               </p>
             </div>
           </div>
@@ -116,6 +159,7 @@ export default function TeamManagerModal({
             type="button"
             onClick={() => {
               setErrorMsg(null);
+              setSuccessMsg(null);
               setView('list');
             }}
             style={{
@@ -134,12 +178,40 @@ export default function TeamManagerModal({
               gap: '0.4rem'
             }}
           >
-            <Layers size={14} /> My Teams ({teams.length})
+            <Layers size={14} /> My Squads ({teams.length})
           </button>
+
           <button
             type="button"
             onClick={() => {
               setErrorMsg(null);
+              setSuccessMsg(null);
+              setView('join');
+            }}
+            style={{
+              flex: 1,
+              padding: '0.5rem',
+              borderRadius: 'var(--radius-sm)',
+              border: 'none',
+              background: view === 'join' ? 'var(--accent-orange)' : 'transparent',
+              color: view === 'join' ? '#ffffff' : 'var(--text-secondary)',
+              fontWeight: 700,
+              fontSize: '0.82rem',
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: '0.4rem'
+            }}
+          >
+            <KeyRound size={14} /> Join Squad
+          </button>
+
+          <button
+            type="button"
+            onClick={() => {
+              setErrorMsg(null);
+              setSuccessMsg(null);
               setView('create');
             }}
             style={{
@@ -182,11 +254,33 @@ export default function TeamManagerModal({
           </div>
         )}
 
+        {successMsg && (
+          <div
+            style={{
+              padding: '0.75rem 0.9rem',
+              borderRadius: 'var(--radius-md)',
+              marginBottom: '1rem',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '0.5rem',
+              fontSize: '0.82rem',
+              background: 'rgba(16, 185, 129, 0.15)',
+              color: '#34d399',
+              border: '1px solid rgba(16, 185, 129, 0.3)'
+            }}
+          >
+            <Check size={16} />
+            <span>{successMsg}</span>
+          </div>
+        )}
+
         {/* List View */}
         {view === 'list' && (
           <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', maxHeight: '380px', overflowY: 'auto' }}>
             {teams.map((t) => {
               const isActive = t.id === activeTeamId;
+              const isOwner = !t.ownerId || t.ownerId === user?.uid || t.role === 'owner';
+
               return (
                 <div
                   key={t.id}
@@ -226,7 +320,7 @@ export default function TeamManagerModal({
                     </div>
 
                     <div>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap' }}>
                         <span style={{ fontWeight: 800, fontSize: '0.95rem', color: '#ffffff' }}>
                           {t.teamName || 'Volleyball Team'}
                         </span>
@@ -246,15 +340,44 @@ export default function TeamManagerModal({
                             Active
                           </span>
                         )}
+                        <span
+                          style={{
+                            fontSize: '0.68rem',
+                            fontWeight: 700,
+                            padding: '2px 6px',
+                            borderRadius: '4px',
+                            background: isOwner ? 'rgba(255, 107, 53, 0.15)' : 'rgba(59, 130, 246, 0.15)',
+                            color: isOwner ? 'var(--accent-orange)' : '#60a5fa',
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '3px'
+                          }}
+                        >
+                          {isOwner ? <Crown size={10} /> : <UserCheck size={10} />}
+                          {isOwner ? 'Owner' : 'Shared'}
+                        </span>
                       </div>
                       <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', marginTop: '2px' }}>
-                        Season: {t.season || '2026'}
+                        Season: {t.season || '2026'} {t.shareCode ? `• Code: ${t.shareCode}` : ''}
                       </div>
                     </div>
                   </div>
 
                   {/* Actions */}
                   <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                    {/* Share Squad Button */}
+                    {onOpenShareModal && (
+                      <button
+                        type="button"
+                        className="btn-icon btn-sm"
+                        onClick={() => onOpenShareModal(t)}
+                        title="Share Squad & Get Invite Code"
+                        style={{ color: 'var(--accent-orange)' }}
+                      >
+                        <Share2 size={15} />
+                      </button>
+                    )}
+
                     {!isActive ? (
                       <button
                         type="button"
@@ -283,7 +406,7 @@ export default function TeamManagerModal({
                       </div>
                     )}
 
-                    {onDuplicateTeam && (
+                    {onDuplicateTeam && isOwner && (
                       <button
                         type="button"
                         className="btn-icon btn-sm"
@@ -295,7 +418,7 @@ export default function TeamManagerModal({
                       </button>
                     )}
 
-                    {teams.length > 1 && onDeleteTeam && (
+                    {teams.length > 1 && onDeleteTeam && isOwner && (
                       <button
                         type="button"
                         className="btn-icon btn-sm"
@@ -316,6 +439,66 @@ export default function TeamManagerModal({
               );
             })}
           </div>
+        )}
+
+        {/* Join Squad View */}
+        {view === 'join' && (
+          <form onSubmit={handleJoinSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
+            <div
+              style={{
+                background: 'rgba(255, 107, 53, 0.06)',
+                border: '1px solid rgba(255, 107, 53, 0.25)',
+                borderRadius: '12px',
+                padding: '1rem',
+                fontSize: '0.82rem',
+                color: 'var(--text-secondary)',
+                lineHeight: 1.5
+              }}
+            >
+              Enter the <strong>6-character Team Share Code</strong> (e.g. <code>VB-883K</code>) provided by the head coach. You will be added as a co-coach with full live editing, court rotations, and match stats access!
+            </div>
+
+            <div>
+              <label className="form-label" style={{ fontSize: '0.85rem' }}>Team Share Code</label>
+              <div style={{ position: 'relative' }}>
+                <input
+                  type="text"
+                  required
+                  className="form-input"
+                  placeholder="e.g. VB-4X9K"
+                  value={joinCodeInput}
+                  onChange={(e) => setJoinCodeInput(e.target.value.toUpperCase())}
+                  style={{
+                    fontSize: '1.2rem',
+                    fontWeight: 800,
+                    letterSpacing: '0.1em',
+                    fontFamily: 'monospace',
+                    textTransform: 'uppercase',
+                    textAlign: 'center'
+                  }}
+                  autoFocus
+                />
+              </div>
+            </div>
+
+            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.6rem' }}>
+              <button
+                type="button"
+                className="btn btn-secondary"
+                onClick={() => setView('list')}
+              >
+                Cancel
+              </button>
+              <button
+                type="submit"
+                className="btn btn-primary"
+                disabled={isJoining}
+              >
+                <KeyRound size={16} />
+                <span>{isJoining ? 'Joining Squad...' : 'Join Squad'}</span>
+              </button>
+            </div>
+          </form>
         )}
 
         {/* Create View */}

@@ -12,7 +12,8 @@ import {
   Sparkles,
   Compass,
   BarChart3,
-  Cloud
+  Cloud,
+  Share2
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
 import Navbar from './components/Navbar';
@@ -26,6 +27,7 @@ import ImportExportModal from './components/ImportExportModal';
 import InstallPrompt from './components/InstallPrompt';
 import AuthModal from './components/AuthModal';
 import TeamManagerModal from './components/TeamManagerModal';
+import ShareTeamModal from './components/ShareTeamModal';
 import FirebaseSettingsModal from './components/FirebaseSettingsModal';
 import { storageService, DEFAULT_TEAM_ID } from './services/storageService';
 import { firebaseService } from './services/firebaseService';
@@ -53,6 +55,8 @@ export default function App() {
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
   const [authModalTab, setAuthModalTab] = useState('login');
   const [isTeamManagerModalOpen, setIsTeamManagerModalOpen] = useState(false);
+  const [isShareModalOpen, setIsShareModalOpen] = useState(false);
+  const [teamToShare, setTeamToShare] = useState(null);
   const [isFirebaseSettingsModalOpen, setIsFirebaseSettingsModalOpen] = useState(false);
   const [isPlayerModalOpen, setIsPlayerModalOpen] = useState(false);
   const [playerToEdit, setPlayerToEdit] = useState(null);
@@ -126,6 +130,26 @@ export default function App() {
   const [matchStats, setMatchStats] = useState(() => storageService.getMatchStats());
 
   // -------------------------------------------------------------
+  // Check URL Join Invite Parameter on Startup (?join=VB-CODE)
+  // -------------------------------------------------------------
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const joinCode = params.get('join');
+    if (joinCode) {
+      if (user?.uid) {
+        handleJoinTeam(joinCode).then((res) => {
+          if (res.success) {
+            window.history.replaceState({}, document.title, window.location.pathname);
+          }
+        });
+      } else {
+        // Open Auth modal with registration or login
+        setIsAuthModalOpen(true);
+      }
+    }
+  }, [user?.uid]);
+
+  // -------------------------------------------------------------
   // Firebase Auth Lifecycle & Cloud Hydration with Real-Time Listeners
   // -------------------------------------------------------------
   useEffect(() => {
@@ -140,11 +164,18 @@ export default function App() {
         setSyncStatus('syncing');
 
         try {
+          // Check if there was a pending join from the URL
+          const params = new URLSearchParams(window.location.search);
+          const joinCode = params.get('join');
+          if (joinCode) {
+            await firebaseService.joinTeamWithCode(currentUser, joinCode);
+            window.history.replaceState({}, document.title, window.location.pathname);
+          }
+
           // 1. Fetch user's teams from Google Cloud Firestore
           const res = await firebaseService.fetchUserTeamsFromCloud(currentUser.uid);
 
           if (res.success && Array.isArray(res.teams) && res.teams.length > 0) {
-            // User has existing squads on Google Cloud (e.g. from Device A)
             const formattedTeams = res.teams.map(t => ({
               id: t.id,
               teamName: t.teamSettings?.teamName || t.teamName || 'Volleyball Team',
@@ -152,6 +183,11 @@ export default function App() {
               primaryColor: t.teamSettings?.primaryColor || t.primaryColor || '#ff6b35',
               secondaryColor: t.teamSettings?.secondaryColor || t.secondaryColor || '#1e3a8a',
               liberoColor: t.teamSettings?.liberoColor || t.liberoColor || '#8b5cf6',
+              shareCode: t.shareCode || '',
+              role: t.role || (t.ownerId === currentUser.uid ? 'owner' : 'coach'),
+              ownerId: t.ownerId || currentUser.uid,
+              ownerName: t.ownerName || currentUser.displayName || 'Coach',
+              members: t.members || {},
               updatedAt: t.updatedAt || new Date().toISOString()
             }));
 
@@ -186,7 +222,7 @@ export default function App() {
           } else {
             // True first-time user login: upload initial team bundle to cloud
             const currentBundle = storageService.getFullTeamBundle(activeTeamId);
-            await firebaseService.syncFullTeamToCloud(currentUser.uid, currentBundle);
+            await firebaseService.syncFullTeamToCloud(currentUser.uid, currentBundle, currentUser);
           }
 
           setSyncStatus('synced');
@@ -195,19 +231,17 @@ export default function App() {
           console.error('Error during cloud hydration:', err);
           setSyncStatus('error');
         } finally {
-          // Release hydration guard after initial load settles
           setTimeout(() => {
             isHydratingCloudRef.current = false;
           }, 400);
         }
 
-        // 2. Attach real-time snapshot listener for multi-device sync
+        // 2. Attach real-time snapshot listener for collaborative multi-user live sync
         if (unsubscribeSnapshot) unsubscribeSnapshot();
         unsubscribeSnapshot = firebaseService.subscribeToUserTeam(
           currentUser.uid,
           activeTeamId,
           (cloudTeam, { hasPendingWrites }) => {
-            // Only apply if it's a remote update from another device (not our own local write in flight)
             if (!hasPendingWrites && !isHydratingCloudRef.current && cloudTeam) {
               isRemoteUpdateRef.current = true;
               if (cloudTeam.teamSettings) setTeamSettings(cloudTeam.teamSettings);
@@ -250,7 +284,6 @@ export default function App() {
   // Real-Time Local Persistence + Debounced Google Cloud Auto-Save
   // -------------------------------------------------------------
   const performCloudAutoSync = useCallback((fullBundle) => {
-    // Guard against syncing during initial hydration or remote snapshot updates
     if (!user?.uid || isHydratingCloudRef.current || isRemoteUpdateRef.current) return;
 
     if (syncTimeoutRef.current) {
@@ -260,7 +293,7 @@ export default function App() {
     setSyncStatus('syncing');
     syncTimeoutRef.current = setTimeout(async () => {
       try {
-        const res = await firebaseService.syncFullTeamToCloud(user.uid, fullBundle);
+        const res = await firebaseService.syncFullTeamToCloud(user.uid, fullBundle, user);
         if (res.success) {
           setSyncStatus('synced');
           setLastSyncTime(new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }));
@@ -291,8 +324,13 @@ export default function App() {
     });
     storageService.saveMatchStats(matchStats);
 
+    const activeTeamObj = teams.find(t => t.id === activeTeamId);
+
     const fullBundle = {
       teamId: activeTeamId,
+      shareCode: activeTeamObj?.shareCode || '',
+      ownerId: activeTeamObj?.ownerId || user?.uid,
+      ownerName: activeTeamObj?.ownerName || user?.displayName || 'Coach',
       teamSettings,
       roster,
       matchState: {
@@ -330,7 +368,7 @@ export default function App() {
   ]);
 
   // -------------------------------------------------------------
-  // Team Management Handlers
+  // Team Management & Sharing Handlers
   // -------------------------------------------------------------
   const handleSelectTeam = async (targetTeamId) => {
     if (targetTeamId === activeTeamId) return;
@@ -338,10 +376,10 @@ export default function App() {
     // 1. Save current team bundle before switching
     const currentBundle = storageService.getFullTeamBundle(activeTeamId);
     if (user?.uid) {
-      await firebaseService.syncFullTeamToCloud(user.uid, currentBundle);
+      await firebaseService.syncFullTeamToCloud(user.uid, currentBundle, user);
     }
 
-    // 2. Fetch target team data (from cloud or localStorage)
+    // 2. Fetch target team data
     setActiveTeamId(targetTeamId);
     storageService.setActiveTeamId(targetTeamId);
 
@@ -382,7 +420,6 @@ export default function App() {
       }
     }
 
-    // Local fallback for target team
     const targetTeam = teams.find(t => t.id === targetTeamId);
     if (targetTeam) {
       const updatedSettings = {
@@ -398,6 +435,8 @@ export default function App() {
 
   const handleCreateTeam = async (newTeamPayload) => {
     const newTeamId = newTeamPayload.id || `team-${Date.now()}`;
+    const newShareCode = firebaseService.generateShareCode();
+
     const newSettings = {
       teamName: newTeamPayload.teamName,
       season: newTeamPayload.season,
@@ -416,6 +455,10 @@ export default function App() {
       primaryColor: newTeamPayload.primaryColor,
       secondaryColor: newTeamPayload.secondaryColor,
       liberoColor: newTeamPayload.liberoColor,
+      shareCode: newShareCode,
+      role: 'owner',
+      ownerId: user?.uid,
+      ownerName: user?.displayName || 'Coach',
       updatedAt: new Date().toISOString()
     };
 
@@ -441,6 +484,9 @@ export default function App() {
     if (user?.uid) {
       const bundle = {
         teamId: newTeamId,
+        shareCode: newShareCode,
+        ownerId: user.uid,
+        ownerName: user.displayName || 'Coach',
         teamSettings: newSettings,
         roster: initialTeamRoster,
         matchState: {
@@ -458,8 +504,74 @@ export default function App() {
         matchHistory: [],
         updatedAt: new Date().toISOString()
       };
-      await firebaseService.syncFullTeamToCloud(user.uid, bundle);
+      await firebaseService.syncFullTeamToCloud(user.uid, bundle, user);
     }
+  };
+
+  const handleJoinTeam = async (shareCode) => {
+    if (!user?.uid) {
+      setIsAuthModalOpen(true);
+      return { success: false, error: 'Please sign in with your Google account first.' };
+    }
+
+    const res = await firebaseService.joinTeamWithCode(user, shareCode);
+    if (res.success && res.team) {
+      const joined = res.team;
+      const joinedEntry = {
+        id: joined.id,
+        teamName: joined.teamSettings?.teamName || joined.teamName || 'Shared Squad',
+        season: joined.teamSettings?.season || joined.season || '2026',
+        primaryColor: joined.teamSettings?.primaryColor || joined.primaryColor || '#ff6b35',
+        secondaryColor: joined.teamSettings?.secondaryColor || joined.secondaryColor || '#1e3a8a',
+        liberoColor: joined.teamSettings?.liberoColor || joined.liberoColor || '#8b5cf6',
+        shareCode: joined.shareCode || shareCode.toUpperCase(),
+        role: 'coach',
+        ownerId: joined.ownerId,
+        ownerName: joined.ownerName || 'Head Coach',
+        members: joined.members || {},
+        updatedAt: new Date().toISOString()
+      };
+
+      const existingIndex = teams.findIndex(t => t.id === joined.id);
+      let updatedTeams;
+      if (existingIndex >= 0) {
+        updatedTeams = [...teams];
+        updatedTeams[existingIndex] = joinedEntry;
+      } else {
+        updatedTeams = [joinedEntry, ...teams];
+      }
+
+      setTeams(updatedTeams);
+      storageService.saveTeamsList(updatedTeams);
+
+      // Switch active squad to joined team
+      setActiveTeamId(joined.id);
+      storageService.setActiveTeamId(joined.id);
+
+      isRemoteUpdateRef.current = true;
+      if (joined.teamSettings) setTeamSettings(joined.teamSettings);
+      if (Array.isArray(joined.roster)) setRoster(joined.roster);
+      if (joined.matchState?.lineup) {
+        setLineup(joined.matchState.lineup);
+        setStartingLineup(joined.matchState.startingLineup || joined.matchState.lineup);
+        setRotation(joined.matchState.rotation || 1);
+        setPhase(joined.matchState.phase || 'serve');
+        setLiberoExchanges(joined.matchState.liberoExchanges || {});
+        setLiberoServingRotation(joined.matchState.liberoServingRotation ?? null);
+        setSubHistory(joined.matchState.subHistory || []);
+        setMaxSubs(joined.matchState.maxSubs || 12);
+        setEnforcePositionLock(joined.matchState.enforcePositionLock || false);
+      }
+      if (joined.matchStats) setMatchStats(joined.matchStats);
+      if (joined.matchHistory) storageService.saveMatchHistory(joined.matchHistory);
+
+      setTimeout(() => {
+        isRemoteUpdateRef.current = false;
+      }, 150);
+
+      return { success: true, team: joined };
+    }
+    return res;
   };
 
   const handleDuplicateTeam = async (targetTeam) => {
@@ -468,6 +580,10 @@ export default function App() {
       ...targetTeam,
       id: newTeamId,
       teamName: `${targetTeam.teamName} (Copy)`,
+      shareCode: firebaseService.generateShareCode(),
+      role: 'owner',
+      ownerId: user?.uid,
+      ownerName: user?.displayName || 'Coach',
       updatedAt: new Date().toISOString()
     };
 
@@ -480,11 +596,12 @@ export default function App() {
       await firebaseService.syncFullTeamToCloud(user.uid, {
         ...bundle,
         teamId: newTeamId,
+        shareCode: newTeamEntry.shareCode,
         teamSettings: {
           ...bundle.teamSettings,
           teamName: `${targetTeam.teamName} (Copy)`
         }
-      });
+      }, user);
     }
     confetti({ particleCount: 30, spread: 50, origin: { y: 0.5 } });
   };
@@ -503,6 +620,11 @@ export default function App() {
     }
   };
 
+  const handleOpenShare = (team) => {
+    setTeamToShare(team || activeTeamObj);
+    setIsShareModalOpen(true);
+  };
+
   const handleManualSync = async () => {
     if (!user?.uid) {
       setIsAuthModalOpen(true);
@@ -511,7 +633,7 @@ export default function App() {
 
     setSyncStatus('syncing');
     const bundle = storageService.getFullTeamBundle(activeTeamId);
-    const res = await firebaseService.syncFullTeamToCloud(user.uid, bundle);
+    const res = await firebaseService.syncFullTeamToCloud(user.uid, bundle, user);
     if (res.success) {
       setSyncStatus('synced');
       setLastSyncTime(new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }));
@@ -663,7 +785,7 @@ export default function App() {
         confetti({ particleCount: 50, spread: 60, origin: { y: 0.3 } });
         if (user?.uid) {
           const bundle = storageService.getFullTeamBundle(activeTeamId);
-          firebaseService.syncFullTeamToCloud(user.uid, bundle);
+          firebaseService.syncFullTeamToCloud(user.uid, bundle, user);
         }
         return true;
       }
@@ -805,6 +927,7 @@ export default function App() {
           setIsAuthModalOpen(true);
         }}
         onOpenTeamManagerModal={() => setIsTeamManagerModalOpen(true)}
+        onOpenShareModal={handleOpenShare}
         onOpenFirebaseSettingsModal={() => setIsFirebaseSettingsModalOpen(true)}
         onManualSync={handleManualSync}
         onLogout={handleLogout}
@@ -867,7 +990,7 @@ export default function App() {
         </button>
       </div>
 
-      {/* Floating In-Game Scoreboard Ribbon (Visible on all tabs for quick score & error tracking) */}
+      {/* Floating In-Game Scoreboard Ribbon */}
       <ScoreboardBar
         matchStats={matchStats}
         setMatchStats={setMatchStats}
@@ -1013,7 +1136,6 @@ export default function App() {
       )}
 
       {activeTab === 'court' && (
-        /* 6-Position Real Court Lineup & Substitutions */
         <CourtView
           roster={roster}
           lineup={lineup}
@@ -1047,7 +1169,6 @@ export default function App() {
       )}
 
       {activeTab === 'formations' && (
-        /* 6-2 Formations & Tactics Interactive Board */
         <FormationsView
           roster={roster}
           lineup={lineup}
@@ -1083,7 +1204,6 @@ export default function App() {
       )}
 
       {activeTab === 'stats' && (
-        /* Match Stats, Error Ranking Leaderboard & PDF Report Export */
         <MatchStatsView
           matchStats={matchStats}
           setMatchStats={setMatchStats}
@@ -1120,6 +1240,19 @@ export default function App() {
         onCreateTeam={handleCreateTeam}
         onDuplicateTeam={handleDuplicateTeam}
         onDeleteTeam={handleDeleteTeam}
+        onJoinTeam={handleJoinTeam}
+        onOpenShareModal={handleOpenShare}
+        user={user}
+      />
+
+      {/* Share Team Modal */}
+      <ShareTeamModal
+        isOpen={isShareModalOpen}
+        onClose={() => {
+          setIsShareModalOpen(false);
+          setTeamToShare(null);
+        }}
+        activeTeam={teamToShare || activeTeamObj}
         user={user}
       />
 

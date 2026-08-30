@@ -12,6 +12,7 @@ import {
   Shield,
   Layers,
   Sparkles,
+  Share2,
   ExternalLink,
   Check
 } from 'lucide-react';
@@ -23,6 +24,7 @@ export default function UserMenu({
   activeTeam,
   onOpenAuthModal,
   onOpenTeamManagerModal,
+  onOpenShareModal,
   onOpenFirebaseSettingsModal,
   onManualSync,
   onLogout
@@ -268,7 +270,7 @@ export default function UserMenu({
             position: 'absolute',
             top: 'calc(100% + 8px)',
             right: 0,
-            width: '270px',
+            width: '280px',
             background: 'rgba(10, 15, 29, 0.96)',
             backdropFilter: 'blur(20px)',
             border: '1px solid var(--border-glass)',
@@ -318,7 +320,7 @@ export default function UserMenu({
             >
               <div>
                 <div style={{ fontSize: '0.68rem', color: 'var(--accent-orange)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.04em' }}>
-                  Active Team
+                  Active Team {activeTeam.shareCode ? `• ${activeTeam.shareCode}` : ''}
                 </div>
                 <div style={{ fontSize: '0.82rem', fontWeight: 800, color: '#ffffff' }}>
                   {activeTeam.teamName || 'CVA Black - 9th'}
@@ -330,6 +332,38 @@ export default function UserMenu({
 
           {/* Menu Items */}
           <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
+            {onOpenShareModal && (
+              <button
+                type="button"
+                onClick={() => {
+                  setIsOpen(false);
+                  onOpenShareModal(activeTeam);
+                }}
+                style={{
+                  width: '100%',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '0.6rem',
+                  padding: '0.55rem 0.75rem',
+                  background: 'rgba(255, 107, 53, 0.12)',
+                  border: '1px solid rgba(255, 107, 53, 0.25)',
+                  borderRadius: 'var(--radius-sm)',
+                  color: '#ffffff',
+                  fontSize: '0.82rem',
+                  fontWeight: 700,
+                  cursor: 'pointer',
+                  textAlign: 'left',
+                  marginBottom: '2px',
+                  transition: 'background 0.15s'
+                }}
+                onMouseEnter={(e) => (e.currentTarget.style.background = 'rgba(255, 107, 53, 0.2)')}
+                onMouseLeave={(e) => (e.currentTarget.style.background = 'rgba(255, 107, 53, 0.12)')}
+              >
+                <Share2 size={15} color="var(--accent-orange)" />
+                <span>Share Squad & Invite Code</span>
+              </button>
+            )}
+
             <button
               type="button"
               onClick={() => {
@@ -356,7 +390,7 @@ export default function UserMenu({
               onMouseLeave={(e) => (e.currentTarget.style.background = 'transparent')}
             >
               <Layers size={15} color="var(--accent-orange)" />
-              <span>Manage & Switch Teams</span>
+              <span>Manage & Switch Squads</span>
             </button>
 
             <button

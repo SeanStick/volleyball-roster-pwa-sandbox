@@ -47,20 +47,16 @@ export default function MatchStatsView({
   onResetScore,
   onStartNewSet,
   onResetFullMatch,
-  onNavigateTab
+  onNavigateTab,
+  matchHistory = [],
+  onArchiveMatch,
+  onDeleteMatchHistory
 }) {
   const [selectedSetFilter, setSelectedSetFilter] = useState('ALL');
   const [suggestionFilter, setSuggestionFilter] = useState('ALL'); // 'ALL' | 'CRITICAL' | 'TACTICAL' | 'ROTATION' | 'HISTORICAL'
   const [tableSortKey, setTableSortKey] = useState('totalErrors');
   const [tableSortAsc, setTableSortAsc] = useState(false);
-  const [matchHistory, setMatchHistory] = useState([]);
   const [isArchiveSuccess, setIsArchiveSuccess] = useState(false);
-
-  // Load historical matches on mount
-  useEffect(() => {
-    const history = storageService.getMatchHistory();
-    setMatchHistory(history);
-  }, []);
 
   const {
     ourScore = 0,
@@ -118,14 +114,22 @@ export default function MatchStatsView({
 
   // Archive Current Match to History
   const handleArchiveMatch = () => {
-    const opp = prompt('Enter Opponent Team Name for match archive:', opponentName || 'Opponent');
-    if (opp !== null) {
-      const archived = storageService.archiveCurrentMatch(matchStats, opp);
-      if (archived) {
-        setMatchHistory(storageService.getMatchHistory());
+    if (onArchiveMatch) {
+      const success = onArchiveMatch(opponentName || 'Opponent');
+      if (success) {
         setIsArchiveSuccess(true);
         setTimeout(() => setIsArchiveSuccess(false), 3500);
         confetti({ particleCount: 35, spread: 55, origin: { y: 0.4 } });
+      }
+    } else {
+      const opp = prompt('Enter Opponent Team Name for match archive:', opponentName || 'Opponent');
+      if (opp !== null) {
+        const archived = storageService.archiveCurrentMatch(matchStats, opp);
+        if (archived) {
+          setIsArchiveSuccess(true);
+          setTimeout(() => setIsArchiveSuccess(false), 3500);
+          confetti({ particleCount: 35, spread: 55, origin: { y: 0.4 } });
+        }
       }
     }
   };
@@ -133,8 +137,11 @@ export default function MatchStatsView({
   // Delete an archived match
   const handleDeleteArchivedMatch = (matchId) => {
     if (window.confirm('Delete this past match from your history archive?')) {
-      const updated = storageService.deleteMatchFromHistory(matchId);
-      setMatchHistory(updated);
+      if (onDeleteMatchHistory) {
+        onDeleteMatchHistory(matchId);
+      } else {
+        storageService.deleteMatchFromHistory(matchId);
+      }
     }
   };
 

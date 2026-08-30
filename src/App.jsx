@@ -48,7 +48,8 @@ export default function App() {
 
   // Guards against race conditions & overwrite loops
   const isHydratingCloudRef = useRef(false);
-  const isRemoteUpdateRef = useRef(false);
+  const isApplyingRemoteUpdateRef = useRef(false);
+  const lastCloudUpdatedAtRef = useRef(null);
   const syncTimeoutRef = useRef(null);
 
   // Modal visibility states
@@ -126,8 +127,9 @@ export default function App() {
   const [maxSubs, setMaxSubs] = useState(() => savedMatchState?.maxSubs || 12);
   const [enforcePositionLock, setEnforcePositionLock] = useState(() => savedMatchState?.enforcePositionLock || false);
 
-  // Match Stats & Error Tracking State
+  // Match Stats & History State (Fully Lifted to App Level for 100% Cross-Device Sync)
   const [matchStats, setMatchStats] = useState(() => storageService.getMatchStats());
+  const [matchHistory, setMatchHistory] = useState(() => storageService.getMatchHistory());
 
   // -------------------------------------------------------------
   // Check URL Join Invite Parameter on Startup (?join=VB-CODE)
@@ -153,6 +155,7 @@ export default function App() {
   // -------------------------------------------------------------
   useEffect(() => {
     let unsubscribeSnapshot = null;
+    let unsubscribeTeamsList = null;
 
     const unsubscribeAuth = firebaseService.onAuthChange(async (currentUser) => {
       setUser(currentUser);
@@ -216,7 +219,7 @@ export default function App() {
                 setEnforcePositionLock(targetCloudTeam.matchState.enforcePositionLock || false);
               }
               if (targetCloudTeam.matchStats) setMatchStats(targetCloudTeam.matchStats);
-              if (targetCloudTeam.matchHistory) storageService.saveMatchHistory(targetCloudTeam.matchHistory);
+              if (Array.isArray(targetCloudTeam.matchHistory)) setMatchHistory(targetCloudTeam.matchHistory);
             }
           } else {
             // True first-time user login: upload initial team bundle to cloud
@@ -232,7 +235,7 @@ export default function App() {
         } finally {
           setTimeout(() => {
             isHydratingCloudRef.current = false;
-          }, 400);
+          }, 300);
         }
 
         // 2. Attach real-time snapshot listener for collaborative multi-user live sync
@@ -241,54 +244,78 @@ export default function App() {
           currentUser.uid,
           activeTeamId,
           (cloudTeam, { hasPendingWrites }) => {
-            if (!hasPendingWrites && !isHydratingCloudRef.current && cloudTeam) {
-              // Ignore if this write originated from this user
-              if (cloudTeam.updatedBy && cloudTeam.updatedBy === currentUser.uid) {
-                return;
-              }
+            if (hasPendingWrites || isHydratingCloudRef.current || !cloudTeam) return;
 
-              isRemoteUpdateRef.current = true;
-              if (cloudTeam.teamSettings) setTeamSettings(cloudTeam.teamSettings);
-              if (Array.isArray(cloudTeam.roster)) setRoster(cloudTeam.roster);
-              if (cloudTeam.matchState?.lineup) {
-                setLineup(cloudTeam.matchState.lineup);
-                setStartingLineup(cloudTeam.matchState.startingLineup || cloudTeam.matchState.lineup);
-                setRotation(cloudTeam.matchState.rotation || 1);
-                setPhase(cloudTeam.matchState.phase || 'serve');
-                setLiberoExchanges(cloudTeam.matchState.liberoExchanges || {});
-                setLiberoServingRotation(cloudTeam.matchState.liberoServingRotation ?? null);
-                setSubHistory(cloudTeam.matchState.subHistory || []);
-                setMaxSubs(cloudTeam.matchState.maxSubs || 12);
-                setEnforcePositionLock(cloudTeam.matchState.enforcePositionLock || false);
-              }
-              if (cloudTeam.matchStats) setMatchStats(cloudTeam.matchStats);
-              if (cloudTeam.matchHistory) storageService.saveMatchHistory(cloudTeam.matchHistory);
-
-              setSyncStatus('synced');
-              setLastSyncTime(new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }));
-
-              setTimeout(() => {
-                isRemoteUpdateRef.current = false;
-              }, 1200);
+            // Ignore if this write originated locally from this same account
+            if (cloudTeam.updatedBy && cloudTeam.updatedBy === currentUser.uid) {
+              return;
             }
+
+            // Check if cloud update is strictly newer
+            const incomingTimestamp = cloudTeam.updatedAt || '';
+            if (incomingTimestamp && lastCloudUpdatedAtRef.current && incomingTimestamp <= lastCloudUpdatedAtRef.current) {
+              return;
+            }
+            lastCloudUpdatedAtRef.current = incomingTimestamp;
+
+            // Mark that we are applying remote updates (prevents echo back)
+            isApplyingRemoteUpdateRef.current = true;
+
+            if (cloudTeam.teamSettings) {
+              setTeamSettings(cloudTeam.teamSettings);
+              storageService.saveTeamSettings(cloudTeam.teamSettings);
+            }
+            if (Array.isArray(cloudTeam.roster)) {
+              setRoster(cloudTeam.roster);
+              storageService.saveRoster(cloudTeam.roster);
+            }
+            if (cloudTeam.matchState) {
+              const ms = cloudTeam.matchState;
+              if (ms.lineup) setLineup(ms.lineup);
+              if (ms.startingLineup) setStartingLineup(ms.startingLineup);
+              if (typeof ms.rotation === 'number') setRotation(ms.rotation);
+              if (ms.phase) setPhase(ms.phase);
+              if (ms.liberoExchanges) setLiberoExchanges(ms.liberoExchanges);
+              if (ms.liberoServingRotation !== undefined) setLiberoServingRotation(ms.liberoServingRotation);
+              if (Array.isArray(ms.subHistory)) setSubHistory(ms.subHistory);
+              if (ms.maxSubs !== undefined) setMaxSubs(ms.maxSubs);
+              if (ms.enforcePositionLock !== undefined) setEnforcePositionLock(ms.enforcePositionLock);
+              storageService.saveMatchState(ms);
+            }
+            if (cloudTeam.matchStats) {
+              setMatchStats(cloudTeam.matchStats);
+              storageService.saveMatchStats(cloudTeam.matchStats);
+            }
+            if (Array.isArray(cloudTeam.matchHistory)) {
+              setMatchHistory(cloudTeam.matchHistory);
+              storageService.saveMatchHistory(cloudTeam.matchHistory);
+            }
+            if (cloudTeam.shareCode) {
+              setTeams(prevTeams => prevTeams.map(t => t.id === cloudTeam.id ? { ...t, shareCode: cloudTeam.shareCode, members: cloudTeam.members || t.members } : t));
+            }
+
+            setSyncStatus('synced');
+            setLastSyncTime(new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }));
           }
         );
       } else {
         if (unsubscribeSnapshot) unsubscribeSnapshot();
+        if (unsubscribeTeamsList) unsubscribeTeamsList();
       }
     });
 
     return () => {
       if (typeof unsubscribeAuth === 'function') unsubscribeAuth();
       if (typeof unsubscribeSnapshot === 'function') unsubscribeSnapshot();
+      if (typeof unsubscribeTeamsList === 'function') unsubscribeTeamsList();
     };
   }, [activeTeamId]);
 
   // -------------------------------------------------------------
-  // Real-Time Local Persistence + Debounced Google Cloud Auto-Save
+  // Real-Time Local Persistence + Google Cloud Auto-Save
   // -------------------------------------------------------------
   const performCloudAutoSync = useCallback((fullBundle) => {
-    if (!user?.uid || isHydratingCloudRef.current || isRemoteUpdateRef.current) return;
+    if (!user?.uid || isHydratingCloudRef.current || isApplyingRemoteUpdateRef.current) return;
 
     if (syncTimeoutRef.current) {
       clearTimeout(syncTimeoutRef.current);
@@ -308,10 +335,10 @@ export default function App() {
         console.error('Auto sync error:', err);
         setSyncStatus('error');
       }
-    }, 800);
+    }, 400);
   }, [user]);
 
-  // Sync state changes locally and trigger debounced cloud sync
+  // Sync state changes locally and trigger cloud sync
   useEffect(() => {
     storageService.saveRoster(roster);
     storageService.saveTeamSettings(teamSettings);
@@ -327,6 +354,13 @@ export default function App() {
       enforcePositionLock
     });
     storageService.saveMatchStats(matchStats);
+    storageService.saveMatchHistory(matchHistory);
+
+    // If this state change was caused by receiving a remote snapshot, consume the flag and don't re-upload
+    if (isApplyingRemoteUpdateRef.current) {
+      isApplyingRemoteUpdateRef.current = false;
+      return;
+    }
 
     const activeTeamObj = teams.find(t => t.id === activeTeamId);
 
@@ -349,7 +383,7 @@ export default function App() {
         enforcePositionLock
       },
       matchStats,
-      matchHistory: storageService.getMatchHistory(),
+      matchHistory,
       updatedAt: new Date().toISOString()
     };
 
@@ -367,6 +401,7 @@ export default function App() {
     maxSubs,
     enforcePositionLock,
     matchStats,
+    matchHistory,
     activeTeamId,
     performCloudAutoSync
   ]);
@@ -392,7 +427,7 @@ export default function App() {
       const res = await firebaseService.fetchTeamDataFromCloud(user.uid, targetTeamId);
       if (res.success && res.data) {
         const d = res.data;
-        isRemoteUpdateRef.current = true;
+        isApplyingRemoteUpdateRef.current = true;
         if (d.teamSettings) setTeamSettings(d.teamSettings);
         if (Array.isArray(d.roster)) setRoster(d.roster);
         if (d.matchState?.lineup) {
@@ -413,13 +448,9 @@ export default function App() {
           setPhase('serve');
         }
         if (d.matchStats) setMatchStats(d.matchStats);
-        if (d.matchHistory) storageService.saveMatchHistory(d.matchHistory);
+        if (Array.isArray(d.matchHistory)) setMatchHistory(d.matchHistory);
         setSyncStatus('synced');
         setLastSyncTime(new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }));
-
-        setTimeout(() => {
-          isRemoteUpdateRef.current = false;
-        }, 150);
         return;
       }
     }
@@ -483,6 +514,7 @@ export default function App() {
     setLiberoServingRotation(null);
     setSubHistory([]);
     setMatchStats(storageService.resetFullMatch());
+    setMatchHistory([]);
 
     // Sync to cloud
     if (user?.uid) {
@@ -552,7 +584,7 @@ export default function App() {
       setActiveTeamId(joined.id);
       storageService.setActiveTeamId(joined.id);
 
-      isRemoteUpdateRef.current = true;
+      isApplyingRemoteUpdateRef.current = true;
       if (joined.teamSettings) setTeamSettings(joined.teamSettings);
       if (Array.isArray(joined.roster)) setRoster(joined.roster);
       if (joined.matchState?.lineup) {
@@ -567,11 +599,7 @@ export default function App() {
         setEnforcePositionLock(joined.matchState.enforcePositionLock || false);
       }
       if (joined.matchStats) setMatchStats(joined.matchStats);
-      if (joined.matchHistory) storageService.saveMatchHistory(joined.matchHistory);
-
-      setTimeout(() => {
-        isRemoteUpdateRef.current = false;
-      }, 150);
+      if (Array.isArray(joined.matchHistory)) setMatchHistory(joined.matchHistory);
 
       return { success: true, team: joined };
     }
@@ -799,15 +827,17 @@ export default function App() {
     if (opp !== null && opp.trim() !== '') {
       const archived = storageService.archiveCurrentMatch(matchStats, opp.trim());
       if (archived) {
+        setMatchHistory(storageService.getMatchHistory());
         confetti({ particleCount: 50, spread: 60, origin: { y: 0.3 } });
-        if (user?.uid) {
-          const bundle = storageService.getFullTeamBundle(activeTeamId);
-          firebaseService.syncFullTeamToCloud(user.uid, bundle, user);
-        }
         return true;
       }
     }
     return false;
+  };
+
+  const handleDeleteMatchHistory = (matchId) => {
+    const updated = storageService.deleteMatchFromHistory(matchId);
+    setMatchHistory(updated);
   };
 
   const handleResetFullMatch = () => {
@@ -1233,6 +1263,9 @@ export default function App() {
             setActiveTab(tab);
             if (rot) setRotation(rot);
           }}
+          matchHistory={matchHistory}
+          onArchiveMatch={handleArchiveMatch}
+          onDeleteMatchHistory={handleDeleteMatchHistory}
         />
       )}
 

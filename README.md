@@ -39,7 +39,7 @@ Open your browser at `http://localhost:3000`.
 ## ☁️ Deploying to Google Cloud Firebase Hosting
 
 ### 🌐 Live Environments:
-- **Sandbox / Preview Environment (New)**: [https://volleyball-roster-sandbox.web.app](https://volleyball-roster-sandbox.web.app)
+- **Sandbox / Preview Environment (New)**: [https://volleyball-roster-pwa-sandbox.web.app](https://volleyball-roster-pwa-sandbox.web.app)
 - **Production Environment**: [https://volleyball-d2085.web.app](https://volleyball-d2085.web.app)
 
 ### Step 1: Install Firebase CLI

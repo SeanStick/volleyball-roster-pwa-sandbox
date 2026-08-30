@@ -7,7 +7,7 @@
     "volleyball-d2085": {
       "hosting": {
         "sandbox": [
-          "volleyball-roster-sandbox"
+          "volleyball-roster-pwa-sandbox"
         ]
       }
     }

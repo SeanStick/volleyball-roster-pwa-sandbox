@@ -1381,51 +1381,51 @@ export default function App() {
         onNavigateTab={(tab) => setActiveTab(tab)}
       />
 
-      {/* Stats Ribbon */}
-      <div className="stats-ribbon">
-        <div className="stat-card">
-          <div className="stat-icon-wrapper" style={{ background: 'rgba(255, 107, 53, 0.15)', color: 'var(--accent-orange)' }}>
-            <Users size={22} />
-          </div>
-          <div>
-            <div className="stat-val">{totalPlayers}</div>
-            <div className="stat-label">Roster Size</div>
-          </div>
-        </div>
-
-        <div className="stat-card">
-          <div className="stat-icon-wrapper" style={{ background: 'rgba(168, 85, 247, 0.15)', color: '#c084fc' }}>
-            <Shield size={22} />
-          </div>
-          <div>
-            <div className="stat-val">{captain ? `#${captain.number}` : 'None'}</div>
-            <div className="stat-label">Captain: {captain?.name ? captain.name.split(' ')[0] : '—'}</div>
-          </div>
-        </div>
-
-        <div className="stat-card">
-          <div className="stat-icon-wrapper" style={{ background: 'rgba(16, 185, 129, 0.15)', color: '#34d399' }}>
-            <Trophy size={22} />
-          </div>
-          <div>
-            <div className="stat-val">{startersCount}/6</div>
-            <div className="stat-label">Starting 6 Set</div>
-          </div>
-        </div>
-
-        <div className="stat-card">
-          <div className="stat-icon-wrapper" style={{ background: 'rgba(59, 130, 246, 0.15)', color: '#60a5fa' }}>
-            <Sparkles size={22} />
-          </div>
-          <div>
-            <div className="stat-val">{setters}</div>
-            <div className="stat-label">Setters</div>
-          </div>
-        </div>
-      </div>
-
       {activeTab === 'roster' && (
         <>
+          {/* Stats Ribbon (Roster Size, Captain, Starting 6, Setters) */}
+          <div className="stats-ribbon">
+            <div className="stat-card">
+              <div className="stat-icon-wrapper" style={{ background: 'rgba(255, 107, 53, 0.15)', color: 'var(--accent-orange)' }}>
+                <Users size={22} />
+              </div>
+              <div>
+                <div className="stat-val">{totalPlayers}</div>
+                <div className="stat-label">Roster Size</div>
+              </div>
+            </div>
+
+            <div className="stat-card">
+              <div className="stat-icon-wrapper" style={{ background: 'rgba(168, 85, 247, 0.15)', color: '#c084fc' }}>
+                <Shield size={22} />
+              </div>
+              <div>
+                <div className="stat-val">{captain ? `#${captain.number}` : 'None'}</div>
+                <div className="stat-label">Captain: {captain?.name ? captain.name.split(' ')[0] : '—'}</div>
+              </div>
+            </div>
+
+            <div className="stat-card">
+              <div className="stat-icon-wrapper" style={{ background: 'rgba(16, 185, 129, 0.15)', color: '#34d399' }}>
+                <Trophy size={22} />
+              </div>
+              <div>
+                <div className="stat-val">{startersCount}/6</div>
+                <div className="stat-label">Starting 6 Set</div>
+              </div>
+            </div>
+
+            <div className="stat-card">
+              <div className="stat-icon-wrapper" style={{ background: 'rgba(59, 130, 246, 0.15)', color: '#60a5fa' }}>
+                <Sparkles size={22} />
+              </div>
+              <div>
+                <div className="stat-val">{setters}</div>
+                <div className="stat-label">Setters</div>
+              </div>
+            </div>
+          </div>
+
           {/* Roster Controls & Filters Bar */}
           <div className="controls-bar">
             <div className="search-filter-group">

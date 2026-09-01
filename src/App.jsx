@@ -29,6 +29,7 @@ import AuthModal from './components/AuthModal';
 import TeamManagerModal from './components/TeamManagerModal';
 import ShareTeamModal from './components/ShareTeamModal';
 import MatchSetupModal from './components/MatchSetupModal';
+import TournamentDayHubModal from './components/TournamentDayHubModal';
 import TournamentSyncToast from './components/TournamentSyncToast';
 import FirebaseSettingsModal from './components/FirebaseSettingsModal';
 import { storageService, DEFAULT_TEAM_ID } from './services/storageService';
@@ -65,6 +66,7 @@ export default function App() {
   const [isShareModalOpen, setIsShareModalOpen] = useState(false);
   const [teamToShare, setTeamToShare] = useState(null);
   const [isMatchSetupModalOpen, setIsMatchSetupModalOpen] = useState(false);
+  const [isTournamentDayHubOpen, setIsTournamentDayHubOpen] = useState(false);
   const [isFirebaseSettingsModalOpen, setIsFirebaseSettingsModalOpen] = useState(false);
   const [isPlayerModalOpen, setIsPlayerModalOpen] = useState(false);
   const [playerToEdit, setPlayerToEdit] = useState(null);
@@ -1084,6 +1086,54 @@ export default function App() {
     });
   };
 
+  const handleSelectSetNumber = (targetSetNumber) => {
+    if (targetSetNumber === matchStats?.setNumber) return;
+
+    // Check if target set already exists in setHistory
+    const pastSetIndex = matchStats?.setHistory?.findIndex(s => s.setNumber === targetSetNumber);
+    let nextStats;
+
+    if (pastSetIndex !== -1 && pastSetIndex !== undefined) {
+      const pastSet = matchStats.setHistory[pastSetIndex];
+      const currentAsSet = {
+        setNumber: matchStats.setNumber,
+        ourScore: matchStats.ourScore,
+        opponentScore: matchStats.opponentScore,
+        winner: matchStats.ourScore > matchStats.opponentScore ? 'us' : 'opponent'
+      };
+
+      const updatedHistory = matchStats.setHistory.filter(s => s.setNumber !== targetSetNumber);
+      updatedHistory.push(currentAsSet);
+
+      nextStats = {
+        ...matchStats,
+        setNumber: targetSetNumber,
+        ourScore: pastSet.ourScore || 0,
+        opponentScore: pastSet.opponentScore || 0,
+        setHistory: updatedHistory
+      };
+    } else {
+      nextStats = {
+        ...matchStats,
+        setNumber: targetSetNumber,
+        ourScore: 0,
+        opponentScore: 0
+      };
+    }
+
+    setMatchStats(nextStats);
+
+    setSyncToast({
+      title: `🏐 Switched to Set ${targetSetNumber}`,
+      message: `Active score: ${nextStats.ourScore} - ${nextStats.opponentScore}`,
+      type: 'new_set'
+    });
+
+    syncCloudImmediately({
+      matchStats: nextStats
+    });
+  };
+
   const handleArchiveMatch = (customOpponentName = null) => {
     const defaultOpp = customOpponentName || matchStats?.opponentName || 'Opponent';
     const opp = customOpponentName !== null ? customOpponentName : window.prompt('Enter Opponent Team Name for match archive:', defaultOpp);
@@ -1374,6 +1424,8 @@ export default function App() {
         onArchiveMatch={handleArchiveMatch}
         onResetFullMatch={handleResetFullMatch}
         onOpenMatchSetup={() => setIsMatchSetupModalOpen(true)}
+        onOpenTournamentDayHub={() => setIsTournamentDayHubOpen(true)}
+        onSelectSetNumber={handleSelectSetNumber}
         lineup={lineup}
         roster={roster}
         rotation={rotation}
@@ -1641,6 +1693,22 @@ export default function App() {
         matchStats={matchStats}
         onUpdateMatchDetails={handleUpdateMatchDetails}
         onStartFreshMatch={handleStartFreshMatch}
+      />
+
+      {/* Tournament Day Hub (Slide-up Mobile Sheet) */}
+      <TournamentDayHubModal
+        isOpen={isTournamentDayHubOpen}
+        onClose={() => setIsTournamentDayHubOpen(false)}
+        matchStats={matchStats}
+        matchHistory={matchHistory}
+        onUpdateMatchDetails={handleUpdateMatchDetails}
+        onStartFreshMatch={handleStartFreshMatch}
+        onStartNewSet={handleStartNewSet}
+        onArchiveMatch={handleArchiveMatch}
+        onDeleteMatchHistory={handleDeleteMatchHistory}
+        onSelectSetNumber={handleSelectSetNumber}
+        onOpenShareModal={handleOpenShare}
+        activeTeam={activeTeamObj}
       />
 
       {/* Firebase Cloud Settings Modal */}

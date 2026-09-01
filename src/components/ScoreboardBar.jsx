@@ -9,7 +9,12 @@ import {
   Archive,
   MapPin,
   Swords,
-  Edit3
+  Edit3,
+  Trophy,
+  Sparkles,
+  ChevronRight,
+  ArrowRight,
+  Play
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
 import QuickPointModal from './QuickPointModal';
@@ -25,6 +30,8 @@ export default function ScoreboardBar({
   onArchiveMatch,
   onResetFullMatch,
   onOpenMatchSetup,
+  onOpenTournamentDayHub,
+  onSelectSetNumber,
   lineup = {},
   roster = [],
   rotation = 1,
@@ -38,6 +45,7 @@ export default function ScoreboardBar({
     courtNumber = 'Court 1',
     opponentName = 'Opponent',
     matchStage = 'Match 1',
+    tournamentName = 'Tournament Day',
     ourScore = 0,
     opponentScore = 0,
     setNumber = 1,
@@ -47,6 +55,11 @@ export default function ScoreboardBar({
     pointHistory = [],
     setHistory = []
   } = matchStats || {};
+
+  // Check if match is concluded (e.g. best of 3: 2 sets won)
+  const isMatchWon = ourSetsWon >= 2;
+  const isMatchLost = opponentSetsWon >= 2;
+  const isMatchComplete = isMatchWon || isMatchLost;
 
   // Fast +1 US Action
   const handlePlusUs = () => {
@@ -103,82 +116,244 @@ export default function ScoreboardBar({
     const confirmMsg = `Finish Set ${setNumber} (${ourScore} - ${opponentScore})?\n\nWinner: ${isOurLead ? 'US' : opponentName || 'Opponent'}\n\nAdvance to Set ${setNumber + 1} (0-0)?`;
     if (window.confirm(confirmMsg)) {
       onStartNewSet();
+      confetti({ particleCount: 35, spread: 50, origin: { y: 0.25 } });
     }
   };
 
+  // Build list of sets to display (at least 1, 2, 3, or more if reached)
+  const maxSet = Math.max(3, setNumber, setHistory.length);
+  const setNumbersList = Array.from({ length: maxSet }, (_, i) => i + 1);
+
   return (
     <>
-      {/* 📱 Super Simple Mobile Match & Set Bar (Tap anywhere to edit / clarify) */}
+      {/* =========================================================================
+          🏆 1. TOP TOURNAMENT & MATCH CAPSULE (1-Tap Day Hub & Quick Edit)
+         ========================================================================= */}
       <div
-        onClick={onOpenMatchSetup}
         style={{
           background: 'linear-gradient(90deg, #1e293b 0%, #0f172a 100%)',
           borderBottom: '1px solid rgba(59, 130, 246, 0.3)',
-          padding: '0.45rem 0.85rem',
+          padding: '0.4rem 0.75rem',
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'space-between',
-          cursor: 'pointer',
+          gap: '0.5rem',
           userSelect: 'none'
         }}
-        title="Tap to change Court, Match, Opponent, or Set"
       >
-        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap', minWidth: 0 }}>
-          {/* Location Chip */}
+        {/* Left: 1-Tap Tournament Day Hub Button */}
+        <button
+          type="button"
+          onClick={onOpenTournamentDayHub}
+          style={{
+            background: 'linear-gradient(135deg, rgba(59, 130, 246, 0.25), rgba(30, 58, 138, 0.35))',
+            border: '1px solid rgba(59, 130, 246, 0.5)',
+            borderRadius: '999px',
+            padding: '0.2rem 0.6rem',
+            color: '#93c5fd',
+            fontSize: '0.74rem',
+            fontWeight: 800,
+            display: 'flex',
+            alignItems: 'center',
+            gap: '0.35rem',
+            cursor: 'pointer',
+            flexShrink: 0
+          }}
+          title="Open Tournament Day Hub"
+        >
+          <Trophy size={13} color="#60a5fa" />
+          <span>Day Hub</span>
+        </button>
+
+        {/* Center: Location & Opponent (Click to Quick Edit) */}
+        <div
+          onClick={onOpenMatchSetup}
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: '0.4rem',
+            minWidth: 0,
+            cursor: 'pointer',
+            flex: 1,
+            justifyContent: 'center'
+          }}
+          title="Tap to change Court, Match, or Opponent"
+        >
           <span
             style={{
-              background: 'rgba(59, 130, 246, 0.2)',
-              border: '1px solid rgba(59, 130, 246, 0.4)',
-              color: '#93c5fd',
-              padding: '0.15rem 0.45rem',
-              borderRadius: '6px',
-              fontSize: '0.75rem',
-              fontWeight: 800,
-              display: 'flex',
-              alignItems: 'center',
-              gap: '0.25rem'
+              background: 'rgba(255, 255, 255, 0.08)',
+              color: '#cbd5e1',
+              padding: '0.12rem 0.4rem',
+              borderRadius: '4px',
+              fontSize: '0.72rem',
+              fontWeight: 700,
+              whiteSpace: 'nowrap'
             }}
           >
-            <MapPin size={11} />
             {courtNumber}
           </span>
-
-          {/* Match & Opponent */}
-          <span style={{ fontSize: '0.8rem', fontWeight: 700, color: '#f8fafc', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+          <span style={{ fontSize: '0.78rem', fontWeight: 700, color: '#f8fafc', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
             <span style={{ color: '#60a5fa' }}>{matchStage}</span> vs <span style={{ color: '#fca5a5' }}>{opponentName || 'Opponent'}</span>
           </span>
-
-          {/* Set Badge */}
-          <span
-            style={{
-              background: 'rgba(16, 185, 129, 0.2)',
-              border: '1px solid rgba(16, 185, 129, 0.4)',
-              color: '#6ee7b7',
-              padding: '0.15rem 0.45rem',
-              borderRadius: '6px',
-              fontSize: '0.75rem',
-              fontWeight: 800
-            }}
-          >
-            Set {setNumber}
-          </span>
-
-          {/* Past Set Scores in Current Match */}
-          {setHistory && setHistory.length > 0 && (
-            <span style={{ fontSize: '0.72rem', color: '#94a3b8' }}>
-              ({setHistory.map(s => `${s.ourScore}-${s.opponentScore}`).join(', ')})
-            </span>
-          )}
+          <Edit3 size={11} color="#94a3b8" style={{ flexShrink: 0 }} />
         </div>
 
-        {/* Tap to Edit Indicator */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: '0.3rem', color: '#94a3b8', fontSize: '0.72rem', flexShrink: 0 }}>
-          <Edit3 size={12} />
-          <span>Edit</span>
+        {/* Right: Sets Summary */}
+        <div
+          onClick={onOpenTournamentDayHub}
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: '0.25rem',
+            fontSize: '0.75rem',
+            fontWeight: 800,
+            cursor: 'pointer',
+            flexShrink: 0
+          }}
+        >
+          <span style={{ color: '#94a3b8' }}>Sets:</span>
+          <span style={{ color: '#10b981' }}>{ourSetsWon}</span>
+          <span style={{ color: '#94a3b8' }}>-</span>
+          <span style={{ color: '#f87171' }}>{opponentSetsWon}</span>
         </div>
       </div>
 
-      {/* Main Scoreboard Ribbon */}
+      {/* =========================================================================
+          🏐 2. INTERACTIVE SET STRIP (1-Tap Switch between Set 1, Set 2, Set 3)
+         ========================================================================= */}
+      <div
+        style={{
+          background: 'rgba(15, 23, 42, 0.95)',
+          borderBottom: '1px solid rgba(255, 255, 255, 0.08)',
+          padding: '0.35rem 0.75rem',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          gap: '0.4rem',
+          overflowX: 'auto'
+        }}
+      >
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem', minWidth: 0 }}>
+          {setNumbersList.map((sNum) => {
+            const isCurrent = setNumber === sNum;
+            const pastSet = setHistory?.find(s => s.setNumber === sNum);
+
+            return (
+              <button
+                key={sNum}
+                type="button"
+                onClick={() => onSelectSetNumber && onSelectSetNumber(sNum)}
+                style={{
+                  padding: '0.25rem 0.55rem',
+                  borderRadius: '6px',
+                  border: isCurrent ? '1.5px solid #3b82f6' : '1px solid rgba(255, 255, 255, 0.1)',
+                  background: isCurrent ? 'linear-gradient(135deg, rgba(59, 130, 246, 0.35), rgba(30, 58, 138, 0.5))' : 'rgba(255, 255, 255, 0.03)',
+                  color: isCurrent ? '#93c5fd' : '#94a3b8',
+                  fontSize: '0.74rem',
+                  fontWeight: 800,
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '0.3rem',
+                  whiteSpace: 'nowrap',
+                  transition: 'all 0.15s ease'
+                }}
+                title={`Switch to Set ${sNum}`}
+              >
+                {isCurrent && <span style={{ width: '5px', height: '5px', borderRadius: '50%', background: '#38bdf8' }} />}
+                <span>Set {sNum}</span>
+                {pastSet ? (
+                  <span style={{ fontSize: '0.68rem', color: pastSet.ourScore > pastSet.opponentScore ? '#34d399' : '#f87171', fontWeight: 700 }}>
+                    ({pastSet.ourScore}-{pastSet.opponentScore})
+                  </span>
+                ) : isCurrent ? (
+                  <span style={{ fontSize: '0.68rem', color: '#fbbf24', fontWeight: 700 }}>
+                    ({ourScore}-{opponentScore})
+                  </span>
+                ) : null}
+              </button>
+            );
+          })}
+        </div>
+
+        {/* Quick Advance / Save Trigger on Set Strip */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem', flexShrink: 0 }}>
+          <button
+            type="button"
+            onClick={handleFinishSetClick}
+            style={{
+              background: 'linear-gradient(135deg, rgba(16, 185, 129, 0.25), rgba(5, 150, 105, 0.35))',
+              border: '1px solid rgba(16, 185, 129, 0.5)',
+              color: '#6ee7b7',
+              borderRadius: '6px',
+              padding: '0.25rem 0.5rem',
+              fontSize: '0.72rem',
+              fontWeight: 800,
+              display: 'flex',
+              alignItems: 'center',
+              gap: '0.25rem',
+              cursor: 'pointer'
+            }}
+            title={`Finish Set ${setNumber} & Advance to Set ${setNumber + 1}`}
+          >
+            <Check size={12} color="#34d399" />
+            <span>Finish S{setNumber}</span>
+          </button>
+        </div>
+      </div>
+
+      {/* =========================================================================
+          🎉 3. MATCH WINNER / COMPLETE CELEBRATION BANNER (If 2 Sets Won)
+         ========================================================================= */}
+      {isMatchComplete && (
+        <div
+          style={{
+            background: isMatchWon
+              ? 'linear-gradient(90deg, rgba(16, 185, 129, 0.35), rgba(5, 150, 105, 0.45))'
+              : 'linear-gradient(90deg, rgba(239, 68, 68, 0.35), rgba(185, 28, 28, 0.45))',
+            borderBottom: `1px solid ${isMatchWon ? '#10b981' : '#ef4444'}`,
+            padding: '0.5rem 0.85rem',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            gap: '0.6rem',
+            animation: 'fadeIn 0.3s ease-out'
+          }}
+        >
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.45rem' }}>
+            <Sparkles size={16} color={isMatchWon ? '#fbbf24' : '#f87171'} />
+            <span style={{ fontSize: '0.82rem', fontWeight: 800, color: '#ffffff' }}>
+              {isMatchWon ? `Match Won! (${ourSetsWon} - ${opponentSetsWon})` : `Match Ended (${ourSetsWon} - ${opponentSetsWon})`}
+            </span>
+          </div>
+
+          <button
+            type="button"
+            onClick={onOpenTournamentDayHub}
+            style={{
+              background: '#ffffff',
+              color: '#0f172a',
+              border: 'none',
+              borderRadius: '8px',
+              padding: '0.3rem 0.7rem',
+              fontSize: '0.76rem',
+              fontWeight: 900,
+              display: 'flex',
+              alignItems: 'center',
+              gap: '0.3rem',
+              cursor: 'pointer',
+              boxShadow: '0 2px 8px rgba(0, 0, 0, 0.3)'
+            }}
+          >
+            <span>Save & Prep Next Match</span>
+            <ArrowRight size={13} />
+          </button>
+        </div>
+      )}
+
+      {/* =========================================================================
+          🔢 4. MAIN LIVE SCOREBOARD RIBBON
+         ========================================================================= */}
       <div className="scoreboard-ribbon">
         {/* Left: Set & Match Status */}
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.65rem' }}>

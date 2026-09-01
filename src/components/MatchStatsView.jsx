@@ -24,7 +24,8 @@ import {
   BarChart3,
   Check,
   Zap,
-  Info
+  Info,
+  Settings
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
 import {

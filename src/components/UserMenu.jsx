@@ -157,33 +157,31 @@ export default function UserMenu({
 
   if (!user) {
     return (
-      <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
         <button
           type="button"
           onClick={() => onOpenAuthModal('login')}
-          className="btn btn-secondary btn-sm"
+          className="btn btn-primary btn-sm"
           style={{
             display: 'flex',
             alignItems: 'center',
-            gap: '0.4rem',
-            padding: '0.4rem 0.8rem',
-            fontSize: '0.82rem',
-            borderRadius: 'var(--radius-md)'
+            gap: '0.35rem',
+            padding: '0.35rem 0.75rem',
+            fontSize: '0.8rem',
+            borderRadius: 'var(--radius-md)',
+            fontWeight: 700
           }}
         >
-          <Cloud size={15} color="var(--accent-orange)" />
+          <Cloud size={14} />
           <span>Sign In</span>
         </button>
         <button
           type="button"
           onClick={() => onOpenAuthModal('register')}
-          className="btn btn-primary btn-sm"
+          className="btn btn-secondary btn-sm hide-mobile"
           style={{
-            display: 'flex',
-            alignItems: 'center',
-            gap: '0.4rem',
-            padding: '0.4rem 0.8rem',
-            fontSize: '0.82rem',
+            padding: '0.35rem 0.75rem',
+            fontSize: '0.8rem',
             borderRadius: 'var(--radius-md)'
           }}
         >
@@ -195,63 +193,82 @@ export default function UserMenu({
 
   const displayName = user.displayName || user.email?.split('@')[0] || 'Coach';
 
+  // Helper for dot indicator on avatar
+  const getSyncDotColor = () => {
+    switch (syncStatus) {
+      case 'syncing':
+        return '#3b82f6';
+      case 'error':
+        return '#ef4444';
+      case 'synced':
+      default:
+        return '#10b981';
+    }
+  };
+
   return (
     <div style={{ position: 'relative' }} ref={dropdownRef}>
       {/* Trigger Button */}
       <button
         type="button"
+        className="user-menu-trigger-btn"
         onClick={() => setIsOpen(!isOpen)}
         aria-expanded={isOpen}
         aria-haspopup="true"
-        style={{
-          display: 'flex',
-          alignItems: 'center',
-          gap: '0.6rem',
-          background: 'rgba(15, 23, 42, 0.85)',
-          border: '1px solid var(--border-glass)',
-          borderRadius: '999px',
-          padding: '4px 10px 4px 4px',
-          color: '#ffffff',
-          cursor: 'pointer',
-          transition: 'all 0.2s',
-          boxShadow: '0 2px 8px rgba(0,0,0,0.2)'
-        }}
       >
-        {/* User Avatar */}
-        {user.photoURL ? (
-          <img
-            src={user.photoURL}
-            alt={displayName}
+        {/* User Avatar with Sync Dot */}
+        <div style={{ position: 'relative', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          {user.photoURL ? (
+            <img
+              src={user.photoURL}
+              alt={displayName}
+              style={{
+                width: '30px',
+                height: '30px',
+                borderRadius: '50%',
+                objectFit: 'cover',
+                border: '1.5px solid rgba(255, 107, 53, 0.6)'
+              }}
+            />
+          ) : (
+            <div
+              style={{
+                width: '30px',
+                height: '30px',
+                borderRadius: '50%',
+                background: 'linear-gradient(135deg, #ff6b35, #ea580c)',
+                color: '#ffffff',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                fontWeight: 800,
+                fontSize: '0.74rem',
+                letterSpacing: '0.02em',
+                boxShadow: '0 2px 8px rgba(255, 107, 53, 0.3)'
+              }}
+            >
+              {getInitials(user.displayName, user.email)}
+            </div>
+          )}
+
+          {/* Micro Status Dot */}
+          <span
             style={{
-              width: '28px',
-              height: '28px',
+              position: 'absolute',
+              bottom: '-1px',
+              right: '-1px',
+              width: '8px',
+              height: '8px',
               borderRadius: '50%',
-              objectFit: 'cover',
-              border: '1px solid rgba(255, 107, 53, 0.6)'
+              background: getSyncDotColor(),
+              border: '1.5px solid #0f172a',
+              boxShadow: `0 0 6px ${getSyncDotColor()}`
             }}
           />
-        ) : (
-          <div
-            style={{
-              width: '28px',
-              height: '28px',
-              borderRadius: '50%',
-              background: 'linear-gradient(135deg, #ff6b35, #ea580c)',
-              color: '#ffffff',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              fontWeight: 800,
-              fontSize: '0.72rem',
-              letterSpacing: '0.02em'
-            }}
-          >
-            {getInitials(user.displayName, user.email)}
-          </div>
-        )}
+        </div>
 
-        {/* Name and Sync Pill (Desktop) */}
-        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', textAlign: 'left', lineHeight: 1.1 }}>
+        {/* Name and Sync Pill (Desktop Only) */}
+        <div className="user-menu-desktop-info">
           <span style={{ fontSize: '0.8rem', fontWeight: 700, color: '#f8fafc', maxWidth: '110px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
             {displayName}
           </span>
@@ -260,7 +277,12 @@ export default function UserMenu({
           </div>
         </div>
 
-        <ChevronDown size={14} color="var(--text-secondary)" style={{ transform: isOpen ? 'rotate(180deg)' : 'none', transition: 'transform 0.2s' }} />
+        <ChevronDown
+          size={14}
+          color="var(--text-secondary)"
+          className="user-menu-desktop-chevron"
+          style={{ transform: isOpen ? 'rotate(180deg)' : 'none', transition: 'transform 0.2s' }}
+        />
       </button>
 
       {/* Dropdown Menu */}

@@ -81,9 +81,9 @@ export default function Navbar({
           </button>
         )}
 
-        {/* Import / Export Modal Trigger */}
+        {/* Import / Export Modal Trigger (Desktop Only) */}
         <button
-          className="btn-icon"
+          className="btn-icon hide-mobile"
           onClick={onOpenImportExportModal}
           title="Backup & Import Roster"
           aria-label="Backup and Import Roster"

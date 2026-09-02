@@ -19,7 +19,8 @@ import {
   ArrowLeftRight,
   Shield,
   Volume2,
-  AlertCircle
+  AlertCircle,
+  Volleyball
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
 import QuickPointModal from './QuickPointModal';

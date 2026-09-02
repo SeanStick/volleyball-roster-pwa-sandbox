@@ -13,7 +13,9 @@ import {
   Compass,
   BarChart3,
   Cloud,
-  Share2
+  Share2,
+  Volleyball,
+  ArrowRight
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
 import Navbar from './components/Navbar';

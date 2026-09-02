@@ -28,9 +28,13 @@ import { FRONT_ROW_ZONES, BACK_ROW_ZONES, ZONE_LABELS } from '../services/volley
 const QUICK_COURTS = ['Ct 1', 'Ct 2', 'Ct 3', 'Ct 4', 'Ct 5', 'Ct 6', 'Ct 7', 'Ct 8', 'Main Gym'];
 const QUICK_MATCHES = ['Match 1', 'Match 2', 'Match 3', 'Match 4', 'Pool Play', 'Playoffs', 'Bracket', 'Finals'];
 const MATCH_FORMATS = [
-  { id: 'best_of_3', label: 'Best of 3 (25, 25, 15)', targetPoints: 25, deciderPoints: 15 },
+  { id: 'best_of_3_21', label: 'Best of 3 (21, 21, 15)', targetPoints: 21, deciderPoints: 15 },
+  { id: 'best_of_3_25', label: 'Best of 3 (25, 25, 15)', targetPoints: 25, deciderPoints: 15 },
   { id: 'best_of_5', label: 'Best of 5 (25, 25, 25, 25, 15)', targetPoints: 25, deciderPoints: 15 },
-  { id: 'one_set', label: '1 Set Game (to 25)', targetPoints: 25, deciderPoints: 25 }
+  { id: 'two_sets_21', label: '2 Sets (21, 21 - Pool Play)', targetPoints: 21, deciderPoints: 21 },
+  { id: 'two_sets_25', label: '2 Sets (25, 25 - Pool Play)', targetPoints: 25, deciderPoints: 25 },
+  { id: 'one_set_21', label: '1 Set Game (to 21)', targetPoints: 21, deciderPoints: 21 },
+  { id: 'one_set_25', label: '1 Set Game (to 25)', targetPoints: 25, deciderPoints: 25 }
 ];
 const SUB_LIMITS = [
   { value: 12, label: '12 Subs (USAV / NFHS Default)' },

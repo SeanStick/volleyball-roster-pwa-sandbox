@@ -25,6 +25,7 @@ export default function MatchSetupModal({
   const [court, setCourt] = useState('Court 1');
   const [matchNumber, setMatchNumber] = useState('Match 1');
   const [opponent, setOpponent] = useState('');
+  const [matchFormat, setMatchFormat] = useState('Best of 3 (21, 21, 15)');
   const [activeSet, setActiveSet] = useState(1);
   const [showResetConfirm, setShowResetConfirm] = useState(false);
 
@@ -33,6 +34,7 @@ export default function MatchSetupModal({
       setCourt(matchStats.courtNumber || 'Court 1');
       setMatchNumber(matchStats.matchStage || 'Match 1');
       setOpponent(matchStats.opponentName === 'Opponent' ? '' : (matchStats.opponentName || ''));
+      setMatchFormat(matchStats.matchFormat || 'Best of 3 (21, 21, 15)');
       setActiveSet(matchStats.setNumber || 1);
       setShowResetConfirm(false);
     }
@@ -41,10 +43,13 @@ export default function MatchSetupModal({
   if (!isOpen) return null;
 
   const handleSave = () => {
+    const targetPoints = matchFormat.includes('21') ? 21 : 25;
     onUpdateMatchDetails({
       courtNumber: court.trim() || 'Court 1',
       matchStage: matchNumber.trim() || 'Match 1',
       opponentName: opponent.trim() || 'Opponent',
+      matchFormat: matchFormat,
+      targetPoints: targetPoints,
       setNumber: Number(activeSet) || 1
     });
     confetti({ particleCount: 20, spread: 40, origin: { y: 0.5 } });
@@ -57,10 +62,13 @@ export default function MatchSetupModal({
       return;
     }
 
+    const targetPoints = matchFormat.includes('21') ? 21 : 25;
     onStartFreshMatch({
       courtNumber: court.trim() || 'Court 1',
       matchStage: matchNumber.trim() || 'Match 1',
       opponentName: opponent.trim() || 'Opponent',
+      matchFormat: matchFormat,
+      targetPoints: targetPoints,
       setNumber: 1
     });
     confetti({ particleCount: 40, spread: 50, origin: { y: 0.4 } });
@@ -248,6 +256,27 @@ export default function MatchSetupModal({
               onChange={(e) => setCourt(e.target.value)}
               style={{ fontSize: '0.85rem' }}
             />
+          </div>
+
+          {/* 5. Match Format */}
+          <div>
+            <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 700, color: '#fbbf24', marginBottom: '0.35rem' }}>
+              Match Format
+            </label>
+            <select
+              className="form-control"
+              value={matchFormat}
+              onChange={(e) => setMatchFormat(e.target.value)}
+              style={{ fontSize: '0.85rem' }}
+            >
+              <option value="Best of 3 (21, 21, 15)">Best of 3 (21, 21, 15)</option>
+              <option value="Best of 3 (25, 25, 15)">Best of 3 (25, 25, 15)</option>
+              <option value="Best of 5 (25, 25, 25, 25, 15)">Best of 5 (25, 25, 25, 25, 15)</option>
+              <option value="2 Sets (21, 21 - Pool Play)">2 Sets (21, 21 - Pool Play)</option>
+              <option value="2 Sets (25, 25 - Pool Play)">2 Sets (25, 25 - Pool Play)</option>
+              <option value="1 Set Game (to 21)">1 Set Game (to 21)</option>
+              <option value="1 Set Game (to 25)">1 Set Game (to 25)</option>
+            </select>
           </div>
 
           {/* Warning when tapping New Match */}

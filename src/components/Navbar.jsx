@@ -80,33 +80,6 @@ export default function Navbar({
       </div>
 
       <div className="header-actions">
-        {/* ⚡ START GAME BUTTON (Desktop/Tablet) */}
-        {onOpenMatchWizard && (
-          <button
-            type="button"
-            className="btn btn-sm hide-mobile"
-            onClick={onOpenMatchWizard}
-            style={{
-              background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
-              borderColor: '#10b981',
-              color: '#ffffff',
-              fontWeight: 800,
-              fontSize: '0.78rem',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '0.35rem',
-              padding: '0.35rem 0.65rem',
-              borderRadius: '8px',
-              boxShadow: '0 2px 10px rgba(16, 185, 129, 0.4)',
-              cursor: 'pointer'
-            }}
-            title="Start New Volleyball Game & Lineup Wizard"
-          >
-            <Volleyball size={15} />
-            <span>Start Game</span>
-          </button>
-        )}
-
         {/* 📋 TACTICAL WHITEBOARD BUTTON (Desktop/Tablet) */}
         {onOpenWhiteboard && (
           <button

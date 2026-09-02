@@ -15,7 +15,8 @@ import {
   Cloud,
   Share2,
   Volleyball,
-  ArrowRight
+  ArrowRight,
+  Dumbbell
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
 import Navbar from './components/Navbar';
@@ -25,6 +26,7 @@ import CourtView from './components/CourtView';
 import FormationsView from './components/FormationsView';
 import ScoreboardBar from './components/ScoreboardBar';
 import MatchStatsView from './components/MatchStatsView';
+import DrillHubPage from './components/DrillHubPage';
 import ImportExportModal from './components/ImportExportModal';
 import InstallPrompt from './components/InstallPrompt';
 import AuthModal from './components/AuthModal';
@@ -1405,7 +1407,7 @@ export default function App() {
         onOpenAddModal={handleOpenAdd}
         onOpenImportExportModal={() => setIsImportExportModalOpen(true)}
         onOpenMatchWizard={() => setIsMatchWizardOpen(true)}
-        onOpenDrillsModal={() => setIsDrillsModalOpen(true)}
+        onOpenDrillsModal={() => setActiveTab('drills')}
         user={user}
         syncStatus={syncStatus}
         lastSyncTime={lastSyncTime}
@@ -1479,33 +1481,48 @@ export default function App() {
           <span className="tab-label-desktop">Match Stats & PDF</span>
           <span className="tab-label-mobile">Stats & PDF</span>
         </button>
+
+        <button
+          id="tab-drills"
+          role="tab"
+          aria-selected={activeTab === 'drills'}
+          className={`tab-button ${activeTab === 'drills' ? 'active' : ''}`}
+          onClick={() => setActiveTab('drills')}
+          title="Practice Drills & Animated Lab"
+        >
+          <Dumbbell size={18} className="tab-icon" />
+          <span className="tab-label-desktop">Practice Drills</span>
+          <span className="tab-label-mobile">Drills</span>
+        </button>
       </div>
 
-      {/* Floating In-Game Scoreboard Ribbon with Tournament Context Header */}
-      <ScoreboardBar
-        matchStats={matchStats}
-        setMatchStats={setMatchStats}
-        onRallyWonByUs={handleRallyWonByUs}
-        onRallyWonByOpponent={handleRallyWonByOpponent}
-        onUndoLastPoint={handleUndoLastPoint}
-        onResetScore={handleResetScore}
-        onStartNewSet={handleStartNewSet}
-        onArchiveMatch={handleArchiveMatch}
-        onResetFullMatch={handleResetFullMatch}
-        onOpenMatchSetup={() => setIsMatchSetupModalOpen(true)}
-        onOpenMatchWizard={() => setIsMatchWizardOpen(true)}
-        onOpenTournamentDayHub={() => setIsTournamentDayHubOpen(true)}
-        onSelectSetNumber={handleSelectSetNumber}
-        onCallTimeout={handleCallTimeout}
-        onOpenSubModal={() => setActiveTab('court')}
-        subHistory={subHistory}
-        maxSubs={maxSubs}
-        lineup={lineup}
-        roster={roster}
-        rotation={rotation}
-        phase={phase}
-        onNavigateTab={(tab) => setActiveTab(tab)}
-      />
+      {/* Floating In-Game Scoreboard Ribbon with Tournament Context Header (Hidden on Drills page for maximum viewing area) */}
+      {activeTab !== 'drills' && (
+        <ScoreboardBar
+          matchStats={matchStats}
+          setMatchStats={setMatchStats}
+          onRallyWonByUs={handleRallyWonByUs}
+          onRallyWonByOpponent={handleRallyWonByOpponent}
+          onUndoLastPoint={handleUndoLastPoint}
+          onResetScore={handleResetScore}
+          onStartNewSet={handleStartNewSet}
+          onArchiveMatch={handleArchiveMatch}
+          onResetFullMatch={handleResetFullMatch}
+          onOpenMatchSetup={() => setIsMatchSetupModalOpen(true)}
+          onOpenMatchWizard={() => setIsMatchWizardOpen(true)}
+          onOpenTournamentDayHub={() => setIsTournamentDayHubOpen(true)}
+          onSelectSetNumber={handleSelectSetNumber}
+          onCallTimeout={handleCallTimeout}
+          onOpenSubModal={() => setActiveTab('court')}
+          subHistory={subHistory}
+          maxSubs={maxSubs}
+          lineup={lineup}
+          roster={roster}
+          rotation={rotation}
+          phase={phase}
+          onNavigateTab={(tab) => setActiveTab(tab)}
+        />
+      )}
 
       {activeTab === 'roster' && (
         <>
@@ -1783,6 +1800,11 @@ export default function App() {
           onDeleteMatchHistory={handleDeleteMatchHistory}
           onOpenMatchSetup={() => setIsMatchSetupModalOpen(true)}
         />
+      )}
+
+      {/* Dedicated Volleyball Practice Drills & 2D Animated Lab Page */}
+      {activeTab === 'drills' && (
+        <DrillHubPage />
       )}
 
       {/* Auth Modal */}

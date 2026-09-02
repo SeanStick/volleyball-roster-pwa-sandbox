@@ -4,7 +4,7 @@
  */
 
 export const DRILL_CATEGORIES = [
-  { id: 'all', label: 'All Drills (25)', icon: 'Sparkles', color: '#f59e0b' },
+  { id: 'all', label: 'All Drills', icon: 'Sparkles', color: '#f59e0b' },
   { id: 'warmup', label: 'Warm-Up & Footwork', icon: 'Flame', color: '#ef4444' },
   { id: 'serving_passing', label: 'Serving & Passing', icon: 'Target', color: '#3b82f6' },
   { id: 'defense', label: 'Defense & Digging', icon: 'Shield', color: '#10b981' },
@@ -1545,6 +1545,661 @@ export const VOLLEYBALL_DRILLS = [
           ],
           ball: { x: 50, y: 60, visible: true, arc: true, height: 3.5, from: { x: 80, y: 88 } },
           annotations: [{ text: 'High Out-Of-System Pop 🏐', x: 50, y: 55 }]
+        }
+      ]
+    }
+  },
+
+  // =========================================================================
+  // 8. NEW BEGINNER & INTERMEDIATE DRILLS
+  // =========================================================================
+  {
+    id: 'warmup-pass-to-self-shuffle',
+    title: 'Pass-to-Self & Lateral Line Shuffles',
+    category: 'warmup',
+    categoryLabel: 'Warm-Up & Footwork',
+    difficulty: 'Beginner',
+    intensity: 'Low',
+    minPlayers: 1,
+    maxPlayers: 12,
+    durationMinutes: 8,
+    equipment: ['1 Volleyball per player'],
+    overview: 'Essential beginner ball control drill teaching players to maintain soft, consistent forearm passes above forehead height while shuffling laterally along court lines.',
+    setup: 'Players space out along the 10ft attack line or endline with one volleyball each.',
+    instructions: [
+      'Player tosses ball up gently to initiate continuous forearm passing to self.',
+      'Maintain each pass at consistent height (3-4 feet above head).',
+      'Shuffle laterally from sideline to sideline without crossing feet, keeping platform locked and level.',
+      'Goal: 20 continuous self-passes while completing 2 full sideline-to-sideline trips.'
+    ],
+    coachingKeys: [
+      'Thumbs pressed together side-by-side, wrists pointed downward toward floor.',
+      'Absorb and lift with legs rather than swinging arms wildly from shoulders.',
+      'Keep eyes locked on ball contact point on the flat forearm sweet-spot.'
+    ],
+    variations: [
+      'Alternate 1 forearm pass, 1 overhead set to self.',
+      'Kneel on floor and pass to self from knees to isolate upper body mechanics.'
+    ],
+    animationData: {
+      courtType: 'half',
+      phases: [
+        {
+          name: 'Phase 1: Self-Pass & Lateral Shuffle',
+          description: 'Player passes ball up to self and shuffles laterally along the line.',
+          duration: 2200,
+          players: [
+            { id: 'p1', label: 'P1', role: 'Player', action: '🏐 Soft Self-Pass', x: 25, y: 65, color: '#3b82f6', path: [{ x: 25, y: 65 }, { x: 55, y: 65 }] }
+          ],
+          ball: { x: 25, y: 52, visible: true, arc: true, height: 2, from: { x: 25, y: 65 } },
+          annotations: [{ text: 'Lateral Shuffle Across Court ↔️', x: 40, y: 72 }]
+        },
+        {
+          name: 'Phase 2: Continued Rhythm Along Line',
+          description: 'Player maintains level platform and catches rhythm at mid-court.',
+          duration: 2200,
+          players: [
+            { id: 'p1', label: 'P1', role: 'Player', action: '🛡️ Platform Locked', x: 55, y: 65, color: '#3b82f6', path: [{ x: 55, y: 65 }, { x: 80, y: 65 }] }
+          ],
+          ball: { x: 55, y: 52, visible: true, arc: true, height: 2, from: { x: 55, y: 65 } },
+          annotations: [{ text: '20 Touches Target! 🎯', x: 65, y: 60 }]
+        }
+      ]
+    }
+  },
+
+  {
+    id: 'warmup-partner-triangle-pepper',
+    title: 'Stationary 3-Player Triangle Pepper',
+    category: 'warmup',
+    categoryLabel: 'Warm-Up & Footwork',
+    difficulty: 'Beginner',
+    intensity: 'Moderate',
+    minPlayers: 3,
+    maxPlayers: 12,
+    durationMinutes: 10,
+    equipment: ['1 Volleyball per trio'],
+    overview: 'Foundational beginner/intermediate group drill reinforcing the standard 3-touch sequence (Pass ➔ Set ➔ Downball) in a controlled triangle format.',
+    setup: '3 players form an equilateral triangle 12 feet apart (Passer, Setter, Hitter).',
+    instructions: [
+      'Player 1 passes to Player 2 (Setter).',
+      'Player 2 sets high, controlled ball to Player 3 (Hitter).',
+      'Player 3 executes a standing overhand downball with wrist snap to Player 1.',
+      'Player 1 digs the ball back to Player 2, and the cycle continues.',
+      'Rotate roles after 15 successful unbroken cycles.'
+    ],
+    coachingKeys: [
+      'Call "MINE" clearly on every single touch.',
+      'Downball hitter must aim directly at partner chest for easy reception.',
+      'Setter establishes balanced base facing hitter before releasing set.'
+    ],
+    variations: [
+      'Add a rule: Every player must touch the floor with one hand after hitting.',
+      'Reverse rotation direction (Passer ➔ Setter ➔ Downball counter-clockwise).'
+    ],
+    animationData: {
+      courtType: 'half',
+      phases: [
+        {
+          name: 'Phase 1: Pass to Setter in Triangle',
+          description: 'Passer delivers ball to Setter at triangle apex.',
+          duration: 2200,
+          players: [
+            { id: 'p1', label: 'P1', role: 'Passer', action: '🏐 Clean Pass', x: 30, y: 75, color: '#3b82f6' },
+            { id: 'p2', label: 'P2', role: 'Setter', action: '👀 Hands Ready', x: 50, y: 40, color: '#a855f7' },
+            { id: 'p3', label: 'P3', role: 'Hitter', action: '👀 Ready', x: 70, y: 75, color: '#f97316' }
+          ],
+          ball: { x: 50, y: 40, visible: true, arc: true, height: 2.2, from: { x: 30, y: 75 } },
+          annotations: [{ text: 'Pass to Apex', x: 40, y: 55 }]
+        },
+        {
+          name: 'Phase 2: Set to Hitter',
+          description: 'Setter delivers high arching ball to Hitter.',
+          duration: 2200,
+          players: [
+            { id: 'p1', label: 'P1', role: 'Passer', action: '🛡️ Base Defense', x: 30, y: 75, color: '#3b82f6' },
+            { id: 'p2', label: 'P2', role: 'Setter', action: '🏐 High Set', x: 50, y: 40, color: '#a855f7' },
+            { id: 'p3', label: 'P3', role: 'Hitter', action: '💥 Arm Loaded', x: 70, y: 75, color: '#f97316' }
+          ],
+          ball: { x: 70, y: 75, visible: true, arc: true, height: 2.5, from: { x: 50, y: 40 } },
+          annotations: [{ text: 'High Set to Hitter', x: 60, y: 55 }]
+        },
+        {
+          name: 'Phase 3: Controlled Downball',
+          description: 'Hitter snaps wrist and hits controlled ball back to Passer.',
+          duration: 2200,
+          players: [
+            { id: 'p1', label: 'P1', role: 'Passer', action: '🛡️ Ready Dig', x: 30, y: 75, color: '#3b82f6' },
+            { id: 'p2', label: 'P2', role: 'Setter', action: '👀 Follow Ball', x: 50, y: 40, color: '#a855f7' },
+            { id: 'p3', label: 'P3', role: 'Hitter', action: '💥 Downball Snap', x: 70, y: 75, color: '#f97316' }
+          ],
+          ball: { x: 30, y: 75, visible: true, arc: true, height: 1.8, from: { x: 70, y: 75 } },
+          annotations: [{ text: 'Controlled Downball 🔄', x: 50, y: 80 }]
+        }
+      ]
+    }
+  },
+
+  {
+    id: 'serve-underhand-foundations',
+    title: 'Underhand Serving Accuracy & Bowling Mechanics',
+    category: 'serving_passing',
+    categoryLabel: 'Serving & Passing',
+    difficulty: 'Beginner',
+    intensity: 'Low',
+    minPlayers: 2,
+    maxPlayers: 12,
+    durationMinutes: 10,
+    equipment: ['Volleyballs', 'Target Cones across Net'],
+    overview: 'Essential entry-level serving drill teaching young and beginner players proper foot placement, rigid fist/heel contact, and bowling follow-through to get serves consistently over the net.',
+    setup: 'Servers stand behind baseline on Side A. Cones placed across the net on Side B at varying depths.',
+    instructions: [
+      'Stance: Right-handed server places left foot forward (heel-to-toe staggered stance) pointing at target.',
+      'Hold ball in non-dominant hand at waist level directly in front of hitting hip.',
+      'Draw dominant arm straight back like a pendulum with rigid flat fist or heel of open hand.',
+      'Step forward with lead foot while swinging arm smoothly like a bowling ball.',
+      'Contact ball off holding hand without tossing it in the air; follow through upward toward target.',
+      'Goal: 8 out of 10 serves in-bounds over the net.'
+    ],
+    coachingKeys: [
+      'Do not toss the ball high—let the swinging hand sweep it off the holding palm.',
+      'Keep wrist locked rigid—do not let fingers flop on contact.',
+      'Transfer weight smoothly from back foot to front foot.'
+    ],
+    variations: [
+      'Start 10 feet inside the baseline (at 20ft line) and take one step back after every successful serve.'
+    ],
+    animationData: {
+      courtType: 'full',
+      phases: [
+        {
+          name: 'Phase 1: Pendulum Swing Stance',
+          description: 'Server in staggered stance holding ball at waist height.',
+          duration: 2200,
+          players: [
+            { id: 's', label: 'Server', role: 'Server', action: '🎳 Bowling Pendulum', x: 50, y: 95, color: '#3b82f6', path: [{ x: 50, y: 95 }, { x: 50, y: 90 }] }
+          ],
+          ball: { x: 50, y: 92, visible: true, arc: false, height: 1 },
+          annotations: [{ text: 'Step & Sweep Swing', x: 50, y: 85 }]
+        },
+        {
+          name: 'Phase 2: High Arching Flight Over Net',
+          description: 'Ball clears net with high consistent trajectory into deep court.',
+          duration: 2500,
+          players: [
+            { id: 's', label: 'Server', role: 'Server', action: '✅ Follow-Through', x: 50, y: 90, color: '#3b82f6' }
+          ],
+          ball: { x: 50, y: 25, visible: true, arc: true, height: 3.8, from: { x: 50, y: 90 } },
+          annotations: [{ text: 'Clean Over-Net Serve! 🏐 (+1 Pt)', x: 50, y: 20 }]
+        }
+      ]
+    }
+  },
+
+  {
+    id: 'serve-overhand-toss-and-trap',
+    title: 'Overhand Standing Float: Toss, Step & Catch Drill',
+    category: 'serving_passing',
+    categoryLabel: 'Serving & Passing',
+    difficulty: 'Beginner',
+    intensity: 'Moderate',
+    minPlayers: 2,
+    maxPlayers: 12,
+    durationMinutes: 10,
+    equipment: ['Volleyballs'],
+    overview: 'The number one fundamental drill to fix erratic overhand serves by isolating a consistent 2-foot toss in front of the hitting shoulder and matching bow-and-arrow arm loading.',
+    setup: 'Servers stand behind baseline facing the net, or facing a wall 15 feet away.',
+    instructions: [
+      'Ready Stance: Left foot forward (for righties), holding ball in left hand out in front of right shoulder.',
+      'Draw hitting arm back into "Bow-and-Arrow" posture with elbow high at ear level.',
+      'Toss ball 2-3 feet straight up with no spin, stepping forward with left foot.',
+      'Progression 1 (Toss & Trap): Reach up with hitting hand at peak height and TRAP/CATCH the ball against the non-dominant hand.',
+      'Progression 2 (Live Float Serve): Step and strike the center of the ball with a flat, rigid palm.'
+    ],
+    coachingKeys: [
+      'The toss determines 90% of the serve quality—keep it consistent!',
+      'Contact the dead center of the ball to create knuckleball float.',
+      'Freeze hand on contact for 1 second (abbreviated follow-through).'
+    ],
+    variations: [
+      'Toss and let the ball bounce on floor to verify it lands 1 foot in front of lead toe.'
+    ],
+    animationData: {
+      courtType: 'half',
+      phases: [
+        {
+          name: 'Phase 1: Bow & Arrow Loading',
+          description: 'Elbow high at ear level, toss straight up in front of shoulder.',
+          duration: 2200,
+          players: [
+            { id: 's', label: 'Server', role: 'Server', action: '🏹 Bow & Arrow', x: 50, y: 85, color: '#3b82f6' }
+          ],
+          ball: { x: 50, y: 75, visible: true, arc: true, height: 2.2, from: { x: 50, y: 85 } },
+          annotations: [{ text: 'Consistent 2ft Toss', x: 50, y: 70 }]
+        },
+        {
+          name: 'Phase 2: High Palm Contact & Float Flight',
+          description: 'Contact high with flat palm, driving ball across the net.',
+          duration: 2500,
+          players: [
+            { id: 's', label: 'Server', role: 'Server', action: '💥 Firm Palm Pop', x: 50, y: 82, color: '#3b82f6' }
+          ],
+          ball: { x: 50, y: 15, visible: true, arc: true, height: 3, from: { x: 50, y: 75 } },
+          annotations: [{ text: 'Knuckleball Float Across Net! 🎯', x: 50, y: 20 }]
+        }
+      ]
+    }
+  },
+
+  {
+    id: 'pass-wall-pass-platform-lock',
+    title: 'Wall Bouncing Platform Lock & Angle Isolation',
+    category: 'serving_passing',
+    categoryLabel: 'Serving & Passing',
+    difficulty: 'Beginner',
+    intensity: 'Low',
+    minPlayers: 1,
+    maxPlayers: 12,
+    durationMinutes: 8,
+    equipment: ['1 Volleyball per player', 'Gym Wall'],
+    overview: 'Solo repetitive control drill to build muscle memory for locking elbows, tilting platform angle, and absorbing ball rebounds against a flat wall.',
+    setup: 'Player stands 6 feet from gym wall with knees bent in ready athletic posture.',
+    instructions: [
+      'Toss ball against wall at a height of 8 feet.',
+      'As ball rebounds off wall, move feet into path of ball, lock platform straight, and bump ball back against wall.',
+      'Keep platform angle tilted at 45° to rebound ball upward.',
+      'Goal: Complete 25 continuous wall passes without dropping the ball.'
+    ],
+    coachingKeys: [
+      'Never swing arms toward wall—let the angle of your platform do the work.',
+      'Shrug shoulders up toward ears to create a flat passing board across forearms.'
+    ],
+    variations: [
+      'Alternate 1 high pass, 1 low pass.',
+      'Add target square on wall with tape (e.g. 2ft x 2ft box).'
+    ],
+    animationData: {
+      courtType: 'half',
+      phases: [
+        {
+          name: 'Phase 1: Wall Rebound & Platform Angle',
+          description: 'Player passes ball against wall target and tracks rebound.',
+          duration: 2200,
+          players: [
+            { id: 'p', label: 'Player', role: 'Passer', action: '🛡️ Platform Lock', x: 50, y: 65, color: '#3b82f6' }
+          ],
+          ball: { x: 50, y: 20, visible: true, arc: true, height: 2.5, from: { x: 50, y: 65 } },
+          annotations: [{ text: 'Wall Target Rebound 🧱', x: 50, y: 15 }]
+        },
+        {
+          name: 'Phase 2: Continuous Rebound Rhythm',
+          description: 'Player stays low and catches rebound with frozen platform.',
+          duration: 2200,
+          players: [
+            { id: 'p', label: 'Player', role: 'Passer', action: '✅ Freeze Angle', x: 50, y: 65, color: '#3b82f6' }
+          ],
+          ball: { x: 50, y: 65, visible: true, arc: true, height: 2, from: { x: 50, y: 20 } },
+          annotations: [{ text: '25 Consecutive Target Reps!', x: 50, y: 72 }]
+        }
+      ]
+    }
+  },
+
+  {
+    id: 'pass-partner-target-bowling',
+    title: 'Partner 10ft Deep-to-Short Passing Exchange',
+    category: 'serving_passing',
+    categoryLabel: 'Serving & Passing',
+    difficulty: 'Intermediate',
+    intensity: 'Moderate',
+    minPlayers: 2,
+    maxPlayers: 12,
+    durationMinutes: 10,
+    equipment: ['Volleyballs'],
+    overview: 'Partner drill training passers to adjust their platform depth for short drop balls versus deep float balls without losing target accuracy.',
+    setup: 'Two partners face each other 15 feet apart.',
+    instructions: [
+      'Partner A passes high ball 3 feet deep behind Partner B.',
+      'Partner B takes 2 drop-steps back, locks platform, and delivers high pass back to Partner A.',
+      'Partner A passes short ball 3 feet in front of Partner B.',
+      'Partner B sprints forward and pops short ball back to target.',
+      'Switch roles after 10 deep/short cycles.'
+    ],
+    coachingKeys: [
+      'Drop-step on deep balls; do not jump backward in mid-air.',
+      'Get low on short balls by bending knees, not bending at waist.'
+    ],
+    variations: [
+      'Add target hoop on floor between partners.'
+    ],
+    animationData: {
+      courtType: 'half',
+      phases: [
+        {
+          name: 'Phase 1: Deep Drop-Step Pass',
+          description: 'Partner B drop-steps and passes deep ball back to target.',
+          duration: 2400,
+          players: [
+            { id: 'pA', label: 'P1', role: 'Target', action: '🎯 Target', x: 50, y: 35, color: '#3b82f6' },
+            { id: 'pB', label: 'P2', role: 'Passer', action: '🏃 Drop-Step', x: 50, y: 65, color: '#10b981', path: [{ x: 50, y: 65 }, { x: 50, y: 85 }] }
+          ],
+          ball: { x: 50, y: 85, visible: true, arc: true, height: 3, from: { x: 50, y: 35 } },
+          annotations: [{ text: 'Deep Float Rebound', x: 50, y: 60 }]
+        },
+        {
+          name: 'Phase 2: Short Sprint & Pop',
+          description: 'Partner B sprints forward to pop short ball.',
+          duration: 2400,
+          players: [
+            { id: 'pA', label: 'P1', role: 'Target', action: '🎯 Target', x: 50, y: 35, color: '#3b82f6' },
+            { id: 'pB', label: 'P2', role: 'Passer', action: '🏃 Sprint Forward', x: 50, y: 85, color: '#10b981', path: [{ x: 50, y: 85 }, { x: 50, y: 55 }] }
+          ],
+          ball: { x: 50, y: 55, visible: true, arc: true, height: 2, from: { x: 50, y: 35 } },
+          annotations: [{ text: 'Short Ball Sprint! 🏃', x: 50, y: 50 }]
+        }
+      ]
+    }
+  },
+
+  {
+    id: 'def-partner-knee-drop-digging',
+    title: 'Knee-Drop & Low Athletic Posture Digging',
+    category: 'defense',
+    categoryLabel: 'Defense & Digging',
+    difficulty: 'Beginner',
+    intensity: 'Moderate',
+    minPlayers: 2,
+    maxPlayers: 10,
+    durationMinutes: 10,
+    equipment: ['Volleyballs', 'Knee Pads'],
+    overview: 'Foundational defensive drill teaching defenders to drop hips, widen base, and absorb low balls without falling backward onto their heels.',
+    setup: 'Defender starts in ready defensive posture (feet wider than shoulders, knees bent 90°, chest forward). Coach/Partner 10 feet away with ball.',
+    instructions: [
+      'Partner hits controlled low downballs to defender left and right.',
+      'Defender drops inside knee close to floor (knee drop) to create flat angle.',
+      'Absorb ball off forearms, popping it high (12+ feet) to mid-court.',
+      'Defender immediately resets feet to base position before next ball.'
+    ],
+    coachingKeys: [
+      'Weight on the balls of your feet, not your heels.',
+      'Keep platform out in front of knees—do not let arms get pulled between legs.'
+    ],
+    variations: [
+      'Rapid fire 10-ball endurance round.'
+    ],
+    animationData: {
+      courtType: 'half',
+      phases: [
+        {
+          name: 'Phase 1: Low Stance & Knee Drop',
+          description: 'Defender drops knee to reach low ball off floor.',
+          duration: 2200,
+          players: [
+            { id: 'c', label: 'Partner', role: 'Hitter', action: '💥 Low Hit', x: 50, y: 30, color: '#ef4444' },
+            { id: 'd', label: 'Defender', role: 'Defense', action: '🛡️ Knee Drop Dig', x: 50, y: 75, color: '#10b981' }
+          ],
+          ball: { x: 50, y: 75, visible: true, arc: true, height: 1.2, from: { x: 50, y: 30 } },
+          annotations: [{ text: 'Low Dig Off Floor 🛡️', x: 50, y: 80 }]
+        },
+        {
+          name: 'Phase 2: High Pop to Target',
+          description: 'Ball pops high toward center court transition spot.',
+          duration: 2400,
+          players: [
+            { id: 'c', label: 'Partner', role: 'Hitter', action: '👀 Tracking', x: 50, y: 30, color: '#ef4444' },
+            { id: 'd', label: 'Defender', role: 'Defense', action: '✅ Quick Reset', x: 50, y: 75, color: '#10b981' }
+          ],
+          ball: { x: 65, y: 40, visible: true, arc: true, height: 3.2, from: { x: 50, y: 75 } },
+          annotations: [{ text: 'High Target Dig 🎯', x: 65, y: 35 }]
+        }
+      ]
+    }
+  },
+
+  {
+    id: 'set-wall-triangle-dishes',
+    title: 'Wall Setting Window & Finger Cushioning',
+    category: 'setting',
+    categoryLabel: 'Setting & Transition',
+    difficulty: 'Beginner',
+    intensity: 'Low',
+    minPlayers: 1,
+    maxPlayers: 12,
+    durationMinutes: 8,
+    equipment: ['1 Volleyball per player', 'Wall'],
+    overview: 'Solo setting drill building soft hand dish shape, 10-finger contact, and wrist cushioning against a gym wall.',
+    setup: 'Player stands 3 feet from wall with hands shaped in a triangle window 2 inches above hairline.',
+    instructions: [
+      'Rapid-set the ball against the wall with soft finger pads (no palm slap).',
+      'Thumbs and index fingers form a diamond/triangle window around the ball.',
+      'Extend wrists and elbows smoothly into each wall push.',
+      'Perform 50 continuous rapid wall sets.'
+    ],
+    coachingKeys: [
+      'Contact ball with pads of all 10 fingers—thumbs must point back toward eyes.',
+      'Listen for silent contact—loud slapping means too much palm.'
+    ],
+    variations: [
+      'One-handed setting against wall to develop weak hand finger strength.'
+    ],
+    animationData: {
+      courtType: 'half',
+      phases: [
+        {
+          name: 'Phase 1: Rapid Wall Setting Dishes',
+          description: 'Player executes rapid soft-finger sets against wall target.',
+          duration: 2000,
+          players: [
+            { id: 's', label: 'Setter', role: 'Setter', action: '🏐 10-Finger Dishes', x: 50, y: 65, color: '#a855f7' }
+          ],
+          ball: { x: 50, y: 25, visible: true, arc: true, height: 1.5, from: { x: 50, y: 65 } },
+          annotations: [{ text: 'Rapid Finger Dishes 👐', x: 50, y: 20 }]
+        }
+      ]
+    }
+  },
+
+  {
+    id: 'hit-standing-bow-and-arrow-arm-swing',
+    title: 'Standing Bow-and-Arrow Arm Swing & Torso Rotation',
+    category: 'hitting',
+    categoryLabel: 'Attacking & Hitting',
+    difficulty: 'Beginner',
+    intensity: 'Low',
+    minPlayers: 2,
+    maxPlayers: 12,
+    durationMinutes: 8,
+    equipment: ['Volleyballs'],
+    overview: 'Teaches beginner hitters how to rotate their torso, raise hitting elbow high, reach at peak extension, and snap wrist for topspin without jump timing complexity.',
+    setup: 'Partners stand 20 feet apart on court, or hitters face net 5 feet back.',
+    instructions: [
+      'Stance: Non-hitting shoulder faces target (staggered stance).',
+      'Draw hitting arm back into bow-and-arrow posture with high elbow.',
+      'Guide hand points at ball in mid-air.',
+      'Rotate hips and torso forward, swing arm up to full vertical reach, and snap wrist over top hemisphere of ball.',
+      'Hit down into floor so ball bounces up to partner.'
+    ],
+    coachingKeys: [
+      'Reach HIGH! Do not contact ball at shoulder height.',
+      'Snap wrist down like throwing a ball over a fence to create topspin.'
+    ],
+    variations: [
+      'Stand on a sturdy box at the net to practice hitting over net tape.'
+    ],
+    animationData: {
+      courtType: 'half',
+      phases: [
+        {
+          name: 'Phase 1: High Contact & Floor Bounce',
+          description: 'Hitter executes standing arm swing snapping wrist down.',
+          duration: 2200,
+          players: [
+            { id: 'h', label: 'Hitter', role: 'Hitter', action: '🏹 High Reach Swing', x: 35, y: 65, color: '#f97316' },
+            { id: 'p', label: 'Partner', role: 'Catch', action: '👀 Catch Rebound', x: 65, y: 65, color: '#3b82f6' }
+          ],
+          ball: { x: 50, y: 65, visible: true, arc: true, height: 1.8, from: { x: 35, y: 65 } },
+          annotations: [{ text: 'Floor Bounce to Partner 💥', x: 50, y: 70 }]
+        }
+      ]
+    }
+  },
+
+  {
+    id: 'block-hand-penetration-net-tape',
+    title: 'Standing Net Tape Hands-Over Penetration',
+    category: 'blocking',
+    categoryLabel: 'Blocking & Net Play',
+    difficulty: 'Beginner',
+    intensity: 'Low',
+    minPlayers: 2,
+    maxPlayers: 8,
+    durationMinutes: 8,
+    equipment: ['Net', 'Volleyball held by Coach'],
+    overview: 'Beginner blocking drill teaching players to reach across the net tape into the opponent court, spread fingers wide, and lock wrists to prevent net fouls.',
+    setup: 'Blockers stand at net with hands up at shoulder height. Coach stands on opposite side holding ball over net tape.',
+    instructions: [
+      'Blocker jumps straight up from standing position.',
+      'Push hands forward and over the net tape ("roofing" the ball).',
+      'Press palms flat against coach’s held ball without brushing net with chest or arms.',
+      'Land softly on two feet with knees bent, turning into court.'
+    ],
+    coachingKeys: [
+      'Jump STRAIGHT UP—do not drift forward into the net.',
+      'Spread fingers as wide as possible to maximize blocking surface.'
+    ],
+    variations: [
+      'Add 1 lateral shuffle step before jumping.'
+    ],
+    animationData: {
+      courtType: 'half',
+      phases: [
+        {
+          name: 'Phase 1: Standing Hands-Over Press',
+          description: 'Blocker jumps straight up and penetrates across net tape.',
+          duration: 2200,
+          players: [
+            { id: 'b', label: 'Blocker', role: 'Blocker', action: '🧱 Penetrate Over Net', x: 50, y: 22, color: '#06b6d4' }
+          ],
+          ball: { x: 50, y: 14, visible: true, arc: false, height: 2 },
+          annotations: [{ text: 'Hands Over Net Tape! 🔒', x: 50, y: 8 }]
+        }
+      ]
+    }
+  },
+
+  {
+    id: 'wash-king-of-the-court-3v3',
+    title: '3v3 King of the Court Continuous Mini-Game',
+    category: 'wash_games',
+    categoryLabel: 'Wash & Scrimmage',
+    difficulty: 'Intermediate',
+    intensity: 'High',
+    minPlayers: 6,
+    maxPlayers: 15,
+    durationMinutes: 15,
+    equipment: ['Volleyballs', 'Net'],
+    overview: 'Fast-paced, high-energy 3v3 mini-scrimmage game where the "King" side scores points by winning rallies while challenging teams sprint on from the challenger side.',
+    setup: '3 players on "King" side (Side A). 3 challengers on Side B. Remaining players in line off court.',
+    instructions: [
+      'Challengers serve or enter free ball to King side.',
+      'Play out rally with mandatory 3-touch rule.',
+      'If King side wins: they earn 1 point and stay on King side.',
+      'If Challenger side wins: they sprint under net to become new Kings! Defeated Kings run to end of challenger line.',
+      'First team to reach 7 King points wins.'
+    ],
+    coachingKeys: [
+      'Fast transitions—new challengers must enter court immediately.',
+      'Communicate every ball—3 players must cover all 900 square feet!'
+    ],
+    variations: [
+      'Queen of the Court (All hits must be back-row attacks).'
+    ],
+    animationData: {
+      courtType: 'full',
+      phases: [
+        {
+          name: 'Phase 1: Challenger Serve to King Side',
+          description: 'Challengers serve to King team to start fast mini-rally.',
+          duration: 2400,
+          players: [
+            { id: 'k1', label: 'King 1', role: 'Kings', action: '👑 Pass', x: 30, y: 75, color: '#f59e0b' },
+            { id: 'k2', label: 'King 2', role: 'Kings', action: '👑 Set', x: 50, y: 60, color: '#f59e0b' },
+            { id: 'k3', label: 'King 3', role: 'Kings', action: '👑 Hit', x: 70, y: 75, color: '#f59e0b' },
+            { id: 'c1', label: 'Challenger', role: 'Challenger', action: '🏐 Serve', x: 50, y: 15, color: '#3b82f6' }
+          ],
+          ball: { x: 30, y: 75, visible: true, arc: true, height: 3, from: { x: 50, y: 15 } },
+          annotations: [{ text: 'King of the Court Rally! 👑', x: 50, y: 50 }]
+        },
+        {
+          name: 'Phase 2: King Kill & Point Scored',
+          description: 'King side sets outside, scores kill, and retains King side.',
+          duration: 2400,
+          players: [
+            { id: 'k1', label: 'King 1', role: 'Kings', action: '👀 Cover', x: 30, y: 75, color: '#f59e0b' },
+            { id: 'k2', label: 'King 2', role: 'Kings', action: '🏐 High Set', x: 50, y: 60, color: '#f59e0b' },
+            { id: 'k3', label: 'King 3', role: 'Kings', action: '💥 SPIKE KILL', x: 70, y: 55, color: '#f59e0b' },
+            { id: 'c1', label: 'Challenger', role: 'Challenger', action: '🛡️ Dig Attempt', x: 50, y: 25, color: '#3b82f6' }
+          ],
+          ball: { x: 30, y: 25, visible: true, arc: true, height: 1.8, from: { x: 70, y: 55 } },
+          annotations: [{ text: '👑 POINT KINGS! (+1 Pt)', x: 30, y: 20 }]
+        }
+      ]
+    }
+  },
+
+  {
+    id: 'wash-free-ball-3touch-relay',
+    title: '3-Touch Mandatory Cooperative Free Ball Relay',
+    category: 'wash_games',
+    categoryLabel: 'Wash & Scrimmage',
+    difficulty: 'Beginner',
+    intensity: 'Moderate',
+    minPlayers: 6,
+    maxPlayers: 12,
+    durationMinutes: 10,
+    equipment: ['Volleyballs', 'Net'],
+    overview: 'Cooperative beginner scrimmage drill where both teams work together to achieve high rally records, enforcing a mandatory 3-touch sequence (Pass ➔ Set ➔ Attack over net).',
+    setup: '3 to 6 players on each side of the net in base rotation.',
+    instructions: [
+      'Coach enters easy free ball to Side A.',
+      'Side A MUST execute 3 distinct contacts: Forearm Pass ➔ Overhead Set ➔ Controlled Downball over net.',
+      'Side B receives, executes 3 contacts, and sends it back to Side A.',
+      'Team earns 1 milestone point for every successful 10-touch rally.',
+      'Goal: Achieve a 30-touch unbroken cooperative rally record as a squad.'
+    ],
+    coachingKeys: [
+      'No one-touch panic returns—trust your teammates to make 3 touches.',
+      'Call "MINE" loudly before touching every single ball.'
+    ],
+    variations: [
+      'Add a rule: Ball sent over net must be an overhead tip or roll shot.'
+    ],
+    animationData: {
+      courtType: 'full',
+      phases: [
+        {
+          name: 'Phase 1: Side A 3-Touch Progression',
+          description: 'Side A executes Pass, Set, and Downball over net.',
+          duration: 2500,
+          players: [
+            { id: 'a1', label: 'A1', role: 'Passer', action: '🏐 Pass', x: 30, y: 75, color: '#3b82f6' },
+            { id: 'a2', label: 'A2', role: 'Setter', action: '🏐 Set', x: 50, y: 58, color: '#a855f7' },
+            { id: 'a3', label: 'A3', role: 'Hitter', action: '💥 Downball', x: 70, y: 58, color: '#f97316' }
+          ],
+          ball: { x: 50, y: 25, visible: true, arc: true, height: 3, from: { x: 70, y: 58 } },
+          annotations: [{ text: 'Pass ➔ Set ➔ Attack! 3 Touches', x: 50, y: 50 }]
+        },
+        {
+          name: 'Phase 2: Side B 3-Touch Return',
+          description: 'Side B digs, sets, and returns ball to continue rally record.',
+          duration: 2500,
+          players: [
+            { id: 'b1', label: 'B1', role: 'Passer', action: '🛡️ Dig', x: 50, y: 25, color: '#10b981' },
+            { id: 'b2', label: 'B2', role: 'Setter', action: '🏐 Set', x: 50, y: 40, color: '#f59e0b' },
+            { id: 'b3', label: 'B3', role: 'Hitter', action: '💥 Return', x: 30, y: 40, color: '#ec4899' }
+          ],
+          ball: { x: 30, y: 75, visible: true, arc: true, height: 2.8, from: { x: 30, y: 40 } },
+          annotations: [{ text: 'RALLY COUNT: 20 Touches! 🎯', x: 50, y: 50 }]
         }
       ]
     }

@@ -1486,8 +1486,8 @@ export default function App() {
         </button>
       </div>
 
-      {/* Floating In-Game Scoreboard Ribbon with Tournament Context Header (Hidden on Drills page for maximum viewing area) */}
-      {activeTab !== 'drills' && (
+      {/* Floating In-Game Scoreboard Ribbon with Tournament Context Header (Hidden on Drills & Whiteboard pages for maximum coaching area) */}
+      {activeTab !== 'drills' && activeTab !== 'whiteboard' && (
         <ScoreboardBar
           matchStats={matchStats}
           setMatchStats={setMatchStats}

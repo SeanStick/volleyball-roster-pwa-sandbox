@@ -173,12 +173,6 @@ export default function Navbar({
           <Database size={18} />
         </button>
 
-        {/* Add Player Action */}
-        <button className="btn btn-secondary btn-sm" onClick={onOpenAddModal} style={{ fontSize: '0.78rem' }}>
-          <Plus size={15} />
-          <span className="hide-mobile">Add Player</span>
-        </button>
-
         {/* User Menu & Cloud Sync Pill */}
         <UserMenu
           user={user}

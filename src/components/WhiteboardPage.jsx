@@ -11,6 +11,7 @@ import {
   Play,
   Pause,
   RotateCcw,
+  RotateCw,
   Plus,
   Users,
   Dumbbell,
@@ -26,23 +27,24 @@ import {
   Maximize2,
   Minimize2,
   RefreshCw,
+  Zap,
+  Eye,
+  EyeOff,
   Volleyball
 } from 'lucide-react';
-import { ZONE_LABELS } from '../services/volleyballRules';
+import { ZONE_LABELS, rotateLineupClockwise } from '../services/volleyballRules';
 import '../styles/whiteboard.css';
 
 // Default Court Zone Coordinates (Normalized 0-100%)
-// Half-court view (Net is at TOP y=0%, Baseline at BOTTOM y=100%)
 const BASE_ZONE_COORDS_HALF = {
-  pos1: { x: 80, y: 80 }, // Back Right (Serving)
-  pos6: { x: 50, y: 82 }, // Back Middle
-  pos5: { x: 20, y: 80 }, // Back Left
-  pos4: { x: 20, y: 28 }, // Front Left (Outside Hitter)
-  pos3: { x: 50, y: 24 }, // Front Middle (Middle Blocker)
-  pos2: { x: 80, y: 28 }  // Front Right (Opposite/Setter)
+  pos1: { x: 80, y: 80 },
+  pos6: { x: 50, y: 82 },
+  pos5: { x: 20, y: 80 },
+  pos4: { x: 20, y: 28 },
+  pos3: { x: 50, y: 24 },
+  pos2: { x: 80, y: 28 }
 };
 
-// Full-court view (Net at CENTER y=50%)
 const BASE_ZONE_COORDS_FULL = {
   pos1: { x: 80, y: 88 },
   pos6: { x: 50, y: 90 },
@@ -61,50 +63,237 @@ const COLOR_PALETTE = [
   { name: 'Magenta', hex: '#f43f5e' }
 ];
 
-const PLAYBOOK_PRESETS = [
-  {
-    id: 'rot1-receive-stack',
-    title: 'Rot 1: Serve Receive Stack (Setter in Z1)',
-    description: 'Setter hides in Z1 corner, OH1 and Opposite stack at net while Libero & OH2 pass.',
-    courtType: 'half',
-    players: {
-      pos1: { x: 88, y: 78, label: 'S1' },
-      pos6: { x: 50, y: 75, label: 'L' },
-      pos5: { x: 22, y: 72, label: 'OH2' },
-      pos4: { x: 20, y: 35, label: 'OH1' },
-      pos3: { x: 45, y: 22, label: 'MB1' },
-      pos2: { x: 75, y: 30, label: 'OPP' }
+// Tactical Rotation Coordinates & Transition Switch Targets (6-2 / Standard Volleyball System)
+const ROTATION_TACTICAL_SPOTS = {
+  1: {
+    serving: {
+      base: {
+        pos1: { x: 82, y: 92 },
+        pos2: { x: 22, y: 18 },
+        pos3: { x: 50, y: 18 },
+        pos4: { x: 80, y: 18 },
+        pos5: { x: 22, y: 72 },
+        pos6: { x: 50, y: 74 }
+      },
+      transition: {
+        pos1: { x: 80, y: 72 },
+        pos2: { x: 20, y: 22 },
+        pos3: { x: 50, y: 20 },
+        pos4: { x: 80, y: 22 },
+        pos5: { x: 22, y: 72 },
+        pos6: { x: 50, y: 76 }
+      }
+    },
+    receiving: {
+      base: {
+        pos1: { x: 78, y: 46 },
+        pos2: { x: 74, y: 70 },
+        pos3: { x: 48, y: 15 },
+        pos4: { x: 18, y: 24 },
+        pos5: { x: 22, y: 72 },
+        pos6: { x: 48, y: 76 }
+      },
+      transition: {
+        pos1: { x: 68, y: 12 },
+        pos2: { x: 18, y: 22 },
+        pos3: { x: 48, y: 20 },
+        pos4: { x: 82, y: 20 },
+        pos5: { x: 22, y: 72 },
+        pos6: { x: 50, y: 75 }
+      }
     }
   },
-  {
-    id: 'middle-slide-combo',
-    title: 'Middle Slide & Pin Cross Combination',
-    description: 'MB fakes 1-tempo quick in middle while Right-Side runs behind setter for a slide attack.',
-    courtType: 'half',
-    players: {
-      pos1: { x: 70, y: 80, label: 'Def' },
-      pos6: { x: 50, y: 82, label: 'L' },
-      pos5: { x: 25, y: 80, label: 'OH' },
-      pos4: { x: 18, y: 22, label: 'OH' },
-      pos3: { x: 48, y: 18, label: 'MB (Slide)' },
-      pos2: { x: 68, y: 20, label: 'S' }
+  2: {
+    serving: {
+      base: {
+        pos1: { x: 82, y: 92 },
+        pos2: { x: 50, y: 18 },
+        pos3: { x: 80, y: 18 },
+        pos4: { x: 22, y: 18 },
+        pos5: { x: 22, y: 72 },
+        pos6: { x: 50, y: 74 }
+      },
+      transition: {
+        pos1: { x: 80, y: 72 },
+        pos2: { x: 50, y: 20 },
+        pos3: { x: 80, y: 22 },
+        pos4: { x: 20, y: 22 },
+        pos5: { x: 22, y: 72 },
+        pos6: { x: 50, y: 76 }
+      }
+    },
+    receiving: {
+      base: {
+        pos1: { x: 78, y: 72 },
+        pos2: { x: 70, y: 20 },
+        pos3: { x: 48, y: 20 },
+        pos4: { x: 22, y: 68 },
+        pos5: { x: 48, y: 76 },
+        pos6: { x: 72, y: 46 }
+      },
+      transition: {
+        pos1: { x: 80, y: 72 },
+        pos2: { x: 50, y: 20 },
+        pos3: { x: 82, y: 20 },
+        pos4: { x: 18, y: 22 },
+        pos5: { x: 22, y: 72 },
+        pos6: { x: 68, y: 12 }
+      }
     }
   },
-  {
-    id: 'perimeter-defense',
-    title: 'Perimeter Defense Transition',
-    description: 'Base-to-Read transition defense against an opponent outside hitter attack.',
-    courtType: 'half',
-    players: {
-      pos1: { x: 82, y: 72, label: 'Z1 Line' },
-      pos6: { x: 50, y: 86, label: 'Z6 Deep' },
-      pos5: { x: 22, y: 68, label: 'Z5 Cross' },
-      pos4: { x: 30, y: 30, label: 'Off-Block' },
-      pos3: { x: 68, y: 15, label: 'MB Block' },
-      pos2: { x: 85, y: 15, label: 'Right Block' }
+  3: {
+    serving: {
+      base: {
+        pos1: { x: 82, y: 92 },
+        pos2: { x: 80, y: 18 },
+        pos3: { x: 22, y: 18 },
+        pos4: { x: 50, y: 18 },
+        pos5: { x: 22, y: 72 },
+        pos6: { x: 50, y: 74 }
+      },
+      transition: {
+        pos1: { x: 50, y: 76 },
+        pos2: { x: 80, y: 22 },
+        pos3: { x: 20, y: 22 },
+        pos4: { x: 50, y: 20 },
+        pos5: { x: 80, y: 72 },
+        pos6: { x: 22, y: 72 }
+      }
+    },
+    receiving: {
+      base: {
+        pos1: { x: 76, y: 72 },
+        pos2: { x: 78, y: 22 },
+        pos3: { x: 50, y: 70 },
+        pos4: { x: 48, y: 20 },
+        pos5: { x: 22, y: 46 },
+        pos6: { x: 22, y: 72 }
+      },
+      transition: {
+        pos1: { x: 50, y: 75 },
+        pos2: { x: 82, y: 20 },
+        pos3: { x: 18, y: 22 },
+        pos4: { x: 50, y: 20 },
+        pos5: { x: 68, y: 12 },
+        pos6: { x: 22, y: 72 }
+      }
+    }
+  },
+  4: {
+    serving: {
+      base: {
+        pos1: { x: 82, y: 92 },
+        pos2: { x: 22, y: 18 },
+        pos3: { x: 50, y: 18 },
+        pos4: { x: 80, y: 18 },
+        pos5: { x: 22, y: 72 },
+        pos6: { x: 50, y: 74 }
+      },
+      transition: {
+        pos1: { x: 80, y: 72 },
+        pos2: { x: 20, y: 22 },
+        pos3: { x: 50, y: 20 },
+        pos4: { x: 80, y: 22 },
+        pos5: { x: 22, y: 72 },
+        pos6: { x: 50, y: 76 }
+      }
+    },
+    receiving: {
+      base: {
+        pos1: { x: 78, y: 46 },
+        pos2: { x: 74, y: 70 },
+        pos3: { x: 48, y: 15 },
+        pos4: { x: 18, y: 24 },
+        pos5: { x: 22, y: 72 },
+        pos6: { x: 48, y: 76 }
+      },
+      transition: {
+        pos1: { x: 68, y: 12 },
+        pos2: { x: 18, y: 22 },
+        pos3: { x: 48, y: 20 },
+        pos4: { x: 82, y: 20 },
+        pos5: { x: 22, y: 72 },
+        pos6: { x: 50, y: 75 }
+      }
+    }
+  },
+  5: {
+    serving: {
+      base: {
+        pos1: { x: 82, y: 92 },
+        pos2: { x: 50, y: 18 },
+        pos3: { x: 80, y: 18 },
+        pos4: { x: 22, y: 18 },
+        pos5: { x: 22, y: 72 },
+        pos6: { x: 50, y: 74 }
+      },
+      transition: {
+        pos1: { x: 80, y: 72 },
+        pos2: { x: 50, y: 20 },
+        pos3: { x: 80, y: 22 },
+        pos4: { x: 20, y: 22 },
+        pos5: { x: 22, y: 72 },
+        pos6: { x: 50, y: 76 }
+      }
+    },
+    receiving: {
+      base: {
+        pos1: { x: 78, y: 72 },
+        pos2: { x: 70, y: 20 },
+        pos3: { x: 48, y: 20 },
+        pos4: { x: 22, y: 68 },
+        pos5: { x: 48, y: 76 },
+        pos6: { x: 72, y: 46 }
+      },
+      transition: {
+        pos1: { x: 80, y: 72 },
+        pos2: { x: 50, y: 20 },
+        pos3: { x: 82, y: 20 },
+        pos4: { x: 18, y: 22 },
+        pos5: { x: 22, y: 72 },
+        pos6: { x: 68, y: 12 }
+      }
+    }
+  },
+  6: {
+    serving: {
+      base: {
+        pos1: { x: 82, y: 92 },
+        pos2: { x: 80, y: 18 },
+        pos3: { x: 22, y: 18 },
+        pos4: { x: 50, y: 18 },
+        pos5: { x: 22, y: 72 },
+        pos6: { x: 50, y: 74 }
+      },
+      transition: {
+        pos1: { x: 50, y: 76 },
+        pos2: { x: 80, y: 22 },
+        pos3: { x: 20, y: 22 },
+        pos4: { x: 50, y: 20 },
+        pos5: { x: 80, y: 72 },
+        pos6: { x: 22, y: 72 }
+      }
+    },
+    receiving: {
+      base: {
+        pos1: { x: 76, y: 72 },
+        pos2: { x: 78, y: 22 },
+        pos3: { x: 50, y: 70 },
+        pos4: { x: 48, y: 20 },
+        pos5: { x: 22, y: 46 },
+        pos6: { x: 22, y: 72 }
+      },
+      transition: {
+        pos1: { x: 50, y: 75 },
+        pos2: { x: 82, y: 20 },
+        pos3: { x: 18, y: 22 },
+        pos4: { x: 50, y: 20 },
+        pos5: { x: 68, y: 12 },
+        pos6: { x: 22, y: 72 }
+      }
     }
   }
-];
+};
 
 export default function WhiteboardPage({
   lineup = {},
@@ -119,10 +308,16 @@ export default function WhiteboardPage({
   const [activeColor, setActiveColor] = useState('#00f5ff');
   const [strokeWidth, setStrokeWidth] = useState(3.5);
 
+  // Rotation & Tactical Formation State
+  const [selectedRotation, setSelectedRotation] = useState(rotation || 1);
+  const [tacticalPhase, setTacticalPhase] = useState('receiving'); // 'serving' | 'receiving'
+  const [isTransitionActive, setIsTransitionActive] = useState(false); // Toggle between Base vs Post-Serve/Receive Transition spot
+  const [showTransitionPaths, setShowTransitionPaths] = useState(true); // Toggle to show directional transition movement arrows
+
   // Tactical On-Court Players State
   const [courtPlayers, setCourtPlayers] = useState(() => {
-    const coords = BASE_ZONE_COORDS_HALF;
-    return Object.entries(coords).map(([zoneKey, pos]) => {
+    const rotSpots = ROTATION_TACTICAL_SPOTS[rotation || 1]?.[tacticalPhase]?.base || BASE_ZONE_COORDS_HALF;
+    return Object.entries(rotSpots).map(([zoneKey, pos]) => {
       const playerId = lineup[zoneKey];
       const p = roster.find((player) => player.id === playerId) || {
         id: `mock-${zoneKey}`,
@@ -157,20 +352,18 @@ export default function WhiteboardPage({
   const [currentStroke, setCurrentStroke] = useState(null);
 
   // Selected Token for Dragging
-  const [draggedToken, setDraggedToken] = useState(null); // { type: 'player'|'item', id, offsetX, offsetY }
+  const [draggedToken, setDraggedToken] = useState(null);
 
   // Bench Substitution Drawer
-  const [isBenchOpen, setIsBenchOpen] = useState(false);
   const [selectedSubPlayer, setSelectedSubPlayer] = useState(null);
 
   // Movement Tracking & Playback Recording
   const [isTrackingMovement, setIsTrackingMovement] = useState(false);
-  const [movementRecordings, setMovementRecordings] = useState({}); // { [tokenId]: [ {x, y, t} ] }
+  const [movementRecordings, setMovementRecordings] = useState({});
   const [isPlayingAnimation, setIsPlayingAnimation] = useState(false);
-  const [animationProgress, setAnimationProgress] = useState(0); // 0 to 1
+  const [animationProgress, setAnimationProgress] = useState(0);
   const [playbackSpeed, setPlaybackSpeed] = useState(1);
 
-  const canvasRef = useRef(null);
   const courtContainerRef = useRef(null);
   const animationFrameRef = useRef(null);
 
@@ -178,37 +371,74 @@ export default function WhiteboardPage({
   const onCourtPlayerIds = courtPlayers.map((cp) => cp.playerId);
   const benchPlayers = roster.filter((p) => !onCourtPlayerIds.includes(p.id));
 
-  // Reset Players to Base Rotation Coordinates
-  const handleResetLineup = useCallback(() => {
-    const coords = courtType === 'half' ? BASE_ZONE_COORDS_HALF : BASE_ZONE_COORDS_FULL;
-    setCourtPlayers((prev) =>
-      prev.map((p) => ({
-        ...p,
-        x: coords[p.zoneKey]?.x || p.x,
-        y: coords[p.zoneKey]?.y || p.y
-      }))
-    );
-    setMovementRecordings({});
-    setIsPlayingAnimation(false);
-  }, [courtType]);
+  // Current rotation tactical spot mapping
+  const currentRotSpots = ROTATION_TACTICAL_SPOTS[selectedRotation] || ROTATION_TACTICAL_SPOTS[1];
+  const currentPhaseSpots = currentRotSpots[tacticalPhase] || currentRotSpots.receiving;
 
-  // Load a Playbook Preset
-  const handleLoadPreset = (preset) => {
-    setCourtType(preset.courtType || 'half');
+  // Apply Rotation & Phase Suggested Coordinates
+  const applyRotationFormation = useCallback((rotNum, phaseKey, isTransition) => {
+    const rotObj = ROTATION_TACTICAL_SPOTS[rotNum] || ROTATION_TACTICAL_SPOTS[1];
+    const phaseObj = rotObj[phaseKey] || rotObj.receiving;
+    const targetCoords = isTransition ? phaseObj.transition : phaseObj.base;
+
+    // Rotate player lineup to this rotation
+    let rotLineup = { ...lineup };
+    for (let i = 1; i < rotNum; i++) {
+      rotLineup = rotateLineupClockwise(rotLineup);
+    }
+
     setCourtPlayers((prev) =>
       prev.map((p) => {
-        const target = preset.players[p.zoneKey];
+        const zoneKey = p.zoneKey;
+        const targetPos = targetCoords[zoneKey] || BASE_ZONE_COORDS_HALF[zoneKey];
+        const playerId = rotLineup[zoneKey];
+        const playerObj = roster.find((r) => r.id === playerId) || {
+          name: p.name,
+          number: p.number,
+          position: p.position
+        };
+
         return {
           ...p,
-          x: target?.x ?? p.x,
-          y: target?.y ?? p.y
+          x: targetPos.x,
+          y: targetPos.y,
+          name: playerObj.name,
+          number: playerObj.number,
+          position: playerObj.position,
+          isLibero: playerObj.position === 'Libero' || playerObj.isLibero,
+          playerId: playerObj.id || p.playerId
         };
       })
     );
-    setDrawings([]);
+
+    setIsPlayingAnimation(false);
+  }, [lineup, roster]);
+
+  // Handle Rotation Selection
+  const handleSelectRotation = (rotNum) => {
+    setSelectedRotation(rotNum);
+    applyRotationFormation(rotNum, tacticalPhase, isTransitionActive);
+  };
+
+  // Handle Phase Selection (Serving vs Receiving)
+  const handleSelectPhase = (phaseKey) => {
+    setTacticalPhase(phaseKey);
+    applyRotationFormation(selectedRotation, phaseKey, isTransitionActive);
+  };
+
+  // Handle Transition Toggle (Base vs Post-Serve/Receive Spot)
+  const handleToggleTransition = () => {
+    const nextState = !isTransitionActive;
+    setIsTransitionActive(nextState);
+    applyRotationFormation(selectedRotation, tacticalPhase, nextState);
+  };
+
+  // Reset Players
+  const handleResetLineup = useCallback(() => {
+    applyRotationFormation(selectedRotation, tacticalPhase, isTransitionActive);
     setMovementRecordings({});
     setIsPlayingAnimation(false);
-  };
+  }, [applyRotationFormation, selectedRotation, tacticalPhase, isTransitionActive]);
 
   // Substitute Player on Court
   const handlePerformSub = (zoneKey, newPlayer) => {
@@ -245,12 +475,6 @@ export default function WhiteboardPage({
     ]);
   };
 
-  // Remove Item
-  const handleRemoveItem = (id, e) => {
-    if (e) e.stopPropagation();
-    setTacticalItems((prev) => prev.filter((item) => item.id !== id));
-  };
-
   // Canvas Coordinate Normalization (0% - 100%)
   const getNormalizedCoords = (e) => {
     if (!courtContainerRef.current) return { x: 50, y: 50 };
@@ -263,9 +487,7 @@ export default function WhiteboardPage({
     return { x, y };
   };
 
-  // -------------------------------------------------------------
-  // Pointer & Touch Event Handlers (Canvas & Dragging)
-  // -------------------------------------------------------------
+  // Pointer & Touch Event Handlers
   const handlePointerDown = (e) => {
     if (activeTool === 'select') return;
 
@@ -281,7 +503,6 @@ export default function WhiteboardPage({
   };
 
   const handlePointerMove = (e) => {
-    // 1. Handle Dragging Player or Tactical Item
     if (draggedToken) {
       e.preventDefault();
       const { x, y } = getNormalizedCoords(e);
@@ -296,7 +517,6 @@ export default function WhiteboardPage({
         );
       }
 
-      // Record Movement if Tracking is active
       if (isTrackingMovement) {
         setMovementRecordings((prev) => {
           const trail = prev[draggedToken.id] || [];
@@ -309,7 +529,6 @@ export default function WhiteboardPage({
       return;
     }
 
-    // 2. Handle Freehand Drawing
     if (isDrawing && currentStroke) {
       e.preventDefault();
       const { x, y } = getNormalizedCoords(e);
@@ -332,7 +551,6 @@ export default function WhiteboardPage({
     }
   };
 
-  // Undo / Redo / Clear
   const handleUndo = () => {
     if (drawings.length === 0) return;
     const last = drawings[drawings.length - 1];
@@ -352,9 +570,7 @@ export default function WhiteboardPage({
     setRedoStack([]);
   };
 
-  // -------------------------------------------------------------
-  // Animated Playback Engine
-  // -------------------------------------------------------------
+  // Animated Playback
   const handleTogglePlayback = () => {
     if (isPlayingAnimation) {
       setIsPlayingAnimation(false);
@@ -369,7 +585,6 @@ export default function WhiteboardPage({
         const progress = Math.min(1, elapsed / duration);
         setAnimationProgress(progress);
 
-        // Interpolate recorded paths
         Object.entries(movementRecordings).forEach(([tokenId, trail]) => {
           if (trail.length > 1) {
             const index = Math.min(trail.length - 1, Math.floor(progress * (trail.length - 1)));
@@ -425,7 +640,7 @@ export default function WhiteboardPage({
               Tactical Volleyball Whiteboard
             </h2>
             <p style={{ fontSize: '0.78rem', color: '#93c5fd', margin: '0.1rem 0 0 0', fontWeight: 700 }}>
-              Live lineup positioning, movement recording, bench substitutions & tactical chalkboard
+              Rotation positioning, serve/receive transition movement & bench substitutions
             </p>
           </div>
         </div>
@@ -470,7 +685,143 @@ export default function WhiteboardPage({
       </div>
 
       {/* =========================================================================
-          2. MAIN TWO-COLUMN WORKSPACE
+          2. ROTATION SELECTOR & TRANSITION MOVEMENT TOGGLE BAR
+         ========================================================================= */}
+      <div
+        style={{
+          background: 'linear-gradient(135deg, rgba(30, 41, 59, 0.9) 0%, rgba(15, 23, 42, 0.98) 100%)',
+          border: '1.5px solid rgba(59, 130, 246, 0.35)',
+          borderRadius: '16px',
+          padding: '0.75rem 1rem',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          gap: '0.75rem',
+          flexWrap: 'wrap',
+          boxShadow: '0 8px 25px rgba(0, 0, 0, 0.4)'
+        }}
+      >
+        {/* Rotation Selector Pills (1-6) */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', flexWrap: 'wrap' }}>
+          <span style={{ fontSize: '0.78rem', fontWeight: 900, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.5px', marginRight: '0.2rem' }}>
+            Rotation:
+          </span>
+          {[1, 2, 3, 4, 5, 6].map((rot) => {
+            const isSel = selectedRotation === rot;
+            return (
+              <button
+                key={rot}
+                type="button"
+                onClick={() => handleSelectRotation(rot)}
+                style={{
+                  background: isSel ? 'linear-gradient(135deg, #3b82f6, #1d4ed8)' : 'rgba(255, 255, 255, 0.05)',
+                  border: isSel ? '1.5px solid #60a5fa' : '1px solid rgba(255, 255, 255, 0.1)',
+                  borderRadius: '10px',
+                  padding: '0.35rem 0.75rem',
+                  color: isSel ? '#ffffff' : '#cbd5e1',
+                  fontSize: '0.8rem',
+                  fontWeight: 900,
+                  cursor: 'pointer',
+                  boxShadow: isSel ? '0 3px 12px rgba(59, 130, 246, 0.4)' : 'none',
+                  transition: 'all 0.15s ease'
+                }}
+              >
+                Rot #{rot}
+              </button>
+            );
+          })}
+        </div>
+
+        {/* Phase Selector (Serve vs Receive) + Post-Contact Transition Toggle */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap' }}>
+          {/* Serve vs Receive Switcher */}
+          <div style={{ display: 'flex', background: 'rgba(0, 0, 0, 0.4)', borderRadius: '10px', padding: '0.2rem', border: '1px solid rgba(255, 255, 255, 0.1)' }}>
+            <button
+              type="button"
+              onClick={() => handleSelectPhase('serving')}
+              style={{
+                background: tacticalPhase === 'serving' ? '#10b981' : 'transparent',
+                color: tacticalPhase === 'serving' ? '#ffffff' : '#94a3b8',
+                border: 'none',
+                borderRadius: '8px',
+                padding: '0.3rem 0.65rem',
+                fontSize: '0.76rem',
+                fontWeight: 800,
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '0.3rem'
+              }}
+            >
+              <Volleyball size={13} />
+              <span>Serving</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => handleSelectPhase('receiving')}
+              style={{
+                background: tacticalPhase === 'receiving' ? '#3b82f6' : 'transparent',
+                color: tacticalPhase === 'receiving' ? '#ffffff' : '#94a3b8',
+                border: 'none',
+                borderRadius: '8px',
+                padding: '0.3rem 0.65rem',
+                fontSize: '0.76rem',
+                fontWeight: 800,
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '0.3rem'
+              }}
+            >
+              <Shield size={13} />
+              <span>Receiving</span>
+            </button>
+          </div>
+
+          {/* ⚡ Post-Contact Transition Toggle (Where players move after serve/receive) */}
+          <button
+            type="button"
+            onClick={handleToggleTransition}
+            style={{
+              background: isTransitionActive
+                ? 'linear-gradient(135deg, rgba(245, 158, 11, 0.35), rgba(217, 119, 6, 0.45))'
+                : 'rgba(255, 255, 255, 0.05)',
+              border: isTransitionActive ? '1.5px solid #f59e0b' : '1px solid rgba(255, 255, 255, 0.12)',
+              borderRadius: '10px',
+              padding: '0.35rem 0.8rem',
+              color: isTransitionActive ? '#fef3c7' : '#cbd5e1',
+              fontSize: '0.78rem',
+              fontWeight: 800,
+              display: 'flex',
+              alignItems: 'center',
+              gap: '0.4rem',
+              cursor: 'pointer',
+              boxShadow: isTransitionActive ? '0 3px 12px rgba(245, 158, 11, 0.3)' : 'none',
+              transition: 'all 0.15s ease'
+            }}
+            title="Toggle between starting formation and post-contact transition spot"
+          >
+            <Zap size={14} color={isTransitionActive ? '#f59e0b' : '#94a3b8'} />
+            <span>{isTransitionActive ? 'Showing: Transition Spots' : 'Showing: Base Stacking'}</span>
+          </button>
+
+          {/* Transition Paths Visibility Toggle */}
+          <button
+            type="button"
+            onClick={() => setShowTransitionPaths(!showTransitionPaths)}
+            className="tool-btn"
+            style={{ fontSize: '0.75rem', padding: '0.35rem 0.65rem' }}
+            title="Toggle transition movement arrows"
+          >
+            {showTransitionPaths ? <Eye size={14} color="#10b981" /> : <EyeOff size={14} color="#94a3b8" />}
+            <span>{showTransitionPaths ? 'Paths ON' : 'Paths OFF'}</span>
+          </button>
+        </div>
+      </div>
+
+      {/* =========================================================================
+          3. MAIN TWO-COLUMN WORKSPACE
          ========================================================================= */}
       <div className="whiteboard-main-layout">
         {/* -----------------------------------------------------------------
@@ -594,7 +945,6 @@ export default function WhiteboardPage({
               preserveAspectRatio="none"
               style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', pointerEvents: 'none' }}
             >
-              {/* Floor Fill Gradient */}
               <defs>
                 <linearGradient id="wbFloor" x1="0" y1="0" x2="0" y2="1">
                   <stop offset="0%" stopColor="#1e3a5f" />
@@ -602,6 +952,9 @@ export default function WhiteboardPage({
                 </linearGradient>
                 <marker id="arrowHead" markerWidth="6" markerHeight="6" refX="4" refY="3" orient="auto">
                   <polygon points="0 0, 6 3, 0 6" fill={activeColor} />
+                </marker>
+                <marker id="transArrowHead" markerWidth="6" markerHeight="6" refX="4" refY="3" orient="auto">
+                  <polygon points="0 0, 6 3, 0 6" fill="#f59e0b" />
                 </marker>
               </defs>
 
@@ -613,21 +966,54 @@ export default function WhiteboardPage({
               {/* Center Net & Attack Lines */}
               {courtType === 'half' ? (
                 <>
-                  {/* Top Net Tape (y=5) */}
                   <line x1="2" y1="5" x2="98" y2="5" stroke="#f8fafc" strokeWidth="3" />
                   <line x1="2" y1="5" x2="98" y2="5" stroke="#ef4444" strokeWidth="1" strokeDasharray="3,3" />
-                  {/* 10ft Attack Line (3m = 35% from net) */}
                   <line x1="5" y1="35" x2="95" y2="35" stroke="#60a5fa" strokeWidth="1.5" strokeDasharray="2,2" />
                   <text x="8" y="33" fill="#93c5fd" fontSize="2.5" fontWeight="bold">10ft Attack Line</text>
                 </>
               ) : (
                 <>
-                  {/* Full Court Center Net (y=50) */}
                   <line x1="2" y1="50" x2="98" y2="50" stroke="#f8fafc" strokeWidth="3.5" />
                   <line x1="5" y1="30" x2="95" y2="30" stroke="#60a5fa" strokeWidth="1.2" strokeDasharray="2,2" />
                   <line x1="5" y1="70" x2="95" y2="70" stroke="#60a5fa" strokeWidth="1.2" strokeDasharray="2,2" />
                 </>
               )}
+
+              {/* Transition Movement Paths (Where players go after serve/receive) */}
+              {showTransitionPaths &&
+                Object.entries(currentPhaseSpots.base).map(([zoneKey, basePos]) => {
+                  const transPos = currentPhaseSpots.transition[zoneKey];
+                  if (!transPos) return null;
+                  const dx = Math.abs(transPos.x - basePos.x);
+                  const dy = Math.abs(transPos.y - basePos.y);
+                  if (dx < 3 && dy < 3) return null; // Player already at spot
+
+                  return (
+                    <g key={zoneKey}>
+                      <line
+                        x1={basePos.x}
+                        y1={basePos.y}
+                        x2={transPos.x}
+                        y2={transPos.y}
+                        stroke="#f59e0b"
+                        strokeWidth="1.8"
+                        strokeDasharray="3,2"
+                        markerEnd="url(#transArrowHead)"
+                        opacity="0.85"
+                      />
+                      {/* Ghost Target Spot Circle */}
+                      <circle
+                        cx={transPos.x}
+                        cy={transPos.y}
+                        r="3.5"
+                        fill="rgba(245, 158, 11, 0.2)"
+                        stroke="#f59e0b"
+                        strokeWidth="1"
+                        strokeDasharray="2,2"
+                      />
+                    </g>
+                  );
+                })}
 
               {/* Movement Recording Trajectory Lines */}
               {Object.entries(movementRecordings).map(([tokenId, trail]) => {
@@ -738,7 +1124,7 @@ export default function WhiteboardPage({
                     zIndex: 20,
                     userSelect: 'none',
                     touchAction: 'none',
-                    transition: isPlayingAnimation ? 'none' : 'transform 0.05s ease'
+                    transition: isPlayingAnimation ? 'none' : 'all 0.25s cubic-bezier(0.16, 1, 0.3, 1)'
                   }}
                 >
                   <div style={{ fontSize: '0.88rem', fontWeight: 900, lineHeight: 1 }}>
@@ -875,7 +1261,7 @@ export default function WhiteboardPage({
         </div>
 
         {/* -----------------------------------------------------------------
-            RIGHT COLUMN: BENCH SUBS, EQUIPMENT STAGING & PLAYBOOK PRESETS
+            RIGHT COLUMN: BENCH SUBS & EQUIPMENT STAGING
            ----------------------------------------------------------------- */}
         <div className="whiteboard-sidebar">
           {/* Court View Mode & Rotation Controls */}
@@ -887,7 +1273,7 @@ export default function WhiteboardPage({
                 className="tool-btn"
                 onClick={handleResetLineup}
                 style={{ fontSize: '0.72rem', padding: '0.2rem 0.5rem' }}
-                title="Snap players back to base positions"
+                title="Snap players back to suggested spots"
               >
                 <RotateCcw size={12} />
                 <span>Reset</span>
@@ -898,10 +1284,7 @@ export default function WhiteboardPage({
               <button
                 type="button"
                 className={`tool-btn ${courtType === 'half' ? 'active' : ''}`}
-                onClick={() => {
-                  setCourtType('half');
-                  handleResetLineup();
-                }}
+                onClick={() => setCourtType('half')}
                 style={{ justifyContent: 'center' }}
               >
                 Half Court (Offense)
@@ -910,10 +1293,7 @@ export default function WhiteboardPage({
               <button
                 type="button"
                 className={`tool-btn ${courtType === 'full' ? 'active' : ''}`}
-                onClick={() => {
-                  setCourtType('full');
-                  handleResetLineup();
-                }}
+                onClick={() => setCourtType('full')}
                 style={{ justifyContent: 'center' }}
               >
                 Full Court (6v6)
@@ -1001,35 +1381,6 @@ export default function WhiteboardPage({
                   );
                 })
               )}
-            </div>
-          </div>
-
-          {/* Tactical Playbook Presets */}
-          <div className="whiteboard-card-panel">
-            <div className="whiteboard-panel-title">
-              <span>Playbook Presets</span>
-            </div>
-
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.45rem' }}>
-              {PLAYBOOK_PRESETS.map((preset) => (
-                <button
-                  key={preset.id}
-                  type="button"
-                  className="bench-player-row"
-                  onClick={() => handleLoadPreset(preset)}
-                  style={{ textAlign: 'left', width: '100%' }}
-                >
-                  <div>
-                    <div style={{ fontSize: '0.8rem', fontWeight: 800, color: '#f8fafc' }}>
-                      {preset.title}
-                    </div>
-                    <div style={{ fontSize: '0.68rem', color: '#94a3b8', marginTop: '1px' }}>
-                      {preset.description}
-                    </div>
-                  </div>
-                  <ChevronRight size={14} color="#60a5fa" />
-                </button>
-              ))}
             </div>
           </div>
         </div>

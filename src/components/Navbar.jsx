@@ -71,7 +71,7 @@ export default function Navbar({
       </div>
 
       <div className="header-actions">
-        {/* ⚡ PROMINENT START GAME / MATCH WIZARD BUTTON */}
+        {/* ⚡ START GAME / MATCH WIZARD BUTTON (Responsive text on mobile) */}
         {onOpenMatchWizard && (
           <button
             type="button"
@@ -94,15 +94,16 @@ export default function Navbar({
             title="Start New Volleyball Game & Lineup Wizard"
           >
             <Volleyball size={15} />
-            <span>Start Game</span>
+            <span className="hide-mobile">Start Game</span>
+            <span className="show-mobile">Start</span>
           </button>
         )}
 
-        {/* 📋 TACTICAL WHITEBOARD BUTTON */}
+        {/* 📋 TACTICAL WHITEBOARD BUTTON (Desktop/Tablet) */}
         {onOpenWhiteboard && (
           <button
             type="button"
-            className="btn btn-sm"
+            className="btn btn-sm hide-mobile"
             onClick={onOpenWhiteboard}
             style={{
               background: 'linear-gradient(135deg, rgba(59, 130, 246, 0.25), rgba(37, 99, 235, 0.35))',
@@ -124,11 +125,11 @@ export default function Navbar({
           </button>
         )}
 
-        {/* 🎯 DRILLS & PRACTICE HUB BUTTON */}
+        {/* 🎯 DRILLS & PRACTICE HUB BUTTON (Desktop/Tablet) */}
         {onOpenDrillsModal && (
           <button
             type="button"
-            className="btn btn-sm"
+            className="btn btn-sm hide-mobile"
             onClick={onOpenDrillsModal}
             style={{
               background: 'linear-gradient(135deg, rgba(168, 85, 247, 0.25), rgba(147, 51, 234, 0.35))',
@@ -150,10 +151,10 @@ export default function Navbar({
           </button>
         )}
 
-        {/* Share Squad Quick Action */}
+        {/* Share Squad Quick Action (Desktop Only) */}
         {activeTeam && onOpenShareModal && (
           <button
-            className="btn-icon"
+            className="btn-icon hide-mobile"
             onClick={() => onOpenShareModal(activeTeam)}
             title="Share Squad & Invite Co-Coaches"
             aria-label="Share Squad"
@@ -173,7 +174,7 @@ export default function Navbar({
           <Database size={18} />
         </button>
 
-        {/* User Menu & Cloud Sync Pill */}
+        {/* User Menu, Coaching Tools & Cloud Sync Pill */}
         <UserMenu
           user={user}
           syncStatus={syncStatus}
@@ -183,6 +184,8 @@ export default function Navbar({
           onOpenTeamManagerModal={onOpenTeamManagerModal}
           onOpenShareModal={onOpenShareModal}
           onOpenFirebaseSettingsModal={onOpenFirebaseSettingsModal}
+          onOpenWhiteboard={onOpenWhiteboard}
+          onOpenDrills={onOpenDrillsModal}
           onManualSync={onManualSync}
           onLogout={onLogout}
         />

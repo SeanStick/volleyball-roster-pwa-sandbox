@@ -14,7 +14,9 @@ import {
   Sparkles,
   Share2,
   ExternalLink,
-  Check
+  Check,
+  PenTool,
+  Dumbbell
 } from 'lucide-react';
 
 export default function UserMenu({
@@ -26,6 +28,8 @@ export default function UserMenu({
   onOpenTeamManagerModal,
   onOpenShareModal,
   onOpenFirebaseSettingsModal,
+  onOpenWhiteboard,
+  onOpenDrills,
   onManualSync,
   onLogout
 }) {
@@ -353,7 +357,72 @@ export default function UserMenu({
           )}
 
           {/* Menu Items */}
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '3px' }}>
+            {/* 📋 Tactical Whiteboard */}
+            {onOpenWhiteboard && (
+              <button
+                type="button"
+                onClick={() => {
+                  setIsOpen(false);
+                  onOpenWhiteboard();
+                }}
+                style={{
+                  width: '100%',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '0.6rem',
+                  padding: '0.55rem 0.75rem',
+                  background: 'rgba(59, 130, 246, 0.12)',
+                  border: '1px solid rgba(59, 130, 246, 0.25)',
+                  borderRadius: 'var(--radius-sm)',
+                  color: '#93c5fd',
+                  fontSize: '0.82rem',
+                  fontWeight: 800,
+                  cursor: 'pointer',
+                  textAlign: 'left',
+                  transition: 'background 0.15s'
+                }}
+                onMouseEnter={(e) => (e.currentTarget.style.background = 'rgba(59, 130, 246, 0.22)')}
+                onMouseLeave={(e) => (e.currentTarget.style.background = 'rgba(59, 130, 246, 0.12)')}
+              >
+                <PenTool size={15} color="#60a5fa" />
+                <span>Tactical Whiteboard</span>
+              </button>
+            )}
+
+            {/* 🎯 Volleyball Drill Lab */}
+            {onOpenDrills && (
+              <button
+                type="button"
+                onClick={() => {
+                  setIsOpen(false);
+                  onOpenDrills();
+                }}
+                style={{
+                  width: '100%',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '0.6rem',
+                  padding: '0.55rem 0.75rem',
+                  background: 'rgba(168, 85, 247, 0.12)',
+                  border: '1px solid rgba(168, 85, 247, 0.25)',
+                  borderRadius: 'var(--radius-sm)',
+                  color: '#e9d5ff',
+                  fontSize: '0.82rem',
+                  fontWeight: 800,
+                  cursor: 'pointer',
+                  textAlign: 'left',
+                  marginBottom: '2px',
+                  transition: 'background 0.15s'
+                }}
+                onMouseEnter={(e) => (e.currentTarget.style.background = 'rgba(168, 85, 247, 0.22)')}
+                onMouseLeave={(e) => (e.currentTarget.style.background = 'rgba(168, 85, 247, 0.12)')}
+              >
+                <Dumbbell size={15} color="#c084fc" />
+                <span>Volleyball Drill Lab</span>
+              </button>
+            )}
+
             {onOpenShareModal && (
               <button
                 type="button"

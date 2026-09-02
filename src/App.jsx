@@ -35,6 +35,7 @@ import MatchWizardModal from './components/MatchWizardModal';
 import TournamentDayHubModal from './components/TournamentDayHubModal';
 import TournamentSyncToast from './components/TournamentSyncToast';
 import FirebaseSettingsModal from './components/FirebaseSettingsModal';
+import DrillCenterModal from './components/DrillCenterModal';
 import { storageService, DEFAULT_TEAM_ID } from './services/storageService';
 import { firebaseService } from './services/firebaseService';
 import { rotateLineupClockwise, checkLineupFrontRowLiberoViolation } from './services/volleyballRules';
@@ -75,6 +76,7 @@ export default function App() {
   const [isPlayerModalOpen, setIsPlayerModalOpen] = useState(false);
   const [playerToEdit, setPlayerToEdit] = useState(null);
   const [isImportExportModalOpen, setIsImportExportModalOpen] = useState(false);
+  const [isDrillsModalOpen, setIsDrillsModalOpen] = useState(false);
 
   // -------------------------------------------------------------
   // Core Application Data State
@@ -1403,6 +1405,7 @@ export default function App() {
         onOpenAddModal={handleOpenAdd}
         onOpenImportExportModal={() => setIsImportExportModalOpen(true)}
         onOpenMatchWizard={() => setIsMatchWizardOpen(true)}
+        onOpenDrillsModal={() => setIsDrillsModalOpen(true)}
         user={user}
         syncStatus={syncStatus}
         lastSyncTime={lastSyncTime}
@@ -1886,6 +1889,12 @@ export default function App() {
         isOpen={isImportExportModalOpen}
         onClose={() => setIsImportExportModalOpen(false)}
         onRosterUpdated={(newRoster) => setRoster(newRoster)}
+      />
+
+      {/* 🎯 Volleyball Drills & Animated Practice Hub Modal */}
+      <DrillCenterModal
+        isOpen={isDrillsModalOpen}
+        onClose={() => setIsDrillsModalOpen(false)}
       />
     </div>
   );

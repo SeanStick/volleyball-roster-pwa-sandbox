@@ -1,11 +1,12 @@
 import React from 'react';
-import { Plus, Database, Volleyball, Layers, Share2 } from 'lucide-react';
+import { Plus, Database, Volleyball, Layers, Share2, Dumbbell } from 'lucide-react';
 import UserMenu from './UserMenu';
 
 export default function Navbar({
   onOpenAddModal,
   onOpenImportExportModal,
   onOpenMatchWizard,
+  onOpenDrillsModal,
   user,
   syncStatus,
   lastSyncTime,
@@ -93,6 +94,32 @@ export default function Navbar({
           >
             <Volleyball size={15} />
             <span>Start Game</span>
+          </button>
+        )}
+
+        {/* 🎯 DRILLS & PRACTICE HUB BUTTON */}
+        {onOpenDrillsModal && (
+          <button
+            type="button"
+            className="btn btn-sm"
+            onClick={onOpenDrillsModal}
+            style={{
+              background: 'linear-gradient(135deg, rgba(59, 130, 246, 0.25), rgba(147, 51, 234, 0.35))',
+              border: '1px solid rgba(59, 130, 246, 0.5)',
+              color: '#93c5fd',
+              fontWeight: 800,
+              fontSize: '0.78rem',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '0.35rem',
+              padding: '0.35rem 0.65rem',
+              borderRadius: '8px',
+              cursor: 'pointer'
+            }}
+            title="Open Volleyball Drills & Animated Practice Hub"
+          >
+            <Dumbbell size={15} color="#60a5fa" />
+            <span>Drills</span>
           </button>
         )}
 

@@ -9,7 +9,9 @@ import {
   Volleyball,
   Repeat,
   Sparkles,
-  Info
+  Info,
+  Sliders,
+  Maximize2
 } from 'lucide-react';
 
 export default function DrillAnimationPlayer({ drill }) {
@@ -69,18 +71,20 @@ export default function DrillAnimationPlayer({ drill }) {
   }
 
   const isFullCourt = animationData.courtType === 'full';
+  const transitionDuration = (currentPhase?.duration || 2200) / (speedMultiplier * 1000);
+  const ballHeight = currentPhase?.ball?.height || 1.5;
 
   return (
     <div
       style={{
-        background: 'linear-gradient(180deg, #0b1329 0%, #060b18 100%)',
-        border: '1.5px solid rgba(59, 130, 246, 0.35)',
+        background: 'linear-gradient(180deg, #0d1527 0%, #060a14 100%)',
+        border: '1.5px solid rgba(59, 130, 246, 0.4)',
         borderRadius: '20px',
         padding: '1rem',
         display: 'flex',
         flexDirection: 'column',
         gap: '0.85rem',
-        boxShadow: '0 15px 35px rgba(0, 0, 0, 0.7)',
+        boxShadow: '0 15px 35px rgba(0, 0, 0, 0.75), 0 0 25px rgba(59, 130, 246, 0.15)',
         overflow: 'hidden'
       }}
     >
@@ -88,15 +92,15 @@ export default function DrillAnimationPlayer({ drill }) {
           TOP PHASE SELECTOR STRIP
          ========================================================================= */}
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '0.5rem', flexWrap: 'wrap' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
-          <Sparkles size={16} color="#fbbf24" />
-          <span style={{ fontSize: '0.85rem', fontWeight: 900, color: '#f8fafc' }}>
-            2D Interactive Drill Demonstration
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.45rem' }}>
+          <span style={{ display: 'inline-block', width: '8px', height: '8px', borderRadius: '50%', background: '#10b981', boxShadow: '0 0 10px #10b981' }} />
+          <span style={{ fontSize: '0.86rem', fontWeight: 900, color: '#f8fafc', letterSpacing: '0.2px' }}>
+            2D Life-Like Drill Movement
           </span>
         </div>
 
         {/* Phase Pills */}
-        <div style={{ display: 'flex', gap: '0.3rem', overflowX: 'auto', WebkitOverflowScrolling: 'touch' }}>
+        <div style={{ display: 'flex', gap: '0.35rem', overflowX: 'auto', WebkitOverflowScrolling: 'touch' }}>
           {phases.map((ph, idx) => {
             const isCur = idx === currentPhaseIndex;
             return (
@@ -108,15 +112,16 @@ export default function DrillAnimationPlayer({ drill }) {
                   setIsPlaying(false);
                 }}
                 style={{
-                  padding: '0.2rem 0.6rem',
+                  padding: '0.22rem 0.65rem',
                   borderRadius: '999px',
                   border: isCur ? '1.5px solid #3b82f6' : '1px solid rgba(255, 255, 255, 0.08)',
-                  background: isCur ? 'rgba(59, 130, 246, 0.35)' : 'rgba(255, 255, 255, 0.03)',
-                  color: isCur ? '#93c5fd' : '#94a3b8',
+                  background: isCur ? 'linear-gradient(135deg, rgba(59, 130, 246, 0.4), rgba(37, 99, 235, 0.5))' : 'rgba(255, 255, 255, 0.04)',
+                  color: isCur ? '#ffffff' : '#94a3b8',
                   fontSize: '0.72rem',
                   fontWeight: 800,
                   cursor: 'pointer',
-                  whiteSpace: 'nowrap'
+                  whiteSpace: 'nowrap',
+                  boxShadow: isCur ? '0 0 12px rgba(59, 130, 246, 0.5)' : 'none'
                 }}
               >
                 Step {idx + 1}
@@ -127,18 +132,18 @@ export default function DrillAnimationPlayer({ drill }) {
       </div>
 
       {/* =========================================================================
-          2D ANIMATED VOLLEYBALL COURT (SVG & CANVAS ENGINE)
+          2D ANIMATED VOLLEYBALL COURT (SMOOTH VECTORS, 3D SHADOWS & ACTION BADGES)
          ========================================================================= */}
       <div
         style={{
           position: 'relative',
           width: '100%',
           aspectRatio: isFullCourt ? '1.4 / 1' : '1.7 / 1',
-          background: 'linear-gradient(135deg, #1e293b 0%, #0f172a 100%)',
-          borderRadius: '14px',
+          background: 'radial-gradient(ellipse at center, #1e293b 0%, #0f172a 100%)',
+          borderRadius: '16px',
           border: '2px solid rgba(255, 255, 255, 0.15)',
           overflow: 'hidden',
-          boxShadow: 'inset 0 0 40px rgba(0, 0, 0, 0.8)'
+          boxShadow: 'inset 0 0 50px rgba(0, 0, 0, 0.85)'
         }}
       >
         <svg
@@ -151,8 +156,30 @@ export default function DrillAnimationPlayer({ drill }) {
             left: 0
           }}
         >
-          {/* Court Wood Flooring Fill */}
+          {/* Defs for gradients & arrow markers */}
+          <defs>
+            <marker id="arrow-blue" markerWidth="6" markerHeight="6" refX="5" refY="3" orient="auto">
+              <path d="M0,0 L0,6 L6,3 z" fill="#60a5fa" />
+            </marker>
+            <marker id="arrow-orange" markerWidth="6" markerHeight="6" refX="5" refY="3" orient="auto">
+              <path d="M0,0 L0,6 L6,3 z" fill="#fb923c" />
+            </marker>
+            <marker id="arrow-green" markerWidth="6" markerHeight="6" refX="5" refY="3" orient="auto">
+              <path d="M0,0 L0,6 L6,3 z" fill="#34d399" />
+            </marker>
+            <radialGradient id="ball-shadow" cx="50%" cy="50%" r="50%">
+              <stop offset="0%" stopColor="rgba(0,0,0,0.6)" />
+              <stop offset="100%" stopColor="rgba(0,0,0,0)" />
+            </radialGradient>
+          </defs>
+
+          {/* Court Wood Flooring Fill with subtle court shine */}
           <rect x="5" y="5" width="90" height="90" fill="#1e293b" rx="4" />
+
+          {/* Court Grid Texture Lines */}
+          <line x1="30" y1="10" x2="30" y2="90" stroke="rgba(255,255,255,0.03)" strokeWidth="0.5" />
+          <line x1="50" y1="10" x2="50" y2="90" stroke="rgba(255,255,255,0.03)" strokeWidth="0.5" />
+          <line x1="70" y1="10" x2="70" y2="90" stroke="rgba(255,255,255,0.03)" strokeWidth="0.5" />
 
           {/* Court Boundary Lines (Sidelines & Endlines) */}
           <rect
@@ -160,88 +187,124 @@ export default function DrillAnimationPlayer({ drill }) {
             y="10"
             width="80"
             height="80"
-            fill="rgba(59, 130, 246, 0.04)"
+            fill="rgba(59, 130, 246, 0.05)"
             stroke="#ffffff"
-            strokeWidth="1"
-            strokeOpacity="0.8"
+            strokeWidth="1.2"
+            strokeOpacity="0.85"
           />
 
           {isFullCourt ? (
             <>
               {/* Full Court: Net at Center Line (y = 50) */}
-              <line x1="8" y1="50" x2="92" y2="50" stroke="#f59e0b" strokeWidth="2" strokeDasharray="2,1" />
-              {/* Net Top Band Glow */}
-              <line x1="8" y1="50" x2="92" y2="50" stroke="#ffffff" strokeWidth="0.8" />
-              {/* Net Antenna Markers */}
-              <circle cx="10" cy="50" r="1.5" fill="#ef4444" />
-              <circle cx="90" cy="50" r="1.5" fill="#ef4444" />
+              <line x1="6" y1="50" x2="94" y2="50" stroke="#f59e0b" strokeWidth="2.5" strokeDasharray="2,1" />
+              <line x1="6" y1="50" x2="94" y2="50" stroke="#ffffff" strokeWidth="0.8" />
+              <circle cx="10" cy="50" r="1.6" fill="#ef4444" />
+              <circle cx="90" cy="50" r="1.6" fill="#ef4444" />
 
               {/* Side A Attack Line (10ft line at y = 65) */}
-              <line x1="10" y1="65" x2="90" y2="65" stroke="#ffffff" strokeWidth="0.8" strokeDasharray="3,2" strokeOpacity="0.6" />
+              <line x1="10" y1="65" x2="90" y2="65" stroke="#ffffff" strokeWidth="0.9" strokeDasharray="3,2" strokeOpacity="0.6" />
               {/* Side B Attack Line (10ft line at y = 35) */}
-              <line x1="10" y1="35" x2="90" y2="35" stroke="#ffffff" strokeWidth="0.8" strokeDasharray="3,2" strokeOpacity="0.6" />
+              <line x1="10" y1="35" x2="90" y2="35" stroke="#ffffff" strokeWidth="0.9" strokeDasharray="3,2" strokeOpacity="0.6" />
 
               {/* Side Labels */}
-              <text x="50" y="8" fill="#93c5fd" fontSize="3" fontWeight="900" textAnchor="middle" opacity="0.6">SIDE B (OPPONENT / SERVE)</text>
-              <text x="50" y="96" fill="#6ee7b7" fontSize="3" fontWeight="900" textAnchor="middle" opacity="0.6">SIDE A (OUR TEAM)</text>
+              <text x="50" y="8" fill="#93c5fd" fontSize="2.8" fontWeight="900" textAnchor="middle" opacity="0.6">SIDE B (OPPONENT / SERVE)</text>
+              <text x="50" y="96" fill="#6ee7b7" fontSize="2.8" fontWeight="900" textAnchor="middle" opacity="0.6">SIDE A (OUR TEAM)</text>
             </>
           ) : (
             <>
               {/* Half Court: Net at Top (y = 15) */}
-              <line x1="8" y1="15" x2="92" y2="15" stroke="#f59e0b" strokeWidth="2.5" strokeDasharray="2,1" />
-              <line x1="8" y1="15" x2="92" y2="15" stroke="#ffffff" strokeWidth="1" />
+              <line x1="6" y1="15" x2="94" y2="15" stroke="#f59e0b" strokeWidth="3" strokeDasharray="2,1" />
+              <line x1="6" y1="15" x2="94" y2="15" stroke="#ffffff" strokeWidth="1" />
               <circle cx="10" cy="15" r="1.8" fill="#ef4444" />
               <circle cx="90" cy="15" r="1.8" fill="#ef4444" />
 
               {/* 10ft Attack Line at y = 45 */}
-              <line x1="10" y1="45" x2="90" y2="45" stroke="#ffffff" strokeWidth="0.9" strokeDasharray="3,2" strokeOpacity="0.7" />
+              <line x1="10" y1="45" x2="90" y2="45" stroke="#ffffff" strokeWidth="1" strokeDasharray="3,2" strokeOpacity="0.75" />
               <text x="50" y="11" fill="#f59e0b" fontSize="3.2" fontWeight="900" textAnchor="middle">━━━━ NET (ATTACK ZONE) ━━━━</text>
-              <text x="85" y="44" fill="#cbd5e1" fontSize="2.5" fontWeight="700" textAnchor="end" opacity="0.5">10FT ATTACK LINE</text>
+              <text x="88" y="44" fill="#cbd5e1" fontSize="2.4" fontWeight="800" textAnchor="end" opacity="0.6">10FT ATTACK LINE</text>
             </>
           )}
 
-          {/* Animated Ball Trajectory Line (If arc from previous spot) */}
+          {/* Dynamic Player Movement Paths (Dashed vectors showing where players run) */}
+          {currentPhase?.players?.map((player) => {
+            if (!player.path || player.path.length < 2) return null;
+            const start = player.path[0];
+            const end = player.path[1];
+            return (
+              <g key={`path-${player.id}`}>
+                <line
+                  x1={start.x}
+                  y1={start.y}
+                  x2={end.x}
+                  y2={end.y}
+                  stroke={player.color || '#60a5fa'}
+                  strokeWidth="0.8"
+                  strokeDasharray="2,2"
+                  strokeOpacity="0.7"
+                  markerEnd="url(#arrow-blue)"
+                />
+              </g>
+            );
+          })}
+
+          {/* Animated Ball Trajectory Line (Parabolic Flight Path) */}
           {currentPhase?.ball?.arc && currentPhase.ball.from && (
             <path
-              d={`M ${currentPhase.ball.from.x} ${currentPhase.ball.from.y} Q ${(currentPhase.ball.from.x + currentPhase.ball.x) / 2} ${Math.min(currentPhase.ball.from.y, currentPhase.ball.y) - 12} ${currentPhase.ball.x} ${currentPhase.ball.y}`}
+              d={`M ${currentPhase.ball.from.x} ${currentPhase.ball.from.y} Q ${(currentPhase.ball.from.x + currentPhase.ball.x) / 2} ${Math.min(currentPhase.ball.from.y, currentPhase.ball.y) - 14} ${currentPhase.ball.x} ${currentPhase.ball.y}`}
               fill="none"
               stroke="#fbbf24"
-              strokeWidth="1.2"
-              strokeDasharray="2,2"
-              strokeOpacity="0.8"
+              strokeWidth="1.4"
+              strokeDasharray="2.5,2.5"
+              strokeOpacity="0.9"
             />
           )}
 
-          {/* Target Mats / Zones */}
+          {/* Target Mats / Zones / Cones */}
           {currentPhase?.annotations?.map((ann, aIdx) => (
             <g key={aIdx} transform={`translate(${ann.x}, ${ann.y})`}>
-              <rect x="-10" y="-3.5" width="20" height="7" rx="3" fill="rgba(15, 23, 42, 0.85)" stroke="#f59e0b" strokeWidth="0.5" />
+              <rect
+                x="-12"
+                y="-4"
+                width="24"
+                height="8"
+                rx="4"
+                fill="rgba(15, 23, 42, 0.9)"
+                stroke="#f59e0b"
+                strokeWidth="0.6"
+                style={{ filter: 'drop-shadow(0 2px 5px rgba(0,0,0,0.6))' }}
+              />
               <text x="0" y="1.2" fill="#fef3c7" fontSize="2.2" fontWeight="800" textAnchor="middle">
                 {ann.text}
               </text>
             </g>
           ))}
 
-          {/* Animated Players */}
+          {/* =========================================================================
+              ANIMATED PLAYERS WITH LIFE-LIKE EASING & ACTION BADGES
+             ========================================================================= */}
           {currentPhase?.players?.map((player) => (
             <g
               key={player.id}
               style={{
-                transition: `all ${(currentPhase.duration || 2000) / (speedMultiplier * 1000)}s cubic-bezier(0.25, 1, 0.5, 1)`
+                transition: `transform ${transitionDuration}s cubic-bezier(0.25, 1, 0.5, 1)`
               }}
               transform={`translate(${player.x}, ${player.y})`}
             >
-              {/* Player Glow Circle */}
+              {/* Player Ground Shadow */}
+              <ellipse cx="0" cy="4" rx="4.2" ry="1.8" fill="rgba(0,0,0,0.5)" />
+
+              {/* Player Outer Glow Circle */}
               <circle
                 cx="0"
                 cy="0"
                 r="4.8"
                 fill={player.color || '#3b82f6'}
                 stroke="#ffffff"
-                strokeWidth="0.8"
-                style={{ filter: 'drop-shadow(0 2px 5px rgba(0,0,0,0.6))' }}
+                strokeWidth="0.9"
+                style={{ filter: 'drop-shadow(0 3px 6px rgba(0,0,0,0.7))' }}
               />
-              {/* Player Label */}
+
+              {/* Player Jersey Number / Position */}
               <text
                 x="0"
                 y="1.2"
@@ -252,31 +315,72 @@ export default function DrillAnimationPlayer({ drill }) {
               >
                 {player.label}
               </text>
-              {/* Role Subtitle below avatar */}
-              <text
-                x="0"
-                y="7"
-                fill="#cbd5e1"
-                fontSize="1.9"
-                fontWeight="700"
-                textAnchor="middle"
-                opacity="0.85"
-              >
-                {player.role}
-              </text>
+
+              {/* Floating Action Status Badge above Player */}
+              {player.action && (
+                <g transform="translate(0, -6.8)">
+                  <rect
+                    x="-9"
+                    y="-2.5"
+                    width="18"
+                    height="5"
+                    rx="2.5"
+                    fill="rgba(15, 23, 42, 0.92)"
+                    stroke={player.color || '#3b82f6'}
+                    strokeWidth="0.5"
+                  />
+                  <text
+                    x="0"
+                    y="1"
+                    fill="#ffffff"
+                    fontSize="1.9"
+                    fontWeight="800"
+                    textAnchor="middle"
+                  >
+                    {player.action}
+                  </text>
+                </g>
+              )}
             </g>
           ))}
 
-          {/* Animated Volleyball */}
+          {/* =========================================================================
+              3D ANIMATED VOLLEYBALL WITH REALISTIC FLOOR SHADOW
+             ========================================================================= */}
           {currentPhase?.ball && currentPhase.ball.visible && (
             <g
               style={{
-                transition: `all ${(currentPhase.duration || 2000) / (speedMultiplier * 1000)}s cubic-bezier(0.25, 1, 0.5, 1)`
+                transition: `transform ${transitionDuration}s cubic-bezier(0.25, 1, 0.5, 1)`
               }}
               transform={`translate(${currentPhase.ball.x}, ${currentPhase.ball.y})`}
             >
-              <circle cx="0" cy="0" r="3.2" fill="#ffffff" stroke="#f59e0b" strokeWidth="0.8" style={{ filter: 'drop-shadow(0 3px 6px rgba(0,0,0,0.8))' }} />
-              <circle cx="0" cy="0" r="1.5" fill="#3b82f6" />
+              {/* Ball 3D Floor Shadow (scales with height) */}
+              <ellipse
+                cx="0"
+                cy={ballHeight * 3.5}
+                rx={Math.max(1.5, 4.5 - ballHeight)}
+                ry={Math.max(0.8, 2.2 - ballHeight * 0.4)}
+                fill="url(#ball-shadow)"
+                opacity={Math.max(0.3, 0.8 - ballHeight * 0.15)}
+              />
+
+              {/* Volleyball Sphere */}
+              <circle
+                cx="0"
+                cy={-ballHeight * 2}
+                r="3.2"
+                fill="#ffffff"
+                stroke="#f59e0b"
+                strokeWidth="0.8"
+                style={{ filter: 'drop-shadow(0 4px 8px rgba(0,0,0,0.8))' }}
+              />
+              <circle cx="0" cy={-ballHeight * 2} r="1.4" fill="#3b82f6" />
+              <path
+                d={`M -2.2 ${-ballHeight * 2} A 2.2 2.2 0 0 1 2.2 ${-ballHeight * 2}`}
+                stroke="#f59e0b"
+                strokeWidth="0.5"
+                fill="none"
+              />
             </g>
           )}
         </svg>
@@ -287,10 +391,10 @@ export default function DrillAnimationPlayer({ drill }) {
             position: 'absolute',
             bottom: '8px',
             right: '10px',
-            background: 'rgba(0, 0, 0, 0.65)',
-            border: '1px solid rgba(255, 255, 255, 0.1)',
+            background: 'rgba(0, 0, 0, 0.75)',
+            border: '1px solid rgba(255, 255, 255, 0.15)',
             borderRadius: '6px',
-            padding: '0.15rem 0.5rem',
+            padding: '0.15rem 0.55rem',
             fontSize: '0.68rem',
             fontWeight: 800,
             color: '#a7f3d0'
@@ -306,12 +410,12 @@ export default function DrillAnimationPlayer({ drill }) {
       <div
         style={{
           background: 'rgba(15, 23, 42, 0.85)',
-          border: '1px solid rgba(59, 130, 246, 0.3)',
-          borderRadius: '10px',
+          border: '1px solid rgba(59, 130, 246, 0.35)',
+          borderRadius: '12px',
           padding: '0.65rem 0.85rem',
           display: 'flex',
           alignItems: 'center',
-          gap: '0.6rem'
+          gap: '0.65rem'
         }}
       >
         <div
@@ -319,7 +423,7 @@ export default function DrillAnimationPlayer({ drill }) {
             width: '28px',
             height: '28px',
             borderRadius: '50%',
-            background: 'rgba(59, 130, 246, 0.2)',
+            background: 'rgba(59, 130, 246, 0.25)',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
@@ -330,7 +434,7 @@ export default function DrillAnimationPlayer({ drill }) {
           <Info size={15} />
         </div>
         <div>
-          <div style={{ fontSize: '0.82rem', fontWeight: 800, color: '#f8fafc' }}>
+          <div style={{ fontSize: '0.84rem', fontWeight: 800, color: '#f8fafc' }}>
             {currentPhase?.name}
           </div>
           <div style={{ fontSize: '0.74rem', color: '#cbd5e1', marginTop: '0.1rem' }}>
@@ -340,7 +444,7 @@ export default function DrillAnimationPlayer({ drill }) {
       </div>
 
       {/* =========================================================================
-          PLAYBACK CONTROLS (PLAY / PAUSE / STEP / SPEED / LOOP)
+          PLAYBACK & TIMELINE CONTROLS (PLAY / PAUSE / STEP / SPEED / LOOP)
          ========================================================================= */}
       <div
         style={{

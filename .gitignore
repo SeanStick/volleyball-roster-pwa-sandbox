@@ -34,3 +34,6 @@ ui-debug.log
 .env.local
 .env.production.local
 .env.development.local
+
+# Agent directories
+.antigravity/

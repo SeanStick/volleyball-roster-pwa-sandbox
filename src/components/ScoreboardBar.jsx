@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   RotateCcw,
   RefreshCw,
@@ -14,7 +14,12 @@ import {
   Sparkles,
   ChevronRight,
   ArrowRight,
-  Play
+  Play,
+  Clock,
+  ArrowLeftRight,
+  Shield,
+  Volume2,
+  AlertCircle
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
 import QuickPointModal from './QuickPointModal';
@@ -32,6 +37,10 @@ export default function ScoreboardBar({
   onOpenMatchSetup,
   onOpenTournamentDayHub,
   onSelectSetNumber,
+  onCallTimeout,
+  onOpenSubModal,
+  subHistory = [],
+  maxSubs = 12,
   lineup = {},
   roster = [],
   rotation = 1,
@@ -40,6 +49,10 @@ export default function ScoreboardBar({
 }) {
   const [isPointModalOpen, setIsPointModalOpen] = useState(false);
   const [scoringTeam, setScoringTeam] = useState('us'); // 'us' | 'opponent'
+
+  // Timeout Countdown Timer State
+  const [activeTimeout, setActiveTimeout] = useState(null); // { team: 'us'|'opponent', secondsLeft: 60 }
+  const [timeoutSeconds, setTimeoutSeconds] = useState(60);
 
   const {
     courtNumber = 'Court 1',
@@ -52,14 +65,53 @@ export default function ScoreboardBar({
     ourSetsWon = 0,
     opponentSetsWon = 0,
     isTrackingEnabled = true,
+    ourTimeoutsRemaining = 2,
+    opponentTimeoutsRemaining = 2,
+    timeoutHistory = [],
     pointHistory = [],
     setHistory = []
   } = matchStats || {};
+
+  // Check regular substitutions used in current set
+  const currentSetSubs = (matchStats?.subHistory || subHistory || [])
+    .filter(s => (s.setNumber === undefined || s.setNumber === setNumber) && !s.isLiberoExchange).length;
 
   // Check if match is concluded (e.g. best of 3: 2 sets won)
   const isMatchWon = ourSetsWon >= 2;
   const isMatchLost = opponentSetsWon >= 2;
   const isMatchComplete = isMatchWon || isMatchLost;
+
+  // Active Timeout Countdown Timer
+  useEffect(() => {
+    let timer = null;
+    if (activeTimeout && timeoutSeconds > 0) {
+      timer = setInterval(() => {
+        setTimeoutSeconds((prev) => {
+          if (prev <= 1) {
+            clearInterval(timer);
+            return 0;
+          }
+          return prev - 1;
+        });
+      }, 1000);
+    }
+    return () => {
+      if (timer) clearInterval(timer);
+    };
+  }, [activeTimeout, timeoutSeconds]);
+
+  const handleStartTimeoutTimer = (team) => {
+    if (onCallTimeout) {
+      onCallTimeout(team);
+    }
+    setActiveTimeout(team);
+    setTimeoutSeconds(60);
+  };
+
+  const handleEndTimeoutTimer = () => {
+    setActiveTimeout(null);
+    setTimeoutSeconds(60);
+  };
 
   // Fast +1 US Action
   const handlePlusUs = () => {
@@ -126,6 +178,73 @@ export default function ScoreboardBar({
 
   return (
     <>
+      {/* =========================================================================
+          ⏱️ ACTIVE TIMEOUT COUNTDOWN OVERLAY / BANNER
+         ========================================================================= */}
+      {activeTimeout && (
+        <div
+          style={{
+            background: activeTimeout === 'us'
+              ? 'linear-gradient(90deg, #10b981 0%, #047857 100%)'
+              : 'linear-gradient(90deg, #ef4444 0%, #b91c1c 100%)',
+            color: '#ffffff',
+            padding: '0.65rem 1rem',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            boxShadow: '0 4px 20px rgba(0, 0, 0, 0.5)',
+            borderBottom: '2px solid rgba(255, 255, 255, 0.2)',
+            animation: 'fadeIn 0.2s ease-out',
+            zIndex: 100
+          }}
+        >
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
+            <Clock size={20} className="animate-spin" />
+            <div>
+              <div style={{ fontSize: '0.9rem', fontWeight: 900, letterSpacing: '0.02em' }}>
+                {activeTimeout === 'us' ? 'OUR TIMEOUT (US)' : `OPPONENT TIMEOUT (${(opponentName || 'OPP').toUpperCase()})`}
+              </div>
+              <div style={{ fontSize: '0.74rem', opacity: 0.9 }}>
+                Official 60-second break • Score: US {ourScore} - {opponentScore} OPP
+              </div>
+            </div>
+          </div>
+
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+            <div
+              style={{
+                fontFamily: 'monospace',
+                fontSize: '1.45rem',
+                fontWeight: 900,
+                background: 'rgba(0, 0, 0, 0.3)',
+                padding: '0.2rem 0.6rem',
+                borderRadius: '8px',
+                border: '1px solid rgba(255, 255, 255, 0.3)'
+              }}
+            >
+              0:{timeoutSeconds < 10 ? `0${timeoutSeconds}` : timeoutSeconds}
+            </div>
+
+            <button
+              type="button"
+              onClick={handleEndTimeoutTimer}
+              style={{
+                background: '#ffffff',
+                color: '#0f172a',
+                border: 'none',
+                borderRadius: '8px',
+                padding: '0.35rem 0.65rem',
+                fontSize: '0.76rem',
+                fontWeight: 900,
+                cursor: 'pointer'
+              }}
+            >
+              Resume Play
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* =========================================================================
           🏆 1. TOP TOURNAMENT & MATCH CAPSULE (1-Tap Day Hub & Quick Edit)
          ========================================================================= */}
@@ -352,20 +471,44 @@ export default function ScoreboardBar({
       )}
 
       {/* =========================================================================
-          🔢 4. MAIN LIVE SCOREBOARD RIBBON
+          🔢 4. MAIN LIVE SCOREBOARD RIBBON WITH TIMEOUTS & SUBS
          ========================================================================= */}
       <div className="scoreboard-ribbon">
-        {/* Left: Set & Match Status */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: '0.65rem' }}>
-          <div className="scoreboard-set-badge">
-            SET {setNumber}
+        {/* Left: Set & Subs Counter */}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.3rem' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+            <div className="scoreboard-set-badge">
+              SET {setNumber}
+            </div>
+
+            <div style={{ fontSize: '0.78rem', color: 'var(--text-secondary)', display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
+              <span>Sets:</span>
+              <strong style={{ color: '#10b981', fontSize: '0.9rem' }}>{ourSetsWon}</strong>
+              <span>-</span>
+              <strong style={{ color: '#f87171', fontSize: '0.9rem' }}>{opponentSetsWon}</strong>
+            </div>
           </div>
 
-          <div style={{ fontSize: '0.78rem', color: 'var(--text-secondary)', display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
-            <span>Sets:</span>
-            <strong style={{ color: '#10b981', fontSize: '0.9rem' }}>{ourSetsWon}</strong>
-            <span>-</span>
-            <strong style={{ color: '#f87171', fontSize: '0.9rem' }}>{opponentSetsWon}</strong>
+          {/* 🔄 Subs Counter (Clickable to view/trigger subs) */}
+          <div
+            onClick={onOpenSubModal}
+            style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '0.3rem',
+              fontSize: '0.72rem',
+              fontWeight: 800,
+              padding: '0.15rem 0.45rem',
+              borderRadius: '6px',
+              background: currentSetSubs >= (maxSubs - 2) ? 'rgba(239, 68, 68, 0.2)' : 'rgba(59, 130, 246, 0.15)',
+              border: `1px solid ${currentSetSubs >= (maxSubs - 2) ? 'rgba(239, 68, 68, 0.4)' : 'rgba(59, 130, 246, 0.35)'}`,
+              color: currentSetSubs >= (maxSubs - 2) ? '#fca5a5' : '#93c5fd',
+              cursor: 'pointer'
+            }}
+            title="Team Substitutions used in this set (Rule limit)"
+          >
+            <ArrowLeftRight size={11} />
+            <span>Subs: {currentSetSubs} / {maxSubs}</span>
           </div>
         </div>
 
@@ -400,8 +543,58 @@ export default function ScoreboardBar({
           </div>
         </div>
 
-        {/* Right: Quick Controls */}
+        {/* Right: Quick Controls + ⏱️ TIMEOUT BUTTONS */}
         <div className="scoreboard-action-group">
+          {/* ⏱️ US Timeout Button & Dots */}
+          <button
+            type="button"
+            className="btn btn-secondary btn-sm"
+            onClick={() => handleStartTimeoutTimer('us')}
+            disabled={ourTimeoutsRemaining <= 0}
+            style={{
+              padding: '0.4rem 0.55rem',
+              fontSize: '0.74rem',
+              fontWeight: 800,
+              background: ourTimeoutsRemaining > 0 ? 'rgba(16, 185, 129, 0.18)' : 'rgba(255, 255, 255, 0.04)',
+              borderColor: ourTimeoutsRemaining > 0 ? 'rgba(16, 185, 129, 0.45)' : 'rgba(255, 255, 255, 0.08)',
+              color: ourTimeoutsRemaining > 0 ? '#6ee7b7' : '#64748b'
+            }}
+            title={ourTimeoutsRemaining > 0 ? `Call Timeout for Us (${ourTimeoutsRemaining} left)` : 'No timeouts remaining for Us in this set'}
+          >
+            <Clock size={12} color={ourTimeoutsRemaining > 0 ? '#34d399' : '#64748b'} />
+            <span>US TO</span>
+            {/* Timeout Dots: [ ● ● ] */}
+            <div style={{ display: 'flex', gap: '3px', marginLeft: '2px' }}>
+              <span style={{ width: '6px', height: '6px', borderRadius: '50%', background: ourTimeoutsRemaining >= 1 ? '#10b981' : '#475569' }} />
+              <span style={{ width: '6px', height: '6px', borderRadius: '50%', background: ourTimeoutsRemaining >= 2 ? '#10b981' : '#475569' }} />
+            </div>
+          </button>
+
+          {/* ⏱️ OPP Timeout Button & Dots */}
+          <button
+            type="button"
+            className="btn btn-secondary btn-sm"
+            onClick={() => handleStartTimeoutTimer('opponent')}
+            disabled={opponentTimeoutsRemaining <= 0}
+            style={{
+              padding: '0.4rem 0.55rem',
+              fontSize: '0.74rem',
+              fontWeight: 800,
+              background: opponentTimeoutsRemaining > 0 ? 'rgba(239, 68, 68, 0.18)' : 'rgba(255, 255, 255, 0.04)',
+              borderColor: opponentTimeoutsRemaining > 0 ? 'rgba(239, 68, 68, 0.45)' : 'rgba(255, 255, 255, 0.08)',
+              color: opponentTimeoutsRemaining > 0 ? '#fca5a5' : '#64748b'
+            }}
+            title={opponentTimeoutsRemaining > 0 ? `Record Opponent Timeout (${opponentTimeoutsRemaining} left)` : 'No timeouts remaining for Opponent in this set'}
+          >
+            <Clock size={12} color={opponentTimeoutsRemaining > 0 ? '#f87171' : '#64748b'} />
+            <span>OPP TO</span>
+            {/* Timeout Dots: [ ● ● ] */}
+            <div style={{ display: 'flex', gap: '3px', marginLeft: '2px' }}>
+              <span style={{ width: '6px', height: '6px', borderRadius: '50%', background: opponentTimeoutsRemaining >= 1 ? '#ef4444' : '#475569' }} />
+              <span style={{ width: '6px', height: '6px', borderRadius: '50%', background: opponentTimeoutsRemaining >= 2 ? '#ef4444' : '#475569' }} />
+            </div>
+          </button>
+
           {/* Undo Button */}
           <button
             className="btn btn-secondary btn-sm"
@@ -413,42 +606,6 @@ export default function ScoreboardBar({
             <RotateCcw size={13} />
             <span>Undo</span>
           </button>
-
-          {/* Finish Set Button */}
-          <button
-            className="btn btn-secondary btn-sm"
-            onClick={handleFinishSetClick}
-            style={{
-              background: 'linear-gradient(135deg, rgba(16, 185, 129, 0.2), rgba(5, 150, 105, 0.3))',
-              borderColor: 'rgba(16, 185, 129, 0.5)',
-              color: '#a7f3d0',
-              fontSize: '0.78rem',
-              fontWeight: 700
-            }}
-            title={`Finish Set ${setNumber} (${ourScore}-${opponentScore}) and advance to Set ${setNumber + 1}`}
-          >
-            <Check size={13} color="#34d399" />
-            <span>Next Set</span>
-          </button>
-
-          {/* Save Match Button */}
-          {onArchiveMatch && (
-            <button
-              className="btn btn-secondary btn-sm"
-              onClick={() => onArchiveMatch()}
-              style={{
-                background: 'rgba(59, 130, 246, 0.18)',
-                borderColor: 'rgba(59, 130, 246, 0.45)',
-                color: '#bfdbfe',
-                fontSize: '0.78rem',
-                fontWeight: 700
-              }}
-              title="Save current match to history"
-            >
-              <Archive size={13} color="#60a5fa" />
-              <span>Save Match</span>
-            </button>
-          )}
 
           {/* Quick Score Reset Button */}
           <button

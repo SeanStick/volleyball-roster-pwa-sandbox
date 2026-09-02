@@ -509,6 +509,9 @@ export default function CourtView({
     const historyEntry = {
       id: `sub-${Date.now()}`,
       timestamp: new Date().toISOString(),
+      setNumber: matchStats?.setNumber || 1,
+      ourScore: matchStats?.ourScore || 0,
+      opponentScore: matchStats?.opponentScore || 0,
       zoneKey,
       outgoingPlayerId: outgoingPlayer?.id || null,
       outgoingPlayerName: outgoingPlayer?.name || null,

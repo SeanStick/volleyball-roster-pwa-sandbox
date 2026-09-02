@@ -24,6 +24,13 @@ export const INITIAL_MATCH_STATS = {
   ourSetsWon: 0,
   opponentSetsWon: 0,
   isTrackingEnabled: true,
+  // Official Timeout tracking (2 per team per set)
+  ourTimeoutsRemaining: 2,
+  opponentTimeoutsRemaining: 2,
+  timeoutHistory: [],
+  // Substitution tracking
+  maxSubs: 12,
+  subHistory: [],
   pointHistory: [],
   setHistory: []
 };
@@ -387,7 +394,9 @@ export const storageService = {
         setScores: currentMatchStats.setHistory?.length > 0 ? currentMatchStats.setHistory : [
           { setNumber: currentMatchStats.setNumber || 1, ourScore: currentMatchStats.ourScore, opponentScore: currentMatchStats.opponentScore, winner: currentMatchStats.ourScore > currentMatchStats.opponentScore ? 'us' : 'opponent' }
         ],
-        pointHistory: [...(currentMatchStats.pointHistory || [])]
+        pointHistory: [...(currentMatchStats.pointHistory || [])],
+        timeoutHistory: [...(currentMatchStats.timeoutHistory || [])],
+        subHistory: [...(currentMatchStats.subHistory || [])]
       };
 
       const existingHistory = this.getMatchHistory();

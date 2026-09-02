@@ -32,6 +32,7 @@ export default function TournamentDayHubModal({
   onArchiveMatch,
   onDeleteMatchHistory,
   onSelectSetNumber,
+  onOpenMatchWizard,
   onOpenShareModal,
   activeTeam
 }) {
@@ -502,28 +503,58 @@ export default function TournamentDayHubModal({
               </div>
             </div>
           ) : (
-            <button
-              type="button"
-              onClick={() => setIsCreatingNextMatch(true)}
-              style={{
-                background: 'linear-gradient(135deg, rgba(59, 130, 246, 0.25), rgba(30, 58, 138, 0.35))',
-                border: '1.5px dashed rgba(59, 130, 246, 0.5)',
-                borderRadius: '14px',
-                padding: '0.85rem',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                gap: '0.5rem',
-                color: '#93c5fd',
-                fontWeight: 800,
-                fontSize: '0.9rem',
-                cursor: 'pointer',
-                transition: 'all 0.2s ease'
-              }}
-            >
-              <Plus size={18} />
-              <span>Ready for Next Match? Start Match {matchHistory.length + 2}</span>
-            </button>
+            <div style={{ display: 'flex', gap: '0.5rem' }}>
+              <button
+                type="button"
+                onClick={() => {
+                  onClose();
+                  if (onOpenMatchWizard) onOpenMatchWizard();
+                }}
+                style={{
+                  flex: 1,
+                  background: 'linear-gradient(135deg, rgba(16, 185, 129, 0.25), rgba(5, 150, 105, 0.35))',
+                  border: '1.5px solid rgba(16, 185, 129, 0.5)',
+                  borderRadius: '14px',
+                  padding: '0.85rem 0.5rem',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: '0.4rem',
+                  color: '#a7f3d0',
+                  fontWeight: 800,
+                  fontSize: '0.85rem',
+                  cursor: 'pointer',
+                  transition: 'all 0.2s ease'
+                }}
+              >
+                <Sparkles size={16} color="#34d399" />
+                <span>Match Wizard (3-Step)</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setIsCreatingNextMatch(true)}
+                style={{
+                  flex: 1,
+                  background: 'linear-gradient(135deg, rgba(59, 130, 246, 0.25), rgba(30, 58, 138, 0.35))',
+                  border: '1.5px dashed rgba(59, 130, 246, 0.5)',
+                  borderRadius: '14px',
+                  padding: '0.85rem 0.5rem',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: '0.4rem',
+                  color: '#93c5fd',
+                  fontWeight: 800,
+                  fontSize: '0.85rem',
+                  cursor: 'pointer',
+                  transition: 'all 0.2s ease'
+                }}
+              >
+                <Plus size={16} />
+                <span>Quick Next Match</span>
+              </button>
+            </div>
           )}
 
           {/* =========================================================================

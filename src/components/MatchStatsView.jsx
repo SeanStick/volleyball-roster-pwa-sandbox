@@ -522,6 +522,121 @@ export default function MatchStatsView({
       </div>
 
       {/* =========================================================================
+          ⏱️ & 🔄 OFFICIAL TIMEOUTS & SUBSTITUTIONS BOX SCORE
+         ========================================================================= */}
+      <div className="error-leaderboard-card">
+        <div className="leaderboard-title-row">
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+            <Zap size={20} color="#f59e0b" />
+            <h3 style={{ margin: 0, fontSize: '1.1rem', color: '#f8fafc', fontWeight: 800 }}>
+              Set-by-Set Substitutions & Timeouts Box Score
+            </h3>
+          </div>
+          <span style={{ fontSize: '0.78rem', color: 'var(--text-secondary)' }}>
+            Official USAV/NFHS Tracking (2 Timeouts & {matchStats?.maxSubs || 12} Subs per Set)
+          </span>
+        </div>
+
+        {/* Set-by-Set Table */}
+        <div style={{ overflowX: 'auto', WebkitOverflowScrolling: 'touch', marginTop: '0.75rem' }}>
+          <table className="stats-table" style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.82rem' }}>
+            <thead>
+              <tr style={{ background: 'rgba(255, 255, 255, 0.04)', textAlign: 'left', borderBottom: '1px solid rgba(255, 255, 255, 0.1)' }}>
+                <th style={{ padding: '0.55rem 0.75rem', color: '#94a3b8' }}>Set</th>
+                <th style={{ padding: '0.55rem 0.75rem', color: '#94a3b8' }}>Score</th>
+                <th style={{ padding: '0.55rem 0.75rem', color: '#94a3b8' }}>Winner</th>
+                <th style={{ padding: '0.55rem 0.75rem', color: '#34d399' }}>US Timeouts</th>
+                <th style={{ padding: '0.55rem 0.75rem', color: '#f87171' }}>OPP Timeouts</th>
+                <th style={{ padding: '0.55rem 0.75rem', color: '#60a5fa' }}>Team Subs</th>
+              </tr>
+            </thead>
+            <tbody>
+              {/* Completed Sets */}
+              {setHistory && setHistory.map((s) => (
+                <tr key={s.setNumber} style={{ borderBottom: '1px solid rgba(255, 255, 255, 0.05)' }}>
+                  <td style={{ padding: '0.55rem 0.75rem', fontWeight: 800, color: '#f8fafc' }}>
+                    Set {s.setNumber}
+                  </td>
+                  <td style={{ padding: '0.55rem 0.75rem', fontWeight: 700 }}>
+                    <span style={{ color: '#10b981' }}>{s.ourScore}</span> - <span style={{ color: '#ef4444' }}>{s.opponentScore}</span>
+                  </td>
+                  <td style={{ padding: '0.55rem 0.75rem', fontWeight: 700, color: s.winner === 'us' ? '#34d399' : '#f87171' }}>
+                    {s.winner === 'us' ? 'US' : (opponentName || 'OPP')}
+                  </td>
+                  <td style={{ padding: '0.55rem 0.75rem', color: '#6ee7b7' }}>
+                    {s.ourTimeoutsUsed ?? 0} / 2 Used
+                  </td>
+                  <td style={{ padding: '0.55rem 0.75rem', color: '#fca5a5' }}>
+                    {s.opponentTimeoutsUsed ?? 0} / 2 Used
+                  </td>
+                  <td style={{ padding: '0.55rem 0.75rem', color: '#93c5fd', fontWeight: 700 }}>
+                    {s.subsCount ?? 0} / {matchStats?.maxSubs || 12}
+                  </td>
+                </tr>
+              ))}
+
+              {/* Active Set */}
+              <tr style={{ background: 'rgba(59, 130, 246, 0.08)', borderBottom: '1px solid rgba(59, 130, 246, 0.2)' }}>
+                <td style={{ padding: '0.55rem 0.75rem', fontWeight: 800, color: '#93c5fd', display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
+                  <span style={{ width: '6px', height: '6px', borderRadius: '50%', background: '#38bdf8' }} />
+                  <span>Set {setNumber} (Live)</span>
+                </td>
+                <td style={{ padding: '0.55rem 0.75rem', fontWeight: 800 }}>
+                  <span style={{ color: '#34d399' }}>{ourScore}</span> - <span style={{ color: '#f87171' }}>{opponentScore}</span>
+                </td>
+                <td style={{ padding: '0.55rem 0.75rem', color: '#fbbf24', fontWeight: 700 }}>
+                  In Progress
+                </td>
+                <td style={{ padding: '0.55rem 0.75rem', color: '#6ee7b7', fontWeight: 700 }}>
+                  {2 - (matchStats?.ourTimeoutsRemaining ?? 2)} / 2 Used ({matchStats?.ourTimeoutsRemaining ?? 2} left)
+                </td>
+                <td style={{ padding: '0.55rem 0.75rem', color: '#fca5a5', fontWeight: 700 }}>
+                  {2 - (matchStats?.opponentTimeoutsRemaining ?? 2)} / 2 Used ({matchStats?.opponentTimeoutsRemaining ?? 2} left)
+                </td>
+                <td style={{ padding: '0.55rem 0.75rem', color: '#93c5fd', fontWeight: 800 }}>
+                  {(matchStats?.subHistory || []).filter(sub => (sub.setNumber === undefined || sub.setNumber === setNumber) && !sub.isLiberoExchange).length} / {matchStats?.maxSubs || 12}
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        {/* Timeout History Log List */}
+        {matchStats?.timeoutHistory && matchStats.timeoutHistory.length > 0 && (
+          <div style={{ marginTop: '0.85rem', paddingTop: '0.75rem', borderTop: '1px solid rgba(255, 255, 255, 0.08)' }}>
+            <div style={{ fontSize: '0.75rem', fontWeight: 800, color: '#cbd5e1', marginBottom: '0.4rem' }}>
+              Timeout Calling Timeline:
+            </div>
+            <div style={{ display: 'flex', gap: '0.4rem', flexWrap: 'wrap' }}>
+              {matchStats.timeoutHistory.map((to, idx) => {
+                const isUs = to.team === 'us';
+                return (
+                  <div
+                    key={to.id || idx}
+                    style={{
+                      fontSize: '0.74rem',
+                      padding: '0.25rem 0.55rem',
+                      borderRadius: '6px',
+                      background: isUs ? 'rgba(16, 185, 129, 0.15)' : 'rgba(239, 68, 68, 0.15)',
+                      border: isUs ? '1px solid rgba(16, 185, 129, 0.35)' : '1px solid rgba(239, 68, 68, 0.35)',
+                      color: isUs ? '#a7f3d0' : '#fca5a5',
+                      fontWeight: 700,
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '0.35rem'
+                    }}
+                  >
+                    <span>{isUs ? '🏐 US TO' : `🛡️ ${(opponentName || 'OPP').slice(0, 4)} TO`}</span>
+                    <span style={{ opacity: 0.8 }}>• S{to.setNumber} @ {to.ourScore}-{to.opponentScore}</span>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* =========================================================================
           HISTORICAL MULTI-MATCH BENCHMARKS & SAVED MATCH ARCHIVE
          ========================================================================= */}
       <div className="error-leaderboard-card">

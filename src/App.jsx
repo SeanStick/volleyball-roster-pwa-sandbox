@@ -29,6 +29,7 @@ import AuthModal from './components/AuthModal';
 import TeamManagerModal from './components/TeamManagerModal';
 import ShareTeamModal from './components/ShareTeamModal';
 import MatchSetupModal from './components/MatchSetupModal';
+import MatchWizardModal from './components/MatchWizardModal';
 import TournamentDayHubModal from './components/TournamentDayHubModal';
 import TournamentSyncToast from './components/TournamentSyncToast';
 import FirebaseSettingsModal from './components/FirebaseSettingsModal';
@@ -66,6 +67,7 @@ export default function App() {
   const [isShareModalOpen, setIsShareModalOpen] = useState(false);
   const [teamToShare, setTeamToShare] = useState(null);
   const [isMatchSetupModalOpen, setIsMatchSetupModalOpen] = useState(false);
+  const [isMatchWizardOpen, setIsMatchWizardOpen] = useState(false);
   const [isTournamentDayHubOpen, setIsTournamentDayHubOpen] = useState(false);
   const [isFirebaseSettingsModalOpen, setIsFirebaseSettingsModalOpen] = useState(false);
   const [isPlayerModalOpen, setIsPlayerModalOpen] = useState(false);
@@ -506,7 +508,7 @@ export default function App() {
     });
   };
 
-  const handleStartFreshMatch = (newMatchPayload) => {
+  const handleStartFreshMatch = (newMatchPayload = {}) => {
     // 1. If previous match had scores or sets, archive it
     if ((matchStats?.ourScore > 0 || matchStats?.opponentScore > 0 || (matchStats?.setHistory && matchStats.setHistory.length > 0))) {
       storageService.archiveCurrentMatch(matchStats, matchStats.opponentName);
@@ -514,12 +516,13 @@ export default function App() {
       setMatchHistory(nextHistory);
     }
 
+    const chosenMaxSubs = newMatchPayload.maxSubs || maxSubs || 12;
     const freshStats = {
       ...storageService.resetFullMatch(),
-      tournamentName: newMatchPayload.tournamentName || matchStats.tournamentName || 'Tournament',
-      courtNumber: newMatchPayload.courtNumber || matchStats.courtNumber || 'Court 1',
+      tournamentName: newMatchPayload.tournamentName || matchStats?.tournamentName || 'Tournament Day',
+      courtNumber: newMatchPayload.courtNumber || matchStats?.courtNumber || 'Court 1',
       opponentName: newMatchPayload.opponentName || 'Opponent',
-      matchStage: newMatchPayload.matchStage || 'Pool Play - Match 1',
+      matchStage: newMatchPayload.matchStage || 'Match 1',
       matchFormat: newMatchPayload.matchFormat || 'Best of 3 (25, 25, 15)',
       targetPoints: newMatchPayload.targetPoints || 25,
       setNumber: 1,
@@ -527,19 +530,36 @@ export default function App() {
       opponentScore: 0,
       ourSetsWon: 0,
       opponentSetsWon: 0,
+      ourTimeoutsRemaining: 2,
+      opponentTimeoutsRemaining: 2,
+      timeoutHistory: [],
+      maxSubs: chosenMaxSubs,
+      subHistory: [],
       pointHistory: [],
       setHistory: []
     };
 
-    const newLineup = startingLineup || getDefaultLineup(roster);
+    const newLineup = newMatchPayload.lineup || startingLineup || getDefaultLineup(roster);
+    const newPhase = newMatchPayload.phase || 'serve';
+    const newRotation = newMatchPayload.rotation || 1;
 
     setMatchStats(freshStats);
     setLineup(newLineup);
-    setRotation(1);
-    setPhase('serve');
-    setLiberoExchanges({});
-    setLiberoServingRotation(null);
+    setStartingLineup(newLineup);
+    setRotation(newRotation);
+    setPhase(newPhase);
     setSubHistory([]);
+    setMaxSubs(chosenMaxSubs);
+
+    const nextExchanges = {};
+    if (newMatchPayload.liberoId) {
+      const mbOnBench = roster.find(p => p.position === 'Middle Blocker' && !Object.values(newLineup).includes(p.id));
+      if (mbOnBench) {
+        nextExchanges[newMatchPayload.liberoId] = mbOnBench.id;
+      }
+    }
+    setLiberoExchanges(nextExchanges);
+    setLiberoServingRotation(null);
 
     setSyncToast({
       title: '🏆 New Match Started',
@@ -553,14 +573,48 @@ export default function App() {
       matchState: {
         lineup: newLineup,
         startingLineup: newLineup,
-        rotation: 1,
-        phase: 'serve',
-        liberoExchanges: {},
+        rotation: newRotation,
+        phase: newPhase,
+        liberoExchanges: nextExchanges,
         liberoServingRotation: null,
         subHistory: [],
-        maxSubs: 12,
-        enforcePositionLock: false
+        maxSubs: chosenMaxSubs,
+        enforcePositionLock
       }
+    });
+  };
+
+  const handleCallTimeout = (team) => {
+    const isUs = team === 'us';
+    const currentRemaining = isUs ? (matchStats?.ourTimeoutsRemaining ?? 2) : (matchStats?.opponentTimeoutsRemaining ?? 2);
+    if (currentRemaining <= 0) return;
+
+    const timeoutEntry = {
+      id: `to-${Date.now()}`,
+      setNumber: matchStats?.setNumber || 1,
+      team: isUs ? 'us' : 'opponent',
+      ourScore: matchStats?.ourScore || 0,
+      opponentScore: matchStats?.opponentScore || 0,
+      timestamp: new Date().toISOString()
+    };
+
+    const nextStats = {
+      ...matchStats,
+      ourTimeoutsRemaining: isUs ? Math.max(0, currentRemaining - 1) : (matchStats?.ourTimeoutsRemaining ?? 2),
+      opponentTimeoutsRemaining: !isUs ? Math.max(0, currentRemaining - 1) : (matchStats?.opponentTimeoutsRemaining ?? 2),
+      timeoutHistory: [...(matchStats?.timeoutHistory || []), timeoutEntry]
+    };
+
+    setMatchStats(nextStats);
+
+    setSyncToast({
+      title: isUs ? '⏱️ Timeout Called (US)' : `⏱️ Timeout (${matchStats?.opponentName || 'Opponent'})`,
+      message: `Score: US ${nextStats.ourScore} - ${nextStats.opponentScore} OPP (${isUs ? nextStats.ourTimeoutsRemaining : nextStats.opponentTimeoutsRemaining} left this set)`,
+      type: 'new_point'
+    });
+
+    syncCloudImmediately({
+      matchStats: nextStats
     });
   };
 
@@ -1037,11 +1091,18 @@ export default function App() {
 
   const handleStartNewSet = () => {
     const isOurSet = (matchStats?.ourScore || 0) > (matchStats?.opponentScore || 0);
+    const currentSubs = (subHistory || []).filter(s => !s.isLiberoExchange).length;
+    const ourTOsUsed = 2 - (matchStats?.ourTimeoutsRemaining ?? 2);
+    const oppTOsUsed = 2 - (matchStats?.opponentTimeoutsRemaining ?? 2);
+
     const completedSet = {
       setNumber: matchStats?.setNumber || 1,
       ourScore: matchStats?.ourScore || 0,
       opponentScore: matchStats?.opponentScore || 0,
-      winner: isOurSet ? 'us' : 'opponent'
+      winner: isOurSet ? 'us' : 'opponent',
+      subsCount: currentSubs,
+      ourTimeoutsUsed: ourTOsUsed,
+      opponentTimeoutsUsed: oppTOsUsed
     };
 
     const nextSetNumber = (matchStats?.setNumber || 1) + 1;
@@ -1052,6 +1113,8 @@ export default function App() {
       setNumber: nextSetNumber,
       ourSetsWon: isOurSet ? (matchStats?.ourSetsWon || 0) + 1 : (matchStats?.ourSetsWon || 0),
       opponentSetsWon: !isOurSet ? (matchStats?.opponentSetsWon || 0) + 1 : (matchStats?.opponentSetsWon || 0),
+      ourTimeoutsRemaining: 2,
+      opponentTimeoutsRemaining: 2,
       setHistory: [...(matchStats?.setHistory || []), completedSet]
     };
 
@@ -1066,7 +1129,7 @@ export default function App() {
 
     setSyncToast({
       title: `🏐 Set ${nextSetNumber} Started`,
-      message: `Set ${matchStats?.setNumber || 1} finished (${completedSet.ourScore}-${completedSet.opponentScore}). Starting Set ${nextSetNumber} (0-0).`,
+      message: `Set ${matchStats?.setNumber || 1} finished (${completedSet.ourScore}-${completedSet.opponentScore}). Starting Set ${nextSetNumber} (0-0, 2 Timeouts each).`,
       type: 'new_set'
     });
 
@@ -1426,6 +1489,10 @@ export default function App() {
         onOpenMatchSetup={() => setIsMatchSetupModalOpen(true)}
         onOpenTournamentDayHub={() => setIsTournamentDayHubOpen(true)}
         onSelectSetNumber={handleSelectSetNumber}
+        onCallTimeout={handleCallTimeout}
+        onOpenSubModal={() => setActiveTab('court')}
+        subHistory={subHistory}
+        maxSubs={maxSubs}
         lineup={lineup}
         roster={roster}
         rotation={rotation}
@@ -1695,6 +1762,17 @@ export default function App() {
         onStartFreshMatch={handleStartFreshMatch}
       />
 
+      {/* 3-Step Start Match & Rules Wizard */}
+      <MatchWizardModal
+        isOpen={isMatchWizardOpen}
+        onClose={() => setIsMatchWizardOpen(false)}
+        matchStats={matchStats}
+        roster={roster}
+        currentLineup={lineup}
+        teamSettings={teamSettings}
+        onStartFreshMatch={handleStartFreshMatch}
+      />
+
       {/* Tournament Day Hub (Slide-up Mobile Sheet) */}
       <TournamentDayHubModal
         isOpen={isTournamentDayHubOpen}
@@ -1707,6 +1785,7 @@ export default function App() {
         onArchiveMatch={handleArchiveMatch}
         onDeleteMatchHistory={handleDeleteMatchHistory}
         onSelectSetNumber={handleSelectSetNumber}
+        onOpenMatchWizard={() => setIsMatchWizardOpen(true)}
         onOpenShareModal={handleOpenShare}
         activeTeam={activeTeamObj}
       />

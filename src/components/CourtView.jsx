@@ -70,6 +70,7 @@ export default function CourtView({
   setEnforcePositionLock,
   onUpdatePlayerPosition,
   matchStats,
+  onOpenMatchWizard,
   onRallyWonByUs,
   onRallyWonByOpponent,
   onStartNewSet,
@@ -988,6 +989,25 @@ export default function CourtView({
             <Archive size={14} color="#60a5fa" />
             <span>Save to History</span>
           </button>
+
+          {/* Match Wizard Action */}
+          {onOpenMatchWizard && (
+            <button
+              type="button"
+              className="btn btn-sm"
+              onClick={onOpenMatchWizard}
+              style={{
+                background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
+                borderColor: '#10b981',
+                color: '#ffffff',
+                fontWeight: 800,
+                fontSize: '0.8rem'
+              }}
+              title="Open the step-by-step match & lineup wizard"
+            >
+              <Volleyball size={14} /> <span>Match Wizard</span>
+            </button>
+          )}
 
           {/* Auto-fill & Clear Actions */}
           <button className="btn btn-secondary btn-sm" onClick={handleAutoFillStarters} title="Auto-fill starting lineup with smart volleyball roles">

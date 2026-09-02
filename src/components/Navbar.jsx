@@ -5,6 +5,7 @@ import UserMenu from './UserMenu';
 export default function Navbar({
   onOpenAddModal,
   onOpenImportExportModal,
+  onOpenMatchWizard,
   user,
   syncStatus,
   lastSyncTime,
@@ -68,6 +69,33 @@ export default function Navbar({
       </div>
 
       <div className="header-actions">
+        {/* ⚡ PROMINENT START GAME / MATCH WIZARD BUTTON */}
+        {onOpenMatchWizard && (
+          <button
+            type="button"
+            className="btn btn-sm"
+            onClick={onOpenMatchWizard}
+            style={{
+              background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
+              borderColor: '#10b981',
+              color: '#ffffff',
+              fontWeight: 800,
+              fontSize: '0.78rem',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '0.35rem',
+              padding: '0.35rem 0.65rem',
+              borderRadius: '8px',
+              boxShadow: '0 2px 10px rgba(16, 185, 129, 0.4)',
+              cursor: 'pointer'
+            }}
+            title="Start New Volleyball Game & Lineup Wizard"
+          >
+            <Volleyball size={15} />
+            <span>Start Game</span>
+          </button>
+        )}
+
         {/* Share Squad Quick Action */}
         {activeTeam && onOpenShareModal && (
           <button
@@ -92,8 +120,8 @@ export default function Navbar({
         </button>
 
         {/* Add Player Action */}
-        <button className="btn btn-primary btn-sm" onClick={onOpenAddModal}>
-          <Plus size={16} />
+        <button className="btn btn-secondary btn-sm" onClick={onOpenAddModal} style={{ fontSize: '0.78rem' }}>
+          <Plus size={15} />
           <span className="hide-mobile">Add Player</span>
         </button>
 

@@ -1400,6 +1400,7 @@ export default function App() {
       <Navbar
         onOpenAddModal={handleOpenAdd}
         onOpenImportExportModal={() => setIsImportExportModalOpen(true)}
+        onOpenMatchWizard={() => setIsMatchWizardOpen(true)}
         user={user}
         syncStatus={syncStatus}
         lastSyncTime={lastSyncTime}
@@ -1487,6 +1488,7 @@ export default function App() {
         onArchiveMatch={handleArchiveMatch}
         onResetFullMatch={handleResetFullMatch}
         onOpenMatchSetup={() => setIsMatchSetupModalOpen(true)}
+        onOpenMatchWizard={() => setIsMatchWizardOpen(true)}
         onOpenTournamentDayHub={() => setIsTournamentDayHubOpen(true)}
         onSelectSetNumber={handleSelectSetNumber}
         onCallTimeout={handleCallTimeout}
@@ -1650,6 +1652,7 @@ export default function App() {
           setEnforcePositionLock={setEnforcePositionLock}
           onUpdatePlayerPosition={handleUpdatePlayerPosition}
           matchStats={matchStats}
+          onOpenMatchWizard={() => setIsMatchWizardOpen(true)}
           onRallyWonByUs={handleRallyWonByUs}
           onRallyWonByOpponent={handleRallyWonByOpponent}
           onStartNewSet={handleStartNewSet}
@@ -1767,6 +1770,7 @@ export default function App() {
         isOpen={isMatchWizardOpen}
         onClose={() => setIsMatchWizardOpen(false)}
         matchStats={matchStats}
+        matchHistory={matchHistory}
         roster={roster}
         currentLineup={lineup}
         teamSettings={teamSettings}

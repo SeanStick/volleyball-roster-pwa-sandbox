@@ -35,6 +35,7 @@ export default function ScoreboardBar({
   onArchiveMatch,
   onResetFullMatch,
   onOpenMatchSetup,
+  onOpenMatchWizard,
   onOpenTournamentDayHub,
   onSelectSetNumber,
   onCallTimeout,
@@ -260,29 +261,54 @@ export default function ScoreboardBar({
           userSelect: 'none'
         }}
       >
-        {/* Left: 1-Tap Tournament Day Hub Button */}
-        <button
-          type="button"
-          onClick={onOpenTournamentDayHub}
-          style={{
-            background: 'linear-gradient(135deg, rgba(59, 130, 246, 0.25), rgba(30, 58, 138, 0.35))',
-            border: '1px solid rgba(59, 130, 246, 0.5)',
-            borderRadius: '999px',
-            padding: '0.2rem 0.6rem',
-            color: '#93c5fd',
-            fontSize: '0.74rem',
-            fontWeight: 800,
-            display: 'flex',
-            alignItems: 'center',
-            gap: '0.35rem',
-            cursor: 'pointer',
-            flexShrink: 0
-          }}
-          title="Open Tournament Day Hub"
-        >
-          <Trophy size={13} color="#60a5fa" />
-          <span>Day Hub</span>
-        </button>
+        {/* Left: 1-Tap Tournament Day Hub & Match Wizard Buttons */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem', flexShrink: 0 }}>
+          {onOpenMatchWizard && (
+            <button
+              type="button"
+              onClick={onOpenMatchWizard}
+              style={{
+                background: 'linear-gradient(135deg, rgba(16, 185, 129, 0.35), rgba(5, 150, 105, 0.45))',
+                border: '1px solid rgba(16, 185, 129, 0.6)',
+                borderRadius: '999px',
+                padding: '0.2rem 0.55rem',
+                color: '#a7f3d0',
+                fontSize: '0.74rem',
+                fontWeight: 800,
+                display: 'flex',
+                alignItems: 'center',
+                gap: '0.3rem',
+                cursor: 'pointer'
+              }}
+              title="Start New Match / Lineup Wizard"
+            >
+              <Sparkles size={12} color="#34d399" />
+              <span>Wizard</span>
+            </button>
+          )}
+
+          <button
+            type="button"
+            onClick={onOpenTournamentDayHub}
+            style={{
+              background: 'linear-gradient(135deg, rgba(59, 130, 246, 0.25), rgba(30, 58, 138, 0.35))',
+              border: '1px solid rgba(59, 130, 246, 0.5)',
+              borderRadius: '999px',
+              padding: '0.2rem 0.55rem',
+              color: '#93c5fd',
+              fontSize: '0.74rem',
+              fontWeight: 800,
+              display: 'flex',
+              alignItems: 'center',
+              gap: '0.3rem',
+              cursor: 'pointer'
+            }}
+            title="Open Tournament Day Hub"
+          >
+            <Trophy size={12} color="#60a5fa" />
+            <span>Day Hub</span>
+          </button>
+        </div>
 
         {/* Center: Location & Opponent (Click to Quick Edit) */}
         <div

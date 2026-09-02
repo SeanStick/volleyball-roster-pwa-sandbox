@@ -162,35 +162,27 @@ export default function UserMenu({
 
   if (!user) {
     return (
-      <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem', flexShrink: 0 }}>
         <button
           type="button"
           onClick={() => onOpenAuthModal('login')}
           className="btn btn-primary btn-sm"
           style={{
-            display: 'flex',
+            display: 'inline-flex',
             alignItems: 'center',
             gap: '0.35rem',
-            padding: '0.35rem 0.75rem',
-            fontSize: '0.8rem',
-            borderRadius: 'var(--radius-md)',
-            fontWeight: 700
+            padding: '0.32rem 0.7rem',
+            fontSize: '0.78rem',
+            borderRadius: '999px',
+            fontWeight: 800,
+            whiteSpace: 'nowrap',
+            boxShadow: '0 2px 10px rgba(255, 107, 53, 0.35)',
+            flexShrink: 0
           }}
+          title="Sign In with Google or Email"
         >
-          <Cloud size={14} />
+          <User size={13} />
           <span>Sign In</span>
-        </button>
-        <button
-          type="button"
-          onClick={() => onOpenAuthModal('register')}
-          className="btn btn-secondary btn-sm hide-mobile"
-          style={{
-            padding: '0.35rem 0.75rem',
-            fontSize: '0.8rem',
-            borderRadius: 'var(--radius-md)'
-          }}
-        >
-          <span>Register</span>
         </button>
       </div>
     );

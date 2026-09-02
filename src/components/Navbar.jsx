@@ -23,14 +23,16 @@ export default function Navbar({
     <header className="header-glass">
       <div className="brand-wrapper">
         <div className="brand-icon">
-          <Volleyball size={22} color="#ffffff" />
+          <Volleyball size={20} color="#ffffff" />
         </div>
         
-        {/* Desktop Brand Title & Team Sub-badge */}
-        <div className="hide-mobile" style={{ display: 'flex', flexDirection: 'column' }}>
+        <div style={{ display: 'flex', flexDirection: 'column', minWidth: 0, overflow: 'hidden' }}>
+          {/* App Title */}
           <div className="brand-title">
             Go Stand Over There
           </div>
+          
+          {/* Team Name Subtitle / Switcher */}
           {activeTeam && (
             <button
               type="button"
@@ -43,9 +45,10 @@ export default function Navbar({
                 padding: 0,
                 display: 'flex',
                 alignItems: 'center',
-                gap: '5px',
+                gap: '4px',
                 cursor: 'pointer',
-                textAlign: 'left'
+                textAlign: 'left',
+                maxWidth: '100%'
               }}
             >
               <span
@@ -54,71 +57,25 @@ export default function Navbar({
                   height: '6px',
                   borderRadius: '50%',
                   background: activeTeam.primaryColor || '#ff6b35',
-                  display: 'inline-block'
+                  display: 'inline-block',
+                  flexShrink: 0
                 }}
               />
               <span
                 style={{
-                  fontSize: '0.72rem',
+                  fontSize: '0.7rem',
                   fontWeight: 700,
                   color: 'var(--text-secondary)',
-                  letterSpacing: '0.02em'
+                  letterSpacing: '0.02em',
+                  whiteSpace: 'nowrap',
+                  overflow: 'hidden',
+                  textOverflow: 'ellipsis'
                 }}
               >
-                {activeTeam.teamName || 'CVA Black - 9th'} ({activeTeam.season || '2026'})
+                {activeTeam.teamName || 'CVA Black - 9th'} {activeTeam.season ? `(${activeTeam.season})` : ''}
               </span>
             </button>
           )}
-        </div>
-
-        {/* Mobile Portrait Clean Single-Line Team Brand */}
-        <div className="show-mobile" style={{ minWidth: 0, flex: 1 }}>
-          <button
-            type="button"
-            onClick={onOpenTeamManagerModal}
-            style={{
-              background: 'none',
-              border: 'none',
-              padding: 0,
-              display: 'flex',
-              alignItems: 'center',
-              gap: '6px',
-              cursor: 'pointer',
-              textAlign: 'left',
-              maxWidth: '100%'
-            }}
-            title="Switch Team or Manage Squad"
-          >
-            <span
-              style={{
-                fontSize: '0.92rem',
-                fontWeight: 800,
-                color: '#f8fafc',
-                whiteSpace: 'nowrap',
-                overflow: 'hidden',
-                textOverflow: 'ellipsis',
-                letterSpacing: '-0.2px'
-              }}
-            >
-              {activeTeam?.teamName || 'Go Stand Over There'}
-            </span>
-            {activeTeam?.season && (
-              <span
-                style={{
-                  fontSize: '0.62rem',
-                  fontWeight: 800,
-                  background: 'rgba(255, 107, 53, 0.2)',
-                  color: 'var(--accent-orange)',
-                  border: '1px solid rgba(255, 107, 53, 0.35)',
-                  padding: '1px 5px',
-                  borderRadius: '999px',
-                  flexShrink: 0
-                }}
-              >
-                {activeTeam.season}
-              </span>
-            )}
-          </button>
         </div>
       </div>
 

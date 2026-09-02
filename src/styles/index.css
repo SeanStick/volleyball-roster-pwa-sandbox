@@ -862,6 +862,14 @@ body::before {
     width: 16px;
     height: 16px;
   }
+  .brand-title {
+    font-size: 0.95rem;
+    letter-spacing: -0.2px;
+    line-height: 1.1;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
   .header-actions {
     gap: 0.35rem;
     flex-shrink: 0;

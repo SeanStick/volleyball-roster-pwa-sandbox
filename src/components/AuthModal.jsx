@@ -13,8 +13,7 @@ import {
   AlertCircle,
   KeyRound,
   LogIn,
-  UserPlus,
-  Zap
+  UserPlus
 } from 'lucide-react';
 import { firebaseService } from '../services/firebaseService';
 
@@ -127,34 +126,15 @@ export default function AuthModal({ isOpen, onClose, onAuthSuccess, initialTab =
 
     setLoading(true);
     setErrorMsg(null);
+    setSuccessMsg(null);
 
-    const res = await firebaseService.resetPassword(email);
+    const res = await firebaseService.sendPasswordReset(email);
     setLoading(false);
 
     if (res.success) {
       setSuccessMsg(res.message || 'Password reset instructions have been sent to your email.');
     } else {
       setErrorMsg(res.error);
-    }
-  };
-
-  const handleQuickDemo = async () => {
-    setLoading(true);
-    setErrorMsg(null);
-
-    const res = await firebaseService.registerWithEmail(
-      'coach.demo@volleyball.app',
-      'password123',
-      'Coach Alex'
-    );
-    setLoading(false);
-
-    if (res.success) {
-      setSuccessMsg('Signed in as Coach Alex (Demo Account)!');
-      if (onAuthSuccess) onAuthSuccess(res.user);
-      setTimeout(() => {
-        onClose();
-      }, 500);
     }
   };
 
@@ -621,31 +601,6 @@ export default function AuthModal({ isOpen, onClose, onAuthSuccess, initialTab =
             </button>
           </form>
         )}
-
-        {/* Quick Demo Mode Pill */}
-        <div
-          style={{
-            marginTop: '1.25rem',
-            paddingTop: '1rem',
-            borderTop: '1px solid var(--border-glass)',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'space-between'
-          }}
-        >
-          <span style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>
-            Quick preview without typing:
-          </span>
-          <button
-            type="button"
-            className="btn btn-secondary btn-sm"
-            onClick={handleQuickDemo}
-            disabled={loading}
-            style={{ fontSize: '0.75rem', padding: '0.25rem 0.6rem' }}
-          >
-            <Zap size={13} color="#f59e0b" /> Demo Account
-          </button>
-        </div>
       </div>
     </div>
   );

@@ -28,6 +28,7 @@ export default function UserMenu({
   onOpenTeamManagerModal,
   onOpenShareModal,
   onOpenFirebaseSettingsModal,
+  onOpenMatchWizard,
   onOpenWhiteboard,
   onOpenDrills,
   onManualSync,
@@ -358,6 +359,37 @@ export default function UserMenu({
 
           {/* Menu Items */}
           <div style={{ display: 'flex', flexDirection: 'column', gap: '3px' }}>
+            {/* ⚡ Start Match / Game Wizard */}
+            {onOpenMatchWizard && (
+              <button
+                type="button"
+                onClick={() => {
+                  setIsOpen(false);
+                  onOpenMatchWizard();
+                }}
+                style={{
+                  width: '100%',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '0.6rem',
+                  padding: '0.65rem 0.75rem',
+                  background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
+                  border: 'none',
+                  borderRadius: 'var(--radius-sm)',
+                  color: '#ffffff',
+                  fontSize: '0.85rem',
+                  fontWeight: 900,
+                  cursor: 'pointer',
+                  textAlign: 'left',
+                  boxShadow: '0 4px 12px rgba(16, 185, 129, 0.35)',
+                  marginBottom: '4px'
+                }}
+              >
+                <Volleyball size={16} />
+                <span>Start Match & Lineup Wizard</span>
+              </button>
+            )}
+
             {/* 📋 Tactical Whiteboard */}
             {onOpenWhiteboard && (
               <button

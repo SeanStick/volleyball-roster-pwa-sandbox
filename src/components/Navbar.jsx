@@ -23,9 +23,11 @@ export default function Navbar({
     <header className="header-glass">
       <div className="brand-wrapper">
         <div className="brand-icon">
-          <Volleyball size={24} color="#ffffff" />
+          <Volleyball size={22} color="#ffffff" />
         </div>
-        <div style={{ display: 'flex', flexDirection: 'column' }}>
+        
+        {/* Desktop Brand Title & Team Sub-badge */}
+        <div className="hide-mobile" style={{ display: 'flex', flexDirection: 'column' }}>
           <div className="brand-title">
             Go Stand Over There
           </div>
@@ -68,14 +70,64 @@ export default function Navbar({
             </button>
           )}
         </div>
+
+        {/* Mobile Portrait Clean Single-Line Team Brand */}
+        <div className="show-mobile" style={{ minWidth: 0, flex: 1 }}>
+          <button
+            type="button"
+            onClick={onOpenTeamManagerModal}
+            style={{
+              background: 'none',
+              border: 'none',
+              padding: 0,
+              display: 'flex',
+              alignItems: 'center',
+              gap: '6px',
+              cursor: 'pointer',
+              textAlign: 'left',
+              maxWidth: '100%'
+            }}
+            title="Switch Team or Manage Squad"
+          >
+            <span
+              style={{
+                fontSize: '0.92rem',
+                fontWeight: 800,
+                color: '#f8fafc',
+                whiteSpace: 'nowrap',
+                overflow: 'hidden',
+                textOverflow: 'ellipsis',
+                letterSpacing: '-0.2px'
+              }}
+            >
+              {activeTeam?.teamName || 'Go Stand Over There'}
+            </span>
+            {activeTeam?.season && (
+              <span
+                style={{
+                  fontSize: '0.62rem',
+                  fontWeight: 800,
+                  background: 'rgba(255, 107, 53, 0.2)',
+                  color: 'var(--accent-orange)',
+                  border: '1px solid rgba(255, 107, 53, 0.35)',
+                  padding: '1px 5px',
+                  borderRadius: '999px',
+                  flexShrink: 0
+                }}
+              >
+                {activeTeam.season}
+              </span>
+            )}
+          </button>
+        </div>
       </div>
 
       <div className="header-actions">
-        {/* ⚡ START GAME / MATCH WIZARD BUTTON (Responsive text on mobile) */}
+        {/* ⚡ START GAME BUTTON (Desktop/Tablet) */}
         {onOpenMatchWizard && (
           <button
             type="button"
-            className="btn btn-sm"
+            className="btn btn-sm hide-mobile"
             onClick={onOpenMatchWizard}
             style={{
               background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
@@ -94,8 +146,7 @@ export default function Navbar({
             title="Start New Volleyball Game & Lineup Wizard"
           >
             <Volleyball size={15} />
-            <span className="hide-mobile">Start Game</span>
-            <span className="show-mobile">Start</span>
+            <span>Start Game</span>
           </button>
         )}
 
@@ -184,6 +235,7 @@ export default function Navbar({
           onOpenTeamManagerModal={onOpenTeamManagerModal}
           onOpenShareModal={onOpenShareModal}
           onOpenFirebaseSettingsModal={onOpenFirebaseSettingsModal}
+          onOpenMatchWizard={onOpenMatchWizard}
           onOpenWhiteboard={onOpenWhiteboard}
           onOpenDrills={onOpenDrillsModal}
           onManualSync={onManualSync}

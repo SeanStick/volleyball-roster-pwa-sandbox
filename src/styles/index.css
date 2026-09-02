@@ -837,44 +837,30 @@ body::before {
 
 @media (max-width: 640px) {
   .app-container {
-    padding: 0.4rem 0.5rem 5rem 0.5rem;
+    padding: 0.35rem 0.5rem 5rem 0.5rem;
   }
   .header-glass {
-    top: 0.3rem;
-    padding: 0.45rem 0.65rem;
-    margin-bottom: 0.65rem;
+    top: 0.25rem;
+    padding: 0.35rem 0.65rem;
+    margin-bottom: 0.5rem;
     gap: 0.5rem;
+    min-height: 44px;
+    border-radius: var(--radius-md);
   }
   .brand-wrapper {
-    gap: 0.5rem;
+    gap: 0.45rem;
     min-width: 0;
     flex: 1;
   }
   .brand-icon {
-    width: 32px;
-    height: 32px;
+    width: 28px;
+    height: 28px;
     border-radius: 8px;
     flex-shrink: 0;
   }
   .brand-icon svg {
-    width: 18px;
-    height: 18px;
-  }
-  .brand-title {
-    font-size: 0.98rem;
-    letter-spacing: -0.3px;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-  }
-  .navbar-team-badge {
-    max-width: 130px;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-  }
-  .navbar-team-badge span:last-child {
-    font-size: 0.68rem;
+    width: 16px;
+    height: 16px;
   }
   .header-actions {
     gap: 0.35rem;
@@ -882,12 +868,12 @@ body::before {
   }
   .header-actions .btn-icon {
     padding: 0.35rem;
-    width: 32px;
-    height: 32px;
+    width: 30px;
+    height: 30px;
   }
   .header-actions .btn-icon svg {
-    width: 16px;
-    height: 16px;
+    width: 15px;
+    height: 15px;
   }
   .user-menu-trigger-btn {
     padding: 2px;

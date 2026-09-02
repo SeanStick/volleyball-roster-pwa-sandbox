@@ -1,5 +1,5 @@
 import React from 'react';
-import { Plus, Database, Volleyball, Layers, Share2, Dumbbell } from 'lucide-react';
+import { Plus, Database, Volleyball, Layers, Share2, Dumbbell, PenTool } from 'lucide-react';
 import UserMenu from './UserMenu';
 
 export default function Navbar({
@@ -7,6 +7,7 @@ export default function Navbar({
   onOpenImportExportModal,
   onOpenMatchWizard,
   onOpenDrillsModal,
+  onOpenWhiteboard,
   user,
   syncStatus,
   lastSyncTime,
@@ -97,14 +98,14 @@ export default function Navbar({
           </button>
         )}
 
-        {/* 🎯 DRILLS & PRACTICE HUB BUTTON */}
-        {onOpenDrillsModal && (
+        {/* 📋 TACTICAL WHITEBOARD BUTTON */}
+        {onOpenWhiteboard && (
           <button
             type="button"
             className="btn btn-sm"
-            onClick={onOpenDrillsModal}
+            onClick={onOpenWhiteboard}
             style={{
-              background: 'linear-gradient(135deg, rgba(59, 130, 246, 0.25), rgba(147, 51, 234, 0.35))',
+              background: 'linear-gradient(135deg, rgba(59, 130, 246, 0.25), rgba(37, 99, 235, 0.35))',
               border: '1px solid rgba(59, 130, 246, 0.5)',
               color: '#93c5fd',
               fontWeight: 800,
@@ -116,9 +117,35 @@ export default function Navbar({
               borderRadius: '8px',
               cursor: 'pointer'
             }}
+            title="Open Tactical Volleyball Whiteboard & Chalkboard"
+          >
+            <PenTool size={15} color="#60a5fa" />
+            <span>Board</span>
+          </button>
+        )}
+
+        {/* 🎯 DRILLS & PRACTICE HUB BUTTON */}
+        {onOpenDrillsModal && (
+          <button
+            type="button"
+            className="btn btn-sm"
+            onClick={onOpenDrillsModal}
+            style={{
+              background: 'linear-gradient(135deg, rgba(168, 85, 247, 0.25), rgba(147, 51, 234, 0.35))',
+              border: '1px solid rgba(168, 85, 247, 0.5)',
+              color: '#e9d5ff',
+              fontWeight: 800,
+              fontSize: '0.78rem',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '0.35rem',
+              padding: '0.35rem 0.65rem',
+              borderRadius: '8px',
+              cursor: 'pointer'
+            }}
             title="Open Volleyball Drills & Animated Practice Hub"
           >
-            <Dumbbell size={15} color="#60a5fa" />
+            <Dumbbell size={15} color="#c084fc" />
             <span>Drills</span>
           </button>
         )}

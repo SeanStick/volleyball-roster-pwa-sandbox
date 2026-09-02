@@ -27,6 +27,7 @@ import FormationsView from './components/FormationsView';
 import ScoreboardBar from './components/ScoreboardBar';
 import MatchStatsView from './components/MatchStatsView';
 import DrillHubPage from './components/DrillHubPage';
+import WhiteboardPage from './components/WhiteboardPage';
 import ImportExportModal from './components/ImportExportModal';
 import InstallPrompt from './components/InstallPrompt';
 import AuthModal from './components/AuthModal';
@@ -44,6 +45,7 @@ import { rotateLineupClockwise, checkLineupFrontRowLiberoViolation } from './ser
 import './styles/court.css';
 import './styles/formations.css';
 import './styles/stats.css';
+import './styles/whiteboard.css';
 
 export default function App() {
   // -------------------------------------------------------------
@@ -1408,6 +1410,7 @@ export default function App() {
         onOpenImportExportModal={() => setIsImportExportModalOpen(true)}
         onOpenMatchWizard={() => setIsMatchWizardOpen(true)}
         onOpenDrillsModal={() => setActiveTab('drills')}
+        onOpenWhiteboard={() => setActiveTab('whiteboard')}
         user={user}
         syncStatus={syncStatus}
         lastSyncTime={lastSyncTime}
@@ -1791,7 +1794,22 @@ export default function App() {
 
       {/* Dedicated Volleyball Practice Drills & 2D Animated Lab Page */}
       {activeTab === 'drills' && (
-        <DrillHubPage onBack={() => setActiveTab('roster')} />
+        <DrillHubPage
+          onBack={() => setActiveTab('roster')}
+          onNavigateToWhiteboard={() => setActiveTab('whiteboard')}
+        />
+      )}
+
+      {/* Dedicated Tactical Volleyball Whiteboard & Chalkboard Page */}
+      {activeTab === 'whiteboard' && (
+        <WhiteboardPage
+          lineup={lineup}
+          roster={roster}
+          rotation={rotation}
+          teamSettings={teamSettings}
+          onBack={() => setActiveTab('roster')}
+          onNavigateToDrills={() => setActiveTab('drills')}
+        />
       )}
 
       {/* Auth Modal */}

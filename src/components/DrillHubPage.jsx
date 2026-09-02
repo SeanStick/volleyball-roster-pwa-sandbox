@@ -23,13 +23,15 @@ import {
   Printer,
   ChevronRight,
   Dumbbell,
+  PenTool,
   Filter
 } from 'lucide-react';
 import { DRILL_CATEGORIES, VOLLEYBALL_DRILLS } from '../services/drillsData';
 import DrillAnimationPlayer from './DrillAnimationPlayer';
 import '../styles/drills.css';
+import '../styles/whiteboard.css';
 
-export default function DrillHubPage({ onBack }) {
+export default function DrillHubPage({ onBack, onNavigateToWhiteboard }) {
   const [activeCategory, setActiveCategory] = useState('all');
   const [searchTerm, setSearchTerm] = useState('');
   const [difficultyFilter, setDifficultyFilter] = useState('all');
@@ -117,7 +119,31 @@ export default function DrillHubPage({ onBack }) {
           </div>
         </div>
 
-        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.65rem', flexWrap: 'wrap' }}>
+          {/* Coaching Suite Navigation Pills */}
+          <div className="coaching-nav-pills">
+            {onNavigateToWhiteboard && (
+              <button
+                type="button"
+                className="coaching-nav-pill"
+                onClick={onNavigateToWhiteboard}
+                title="Tactical Chalkboard & Whiteboard"
+              >
+                <PenTool size={15} />
+                <span>Whiteboard</span>
+              </button>
+            )}
+
+            <button
+              type="button"
+              className="coaching-nav-pill active"
+              title="Volleyball Drills Lab"
+            >
+              <Dumbbell size={15} />
+              <span>Drills Lab</span>
+            </button>
+          </div>
+
           {onBack && (
             <button
               type="button"

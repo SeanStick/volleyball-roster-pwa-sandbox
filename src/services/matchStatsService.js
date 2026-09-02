@@ -14,14 +14,15 @@ export const ERROR_CATEGORIES = {
 };
 
 export const VOLLEYBALL_ERRORS = [
-  // Service Errors
+  // Service Errors (ONLY possible when Our Team is SERVING)
   {
     id: 'missed_serve_net',
     label: 'Missed Serve (Into Net)',
     category: ERROR_CATEGORIES.SERVICE,
     icon: '🏐',
     shortLabel: 'Serve in Net',
-    description: 'Served ball contacted net and failed to pass into opponent court (Rule 12.6.2.1).'
+    description: 'Served ball contacted net and failed to pass into opponent court (Rule 12.6.2.1).',
+    validPhases: ['serve']
   },
   {
     id: 'missed_serve_out',
@@ -29,7 +30,8 @@ export const VOLLEYBALL_ERRORS = [
     category: ERROR_CATEGORIES.SERVICE,
     icon: '🏐',
     shortLabel: 'Serve Out',
-    description: 'Served ball landed completely outside boundary lines (Rule 12.6.2.2).'
+    description: 'Served ball landed completely outside boundary lines (Rule 12.6.2.2).',
+    validPhases: ['serve']
   },
   {
     id: 'service_foot_fault',
@@ -37,17 +39,19 @@ export const VOLLEYBALL_ERRORS = [
     category: ERROR_CATEGORIES.SERVICE,
     icon: '🦶',
     shortLabel: 'Foot Fault',
-    description: 'Server touched endline or court before contacting the ball (Rule 12.4.3).'
+    description: 'Server touched endline or court before contacting the ball (Rule 12.4.3).',
+    validPhases: ['serve']
   },
 
-  // Attack Errors
+  // Attack Errors (Possible in both Serve and Receive phases)
   {
     id: 'attack_net',
     label: 'Attack (Into Net)',
     category: ERROR_CATEGORIES.ATTACK,
     icon: '💥',
     shortLabel: 'Hit in Net',
-    description: 'Spike or attack hit directly into the net and died (Rule 13.3.1).'
+    description: 'Spike or attack hit directly into the net and died (Rule 13.3.1).',
+    validPhases: ['serve', 'receive']
   },
   {
     id: 'attack_out',
@@ -55,7 +59,8 @@ export const VOLLEYBALL_ERRORS = [
     category: ERROR_CATEGORIES.ATTACK,
     icon: '💥',
     shortLabel: 'Hit Out',
-    description: 'Spike or tip landed out of bounds without contacting an opponent block (Rule 13.3.2).'
+    description: 'Spike or tip landed out of bounds without contacting an opponent block (Rule 13.3.2).',
+    validPhases: ['serve', 'receive']
   },
   {
     id: 'attack_blocked',
@@ -63,7 +68,8 @@ export const VOLLEYBALL_ERRORS = [
     category: ERROR_CATEGORIES.ATTACK,
     icon: '🛑',
     shortLabel: 'Hit Blocked',
-    description: 'Spike was rejected by opponent block and landed on our side (Rule 14.1.1).'
+    description: 'Spike was rejected by opponent block and landed on our side (Rule 14.1.1).',
+    validPhases: ['serve', 'receive']
   },
   {
     id: 'attack_backrow',
@@ -71,17 +77,19 @@ export const VOLLEYBALL_ERRORS = [
     category: ERROR_CATEGORIES.ATTACK,
     icon: '⚠️',
     shortLabel: 'Back-Row Hit',
-    description: 'Back-row player took off on or in front of 10ft attack line while ball was above net (Rule 13.2.2).'
+    description: 'Back-row player took off on or in front of 10ft attack line while ball was above net (Rule 13.2.2).',
+    validPhases: ['serve', 'receive']
   },
 
-  // Passing & Receive Errors
+  // Passing & Receive Errors (ONLY possible when Our Team is RECEIVING serve)
   {
     id: 'receive_ace_against',
     label: 'Serve Receive Error (Ace Against)',
     category: ERROR_CATEGORIES.PASS_RECEIVE,
     icon: '🎯',
     shortLabel: 'Pass Shanked / Ace',
-    description: 'Serve contacted passer and could not be kept in play, resulting in opponent ace (Rule 9.2).'
+    description: 'Serve contacted passer and could not be kept in play, resulting in opponent ace (Rule 9.2).',
+    validPhases: ['receive']
   },
   {
     id: 'overpass_kill',
@@ -89,7 +97,8 @@ export const VOLLEYBALL_ERRORS = [
     category: ERROR_CATEGORIES.PASS_RECEIVE,
     icon: '📈',
     shortLabel: 'Overpass',
-    description: 'Shanked pass traveled over net allowing immediate opponent attack kill.'
+    description: 'Shanked pass traveled over net allowing immediate opponent attack kill.',
+    validPhases: ['receive']
   },
   {
     id: 'dig_error',
@@ -97,7 +106,8 @@ export const VOLLEYBALL_ERRORS = [
     category: ERROR_CATEGORIES.PASS_RECEIVE,
     icon: '🛡️',
     shortLabel: 'Dig Error',
-    description: 'Defensive dig or free ball pass could not be retrieved by teammates.'
+    description: 'Defensive dig or free ball pass could not be retrieved by teammates.',
+    validPhases: ['serve', 'receive']
   },
 
   // Ball Handling & Setting Violations
@@ -107,7 +117,8 @@ export const VOLLEYBALL_ERRORS = [
     category: ERROR_CATEGORIES.HANDLING,
     icon: '🖐️',
     shortLabel: 'Double Contact',
-    description: 'Player contacted ball twice consecutively or hands did not touch ball simultaneously (Rule 9.3.4).'
+    description: 'Player contacted ball twice consecutively or hands did not touch ball simultaneously (Rule 9.3.4).',
+    validPhases: ['serve', 'receive']
   },
   {
     id: 'lift_carry',
@@ -115,7 +126,8 @@ export const VOLLEYBALL_ERRORS = [
     category: ERROR_CATEGORIES.HANDLING,
     icon: '🤲',
     shortLabel: 'Lift / Carry',
-    description: 'Ball came to rest momentarily in player hands or was scooped/thrown (Rule 9.3.3).'
+    description: 'Ball came to rest momentarily in player hands or was scooped/thrown (Rule 9.3.3).',
+    validPhases: ['serve', 'receive']
   },
   {
     id: 'four_hits',
@@ -123,7 +135,8 @@ export const VOLLEYBALL_ERRORS = [
     category: ERROR_CATEGORIES.HANDLING,
     icon: '4️⃣',
     shortLabel: '4 Hits',
-    description: 'Team contacted the ball four times before sending it over the net (Rule 9.1).'
+    description: 'Team contacted the ball four times before sending it over the net (Rule 9.1).',
+    validPhases: ['serve', 'receive']
   },
 
   // Net & Court Violations
@@ -133,7 +146,8 @@ export const VOLLEYBALL_ERRORS = [
     category: ERROR_CATEGORIES.NET_COURT,
     icon: '🚫',
     shortLabel: 'Net Touch',
-    description: 'Player contacted net mesh, tape, or antenna during play (Rule 11.3).'
+    description: 'Player contacted net mesh, tape, or antenna during play (Rule 11.3).',
+    validPhases: ['serve', 'receive']
   },
   {
     id: 'centerline_fault',
@@ -141,7 +155,8 @@ export const VOLLEYBALL_ERRORS = [
     category: ERROR_CATEGORIES.NET_COURT,
     icon: '👟',
     shortLabel: 'Centerline',
-    description: 'Player foot completely crossed centerline into opponent court interfering with play (Rule 11.2.2).'
+    description: 'Player foot completely crossed centerline into opponent court interfering with play (Rule 11.2.2).',
+    validPhases: ['serve', 'receive']
   },
   {
     id: 'reaching_over',
@@ -149,7 +164,8 @@ export const VOLLEYBALL_ERRORS = [
     category: ERROR_CATEGORIES.NET_COURT,
     icon: '✋',
     shortLabel: 'Over Net',
-    description: 'Player contacted ball in opponent space before attack completion (Rule 11.1.2).'
+    description: 'Player contacted ball in opponent space before attack completion (Rule 11.1.2).',
+    validPhases: ['serve', 'receive']
   },
 
   // Rotational Violations
@@ -159,7 +175,8 @@ export const VOLLEYBALL_ERRORS = [
     category: ERROR_CATEGORIES.ROTATION,
     icon: '🔄',
     shortLabel: 'Overlap Fault',
-    description: 'Players were out of rotational position relative to adjacent teammates at service contact (Rule 7.5).'
+    description: 'Players were out of rotational position relative to adjacent teammates at service contact (Rule 7.5).',
+    validPhases: ['serve', 'receive']
   },
   {
     id: 'wrong_server',
@@ -167,7 +184,8 @@ export const VOLLEYBALL_ERRORS = [
     category: ERROR_CATEGORIES.ROTATION,
     icon: '⚠️',
     shortLabel: 'Wrong Server',
-    description: 'Incorrect player in rotation served the ball (Rule 7.7).'
+    description: 'Incorrect player in rotation served the ball (Rule 7.7).',
+    validPhases: ['serve']
   },
 
   // Opponent Earned Plays
@@ -177,7 +195,8 @@ export const VOLLEYBALL_ERRORS = [
     category: ERROR_CATEGORIES.OPPONENT_EARNED,
     icon: '⚡',
     shortLabel: 'Opponent Kill',
-    description: 'Opponent hitter struck an unstoppable kill point.'
+    description: 'Opponent hitter struck an unstoppable kill point.',
+    validPhases: ['serve', 'receive']
   },
   {
     id: 'opp_ace',
@@ -185,7 +204,8 @@ export const VOLLEYBALL_ERRORS = [
     category: ERROR_CATEGORIES.OPPONENT_EARNED,
     icon: '🎯',
     shortLabel: 'Opponent Ace',
-    description: 'Opponent serve landed untouched on court for an ace.'
+    description: 'Opponent serve landed untouched on court for an ace.',
+    validPhases: ['receive']
   },
   {
     id: 'opp_block',
@@ -193,16 +213,68 @@ export const VOLLEYBALL_ERRORS = [
     category: ERROR_CATEGORIES.OPPONENT_EARNED,
     icon: '🧱',
     shortLabel: 'Opponent Block',
-    description: 'Opponent blocker executed a point-ending block.'
+    description: 'Opponent blocker executed a point-ending block.',
+    validPhases: ['serve', 'receive']
   }
 ];
 
 export const POINT_EARNED_TYPES = [
-  { id: 'kill', label: 'Attack Kill (Spike Winner)', icon: '💥', shortLabel: 'Kill' },
-  { id: 'ace', label: 'Service Ace (Direct Winner)', icon: '🏐', shortLabel: 'Ace' },
-  { id: 'block', label: 'Block Kill (Roof Winner)', icon: '🧱', shortLabel: 'Block' },
-  { id: 'opp_error', label: 'Opponent Error (Out / Net / Fault)', icon: '❌', shortLabel: 'Opp Error' }
+  {
+    id: 'kill',
+    label: 'Attack Kill (Spike Winner)',
+    icon: '💥',
+    shortLabel: 'Kill',
+    validPhases: ['serve', 'receive'],
+    description: 'Hitter strikes an unreturnable spike or tip for an immediate point.'
+  },
+  {
+    id: 'ace',
+    label: 'Service Ace (Direct Winner)',
+    icon: '🏐',
+    shortLabel: 'Ace',
+    validPhases: ['serve'], // Only when we are serving!
+    description: 'Served ball directly results in a point without opponent retrieval.'
+  },
+  {
+    id: 'block',
+    label: 'Block Kill (Roof Winner)',
+    icon: '🧱',
+    shortLabel: 'Block',
+    validPhases: ['serve', 'receive'],
+    validZones: ['pos4', 'pos3', 'pos2'], // Rule 14.1.3: Only Front-Row players can complete a block!
+    description: 'Front-row blocker deflects opponent attack directly onto opponent court for a point.'
+  },
+  {
+    id: 'opp_missed_serve',
+    label: 'Opponent Missed Serve (Net / Out)',
+    icon: '🏐',
+    shortLabel: 'Opp Serve Error',
+    validPhases: ['receive'], // Only when we are receiving!
+    description: 'Opponent served into the net or out of bounds for an automatic side-out.'
+  },
+  {
+    id: 'opp_error',
+    label: 'Opponent Attack/Net Error',
+    icon: '❌',
+    shortLabel: 'Opp Error',
+    validPhases: ['serve', 'receive'],
+    description: 'Opponent committed an attack error, net touch, double contact, or violation.'
+  }
 ];
+
+/**
+ * Filter errors that are legally possible based on current point phase (serve vs receive).
+ */
+export function getValidErrorsForPhase(phase = 'serve') {
+  return VOLLEYBALL_ERRORS.filter(e => !e.validPhases || e.validPhases.includes(phase));
+}
+
+/**
+ * Filter earned point options that are legally possible based on current point phase.
+ */
+export function getValidEarnedTypesForPhase(phase = 'serve') {
+  return POINT_EARNED_TYPES.filter(t => !t.validPhases || t.validPhases.includes(phase));
+}
 
 /**
  * Computes Error Rankings from point history, sorted strictly from MOST COMMON to LEAST COMMON.

@@ -261,29 +261,30 @@ export default function ScoreboardBar({
           userSelect: 'none'
         }}
       >
-        {/* Left: 1-Tap Tournament Day Hub & Match Wizard Buttons */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem', flexShrink: 0 }}>
+        {/* Left: 1-Tap Start Game & Day Hub Buttons */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', flexShrink: 0 }}>
           {onOpenMatchWizard && (
             <button
               type="button"
               onClick={onOpenMatchWizard}
               style={{
-                background: 'linear-gradient(135deg, rgba(16, 185, 129, 0.35), rgba(5, 150, 105, 0.45))',
-                border: '1px solid rgba(16, 185, 129, 0.6)',
+                background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
+                border: '1px solid #10b981',
                 borderRadius: '999px',
-                padding: '0.2rem 0.55rem',
-                color: '#a7f3d0',
-                fontSize: '0.74rem',
-                fontWeight: 800,
+                padding: '0.25rem 0.65rem',
+                color: '#ffffff',
+                fontSize: '0.76rem',
+                fontWeight: 900,
                 display: 'flex',
                 alignItems: 'center',
-                gap: '0.3rem',
-                cursor: 'pointer'
+                gap: '0.35rem',
+                cursor: 'pointer',
+                boxShadow: '0 2px 8px rgba(16, 185, 129, 0.4)'
               }}
               title="Start New Match / Lineup Wizard"
             >
-              <Sparkles size={12} color="#34d399" />
-              <span>Wizard</span>
+              <Volleyball size={13} />
+              <span>Start Game</span>
             </button>
           )}
 
@@ -664,6 +665,29 @@ export default function ScoreboardBar({
             <Sliders size={13} />
             <span>{isTrackingEnabled ? 'Errors: ON' : 'Errors: OFF'}</span>
           </button>
+
+          {/* Start Game Action */}
+          {onOpenMatchWizard && (
+            <button
+              type="button"
+              className="btn btn-sm"
+              onClick={onOpenMatchWizard}
+              style={{
+                background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
+                borderColor: '#10b981',
+                color: '#ffffff',
+                fontSize: '0.78rem',
+                fontWeight: 800,
+                display: 'flex',
+                alignItems: 'center',
+                gap: '0.3rem'
+              }}
+              title="Start New Volleyball Match"
+            >
+              <Volleyball size={13} />
+              <span>Start Game</span>
+            </button>
+          )}
 
           {/* View Stats Tab Link */}
           {onNavigateTab && (

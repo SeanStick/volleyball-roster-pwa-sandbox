@@ -802,6 +802,71 @@ export default function CourtView({
 
   return (
     <div className="court-container">
+      {/* Quick Start Game Banner */}
+      {onOpenMatchWizard && (
+        <div
+          onClick={onOpenMatchWizard}
+          style={{
+            background: 'linear-gradient(135deg, rgba(16, 185, 129, 0.25), rgba(5, 150, 105, 0.35))',
+            border: '1.5px solid rgba(16, 185, 129, 0.6)',
+            borderRadius: 'var(--radius-lg)',
+            padding: '0.75rem 1.1rem',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            marginBottom: '0.85rem',
+            cursor: 'pointer',
+            boxShadow: '0 4px 15px rgba(16, 185, 129, 0.25)',
+            transition: 'all 0.2s ease'
+          }}
+        >
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+            <div
+              style={{
+                width: '36px',
+                height: '36px',
+                borderRadius: '10px',
+                background: 'linear-gradient(135deg, #10b981, #059669)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                color: '#ffffff',
+                boxShadow: '0 4px 12px rgba(16, 185, 129, 0.4)',
+                flexShrink: 0
+              }}
+            >
+              <Volleyball size={20} />
+            </div>
+            <div>
+              <div style={{ fontSize: '0.92rem', fontWeight: 900, color: '#f8fafc' }}>
+                Start New Game & Lineup Wizard
+              </div>
+              <div style={{ fontSize: '0.75rem', color: '#a7f3d0' }}>
+                1-tap 6-2 lineup auto-fill, opponent setup & coin toss
+              </div>
+            </div>
+          </div>
+
+          <button
+            type="button"
+            className="btn btn-primary btn-sm"
+            style={{
+              background: '#10b981',
+              borderColor: '#10b981',
+              fontWeight: 900,
+              fontSize: '0.82rem',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '0.35rem',
+              flexShrink: 0
+            }}
+          >
+            <span>Start Game</span>
+            <ArrowRight size={14} />
+          </button>
+        </div>
+      )}
+
       {/* Court Top Controls Header */}
       <div className="court-header">
         {/* Rotation Selectors & Steppers */}

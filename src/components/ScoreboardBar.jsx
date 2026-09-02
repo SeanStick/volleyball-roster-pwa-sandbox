@@ -262,8 +262,8 @@ export default function ScoreboardBar({
           userSelect: 'none'
         }}
       >
-        {/* Left: 1-Tap Start Game & Day Hub Buttons */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', flexShrink: 0 }}>
+        {/* Left: 1-Tap Start Game & Day Hub Buttons (Desktop/Tablet) */}
+        <div className="hide-mobile" style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', flexShrink: 0 }}>
           {onOpenMatchWizard && (
             <button
               type="button"

@@ -29,7 +29,7 @@ import { DRILL_CATEGORIES, VOLLEYBALL_DRILLS } from '../services/drillsData';
 import DrillAnimationPlayer from './DrillAnimationPlayer';
 import '../styles/drills.css';
 
-export default function DrillHubPage() {
+export default function DrillHubPage({ onBack }) {
   const [activeCategory, setActiveCategory] = useState('all');
   const [searchTerm, setSearchTerm] = useState('');
   const [difficultyFilter, setDifficultyFilter] = useState('all');
@@ -117,37 +117,58 @@ export default function DrillHubPage() {
           </div>
         </div>
 
-        {/* Practice Plan Drawer Button */}
-        <button
-          type="button"
-          onClick={() => setIsPlanDrawerOpen(!isPlanDrawerOpen)}
-          style={{
-            background: practicePlan.length > 0
-              ? 'linear-gradient(135deg, rgba(16, 185, 129, 0.35), rgba(5, 150, 105, 0.45))'
-              : 'rgba(255, 255, 255, 0.05)',
-            border: practicePlan.length > 0 ? '1.5px solid #10b981' : '1px solid rgba(255, 255, 255, 0.12)',
-            borderRadius: '999px',
-            padding: '0.45rem 1rem',
-            color: practicePlan.length > 0 ? '#a7f3d0' : '#cbd5e1',
-            fontSize: '0.82rem',
-            fontWeight: 800,
-            display: 'flex',
-            alignItems: 'center',
-            gap: '0.45rem',
-            cursor: 'pointer',
-            boxShadow: practicePlan.length > 0 ? '0 4px 15px rgba(16, 185, 129, 0.3)' : 'none',
-            transition: 'all 0.2s ease'
-          }}
-          title="Open Practice Plan Builder"
-        >
-          <ListOrdered size={16} color={practicePlan.length > 0 ? '#34d399' : '#94a3b8'} />
-          <span>Practice Plan ({practicePlan.length})</span>
-          {practicePlan.length > 0 && (
-            <span style={{ background: '#10b981', color: '#090e1a', padding: '0.1rem 0.45rem', borderRadius: '999px', fontSize: '0.72rem', fontWeight: 900 }}>
-              {totalPlanMinutes}m
-            </span>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+          {onBack && (
+            <button
+              type="button"
+              className="btn btn-secondary btn-sm"
+              onClick={onBack}
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '0.35rem',
+                fontSize: '0.8rem',
+                fontWeight: 800,
+                padding: '0.45rem 0.85rem'
+              }}
+            >
+              <ArrowLeft size={15} />
+              <span>Back to Team</span>
+            </button>
           )}
-        </button>
+
+          {/* Practice Plan Drawer Button */}
+          <button
+            type="button"
+            onClick={() => setIsPlanDrawerOpen(!isPlanDrawerOpen)}
+            style={{
+              background: practicePlan.length > 0
+                ? 'linear-gradient(135deg, rgba(16, 185, 129, 0.35), rgba(5, 150, 105, 0.45))'
+                : 'rgba(255, 255, 255, 0.05)',
+              border: practicePlan.length > 0 ? '1.5px solid #10b981' : '1px solid rgba(255, 255, 255, 0.12)',
+              borderRadius: '999px',
+              padding: '0.45rem 1rem',
+              color: practicePlan.length > 0 ? '#a7f3d0' : '#cbd5e1',
+              fontSize: '0.82rem',
+              fontWeight: 800,
+              display: 'flex',
+              alignItems: 'center',
+              gap: '0.45rem',
+              cursor: 'pointer',
+              boxShadow: practicePlan.length > 0 ? '0 4px 15px rgba(16, 185, 129, 0.3)' : 'none',
+              transition: 'all 0.2s ease'
+            }}
+            title="Open Practice Plan Builder"
+          >
+            <ListOrdered size={16} color={practicePlan.length > 0 ? '#34d399' : '#94a3b8'} />
+            <span>Practice Plan ({practicePlan.length})</span>
+            {practicePlan.length > 0 && (
+              <span style={{ background: '#10b981', color: '#090e1a', padding: '0.1rem 0.45rem', borderRadius: '999px', fontSize: '0.72rem', fontWeight: 900 }}>
+                {totalPlanMinutes}m
+              </span>
+            )}
+          </button>
+        </div>
       </div>
 
       {/* =========================================================================

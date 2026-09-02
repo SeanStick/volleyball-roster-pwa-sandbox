@@ -1481,19 +1481,6 @@ export default function App() {
           <span className="tab-label-desktop">Match Stats & PDF</span>
           <span className="tab-label-mobile">Stats & PDF</span>
         </button>
-
-        <button
-          id="tab-drills"
-          role="tab"
-          aria-selected={activeTab === 'drills'}
-          className={`tab-button ${activeTab === 'drills' ? 'active' : ''}`}
-          onClick={() => setActiveTab('drills')}
-          title="Practice Drills & Animated Lab"
-        >
-          <Dumbbell size={18} className="tab-icon" />
-          <span className="tab-label-desktop">Practice Drills</span>
-          <span className="tab-label-mobile">Drills</span>
-        </button>
       </div>
 
       {/* Floating In-Game Scoreboard Ribbon with Tournament Context Header (Hidden on Drills page for maximum viewing area) */}
@@ -1804,7 +1791,7 @@ export default function App() {
 
       {/* Dedicated Volleyball Practice Drills & 2D Animated Lab Page */}
       {activeTab === 'drills' && (
-        <DrillHubPage />
+        <DrillHubPage onBack={() => setActiveTab('roster')} />
       )}
 
       {/* Auth Modal */}

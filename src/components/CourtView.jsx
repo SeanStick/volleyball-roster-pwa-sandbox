@@ -883,6 +883,41 @@ export default function CourtView({
             </button>
           </div>
 
+          {/* Small Serving / Receiving Phase Indicator */}
+          <div
+            className={`phase-status-indicator ${phase === 'serve' ? 'is-serving' : 'is-receiving'}`}
+            onClick={() => setPhase(phase === 'serve' ? 'receive' : 'serve')}
+            title={`Currently ${phase === 'serve' ? 'Serving' : 'Receiving'}. Tap to toggle.`}
+            style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '0.35rem',
+              padding: '0.25rem 0.65rem',
+              borderRadius: '999px',
+              fontSize: '0.74rem',
+              fontWeight: 900,
+              letterSpacing: '0.04em',
+              cursor: 'pointer',
+              background: phase === 'serve' ? 'rgba(16, 185, 129, 0.18)' : 'rgba(59, 130, 246, 0.18)',
+              border: `1.5px solid ${phase === 'serve' ? '#10b981' : '#3b82f6'}`,
+              color: phase === 'serve' ? '#34d399' : '#93c5fd',
+              boxShadow: phase === 'serve' ? '0 2px 8px rgba(16, 185, 129, 0.35)' : '0 2px 8px rgba(59, 130, 246, 0.35)',
+              userSelect: 'none'
+            }}
+          >
+            {phase === 'serve' ? (
+              <>
+                <Volleyball size={12} />
+                <span>SERVING</span>
+              </>
+            ) : (
+              <>
+                <Shield size={12} />
+                <span>RECEIVING</span>
+              </>
+            )}
+          </div>
+
           {/* Selectable Rotation Pills (R1 - R6) */}
           <div className="rotation-pill-group">
             {[1, 2, 3, 4, 5, 6].map(rNum => (
@@ -1244,7 +1279,7 @@ export default function CourtView({
           {/* Net on Top */}
           <div className="court-net-line"></div>
           <div className="court-net-label">
-            {phase === 'serve' ? 'NET / OPPONENT RECEIVES' : 'NET / OPPONENT SERVES'}
+            {phase === 'serve' ? '🟢 WE ARE SERVING • NET • OPPONENT RECEIVES' : '🛡️ WE ARE RECEIVING • NET • OPPONENT SERVES'}
           </div>
 
           {/* Front Row (Attack Zone) Header */}

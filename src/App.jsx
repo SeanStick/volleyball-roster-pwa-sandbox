@@ -1638,7 +1638,23 @@ export default function App() {
           onClick={() => setActiveTab('court')}
           title="6-Position Lineup"
         >
-          <LayoutGrid size={18} className="tab-icon" />
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
+            <LayoutGrid size={18} className="tab-icon" />
+            <span
+              style={{
+                fontSize: '0.6rem',
+                fontWeight: 900,
+                padding: '1px 5px',
+                borderRadius: '999px',
+                background: phase === 'serve' ? 'rgba(16, 185, 129, 0.25)' : 'rgba(59, 130, 246, 0.25)',
+                color: phase === 'serve' ? '#34d399' : '#93c5fd',
+                border: `1px solid ${phase === 'serve' ? '#10b981' : '#3b82f6'}`,
+                lineHeight: 1.2
+              }}
+            >
+              {phase === 'serve' ? 'SERVE' : 'RECV'}
+            </span>
+          </div>
           <span className="tab-label-desktop">6-Position Lineup</span>
           <span className="tab-label-mobile">Lineup</span>
         </button>
@@ -1651,7 +1667,23 @@ export default function App() {
           onClick={() => setActiveTab('formations')}
           title="6-2 Formations & Tactics"
         >
-          <Compass size={18} className="tab-icon" />
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
+            <Compass size={18} className="tab-icon" />
+            <span
+              style={{
+                fontSize: '0.6rem',
+                fontWeight: 900,
+                padding: '1px 5px',
+                borderRadius: '999px',
+                background: phase === 'serve' ? 'rgba(16, 185, 129, 0.25)' : 'rgba(59, 130, 246, 0.25)',
+                color: phase === 'serve' ? '#34d399' : '#93c5fd',
+                border: `1px solid ${phase === 'serve' ? '#10b981' : '#3b82f6'}`,
+                lineHeight: 1.2
+              }}
+            >
+              {phase === 'serve' ? 'SERVE' : 'RECV'}
+            </span>
+          </div>
           <span className="tab-label-desktop">6-2 Formations & Tactics</span>
           <span className="tab-label-mobile">6-2 Tactics</span>
         </button>

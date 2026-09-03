@@ -605,6 +605,41 @@ export default function FormationsView({
               </button>
             ))}
           </div>
+
+          {/* Small Serving / Receiving Phase Indicator */}
+          <div
+            className={`phase-status-indicator ${!isReceivePhase ? 'is-serving' : 'is-receiving'}`}
+            onClick={() => setPhase && setPhase(isReceivePhase ? 'serve' : 'receive')}
+            title={`Currently ${!isReceivePhase ? 'Serving' : 'Receiving'}. Tap to toggle.`}
+            style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '0.35rem',
+              padding: '0.25rem 0.65rem',
+              borderRadius: '999px',
+              fontSize: '0.74rem',
+              fontWeight: 900,
+              letterSpacing: '0.04em',
+              cursor: 'pointer',
+              background: !isReceivePhase ? 'rgba(16, 185, 129, 0.18)' : 'rgba(59, 130, 246, 0.18)',
+              border: `1.5px solid ${!isReceivePhase ? '#10b981' : '#3b82f6'}`,
+              color: !isReceivePhase ? '#34d399' : '#93c5fd',
+              boxShadow: !isReceivePhase ? '0 2px 8px rgba(16, 185, 129, 0.35)' : '0 2px 8px rgba(59, 130, 246, 0.35)',
+              userSelect: 'none'
+            }}
+          >
+            {!isReceivePhase ? (
+              <>
+                <Volleyball size={12} />
+                <span>SERVING</span>
+              </>
+            ) : (
+              <>
+                <Shield size={12} />
+                <span>RECEIVING</span>
+              </>
+            )}
+          </div>
         </div>
 
         {/* Phase Controls: Serving first, then Receiving, plus Side-Out Advance Button */}
@@ -894,6 +929,60 @@ export default function FormationsView({
       <div className="formations-grid-layout">
         {/* Left Column: Interactive Hardwood Floor Canvas & Animation Player */}
         <div className="canvas-column">
+          {/* Active Phase & Rotation Banner */}
+          <div
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              padding: '0.45rem 0.85rem',
+              background: 'rgba(15, 23, 42, 0.7)',
+              borderRadius: '12px',
+              border: `1px solid ${!isReceivePhase ? 'rgba(16, 185, 129, 0.35)' : 'rgba(59, 130, 246, 0.35)'}`,
+              marginBottom: '0.65rem',
+              boxShadow: '0 2px 8px rgba(0, 0, 0, 0.3)'
+            }}
+          >
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+              <span
+                style={{
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '0.35rem',
+                  padding: '0.2rem 0.6rem',
+                  borderRadius: '999px',
+                  fontSize: '0.72rem',
+                  fontWeight: 900,
+                  background: !isReceivePhase ? 'rgba(16, 185, 129, 0.2)' : 'rgba(59, 130, 246, 0.2)',
+                  color: !isReceivePhase ? '#34d399' : '#93c5fd',
+                  border: `1px solid ${!isReceivePhase ? '#10b981' : '#3b82f6'}`
+                }}
+              >
+                {!isReceivePhase ? <Volleyball size={12} /> : <Shield size={12} />}
+                <span>{!isReceivePhase ? 'WE ARE SERVING' : 'WE ARE RECEIVING'}</span>
+              </span>
+              <span style={{ fontSize: '0.78rem', color: '#cbd5e1', fontWeight: 800 }}>
+                Rotation #{rotation} {isReceivePhase ? '• Serve Receive Stack' : '• Base Defense'}
+              </span>
+            </div>
+
+            <button
+              type="button"
+              onClick={() => setPhase && setPhase(isReceivePhase ? 'serve' : 'receive')}
+              style={{
+                background: 'none',
+                border: 'none',
+                color: 'var(--text-secondary)',
+                fontSize: '0.72rem',
+                fontWeight: 700,
+                cursor: 'pointer',
+                textDecoration: 'underline'
+              }}
+            >
+              Switch to {isReceivePhase ? 'Serving' : 'Receiving'}
+            </button>
+          </div>
+
           {/* Rally Simulator Multi-Stage Transport Bar */}
           {isAnimationActive && (
             <FormationAnimationPlayer

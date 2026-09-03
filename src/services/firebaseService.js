@@ -384,6 +384,7 @@ export const firebaseService = {
         matchState: teamData.matchState || null,
         matchStats: teamData.matchStats || null,
         matchHistory: teamData.matchHistory || [],
+        lastScoreEvent: teamData.lastScoreEvent || null,
         updatedAt: new Date().toISOString(),
         updatedBy: userId,
         updatedByDeviceId: deviceId || teamData.updatedByDeviceId || null,

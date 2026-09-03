@@ -37,6 +37,7 @@ import MatchSetupModal from './components/MatchSetupModal';
 import MatchWizardModal from './components/MatchWizardModal';
 import TournamentDayHubModal from './components/TournamentDayHubModal';
 import TournamentSyncToast from './components/TournamentSyncToast';
+import RemoteScoreUpdateOverlay from './components/RemoteScoreUpdateOverlay';
 import FirebaseSettingsModal from './components/FirebaseSettingsModal';
 import DrillCenterModal from './components/DrillCenterModal';
 import { storageService, DEFAULT_TEAM_ID } from './services/storageService';
@@ -149,6 +150,12 @@ export default function App() {
   // Match Stats & History State (Fully Lifted to App Level for 100% Cross-Device Sync)
   const [matchStats, setMatchStats] = useState(() => storageService.getMatchStats());
   const [matchHistory, setMatchHistory] = useState(() => storageService.getMatchHistory());
+  const [remoteScoreEvent, setRemoteScoreEvent] = useState(null);
+  const lastSeenScoreEventIdRef = useRef(null);
+  const lastScoreStateRef = useRef({
+    ourScore: matchStats?.ourScore ?? 0,
+    opponentScore: matchStats?.opponentScore ?? 0
+  });
 
   // -------------------------------------------------------------
   // Instant Cloud Sync Function for Game Events (Scores, Points, Rotations, Tournament Setup)
@@ -335,6 +342,53 @@ export default function App() {
 
         // 1. Live Match Score & Stats
         if (cloudTeam.matchStats) {
+          const incomingOurScore = cloudTeam.matchStats.ourScore ?? 0;
+          const incomingOppScore = cloudTeam.matchStats.opponentScore ?? 0;
+          const localOurScore = lastScoreStateRef.current.ourScore;
+          const localOppScore = lastScoreStateRef.current.opponentScore;
+
+          // Check if remote score changed or if there's an incoming lastScoreEvent from another coach
+          const incomingScoreEvent = cloudTeam.lastScoreEvent;
+          const isNewEventId = incomingScoreEvent && incomingScoreEvent.id !== lastSeenScoreEventIdRef.current;
+          const isScoreDifferent = incomingOurScore !== localOurScore || incomingOppScore !== localOppScore;
+
+          if (isNewEventId || isScoreDifferent) {
+            const eventTimestamp = incomingScoreEvent?.timestamp
+              ? new Date(incomingScoreEvent.timestamp).getTime()
+              : Date.now();
+            const isRecent = Date.now() - eventTimestamp < 90000; // within last 90 seconds
+
+            if (isRecent) {
+              const eventToShow = incomingScoreEvent || {
+                id: `remote-score-${Date.now()}`,
+                type: incomingOurScore > localOurScore ? 'point_won_by_us' : 'point_won_by_opponent',
+                pointWonBy: incomingOurScore > localOurScore ? 'us' : (incomingOppScore > localOppScore ? 'opponent' : 'adjust'),
+                timestamp: new Date().toISOString(),
+                newScore: {
+                  ourScore: incomingOurScore,
+                  opponentScore: incomingOppScore,
+                  setNumber: cloudTeam.matchStats.setNumber || 1
+                },
+                scorer: {
+                  name: cloudTeam.updatedByName || 'Co-Coach',
+                  deviceId: cloudTeam.updatedByDeviceId
+                },
+                details: {
+                  earnedTypeName: incomingOurScore > localOurScore ? 'Point Awarded (+1)' : null,
+                  errorTypeName: incomingOppScore > localOppScore ? 'Opponent Point (+1)' : null,
+                  opponentName: cloudTeam.matchStats.opponentName || 'Opponent',
+                  rotation: cloudTeam.matchState?.rotation || rotation,
+                  phase: cloudTeam.matchState?.phase || phase
+                }
+              };
+
+              lastSeenScoreEventIdRef.current = eventToShow.id;
+              setRemoteScoreEvent(eventToShow);
+            }
+          }
+
+          lastScoreStateRef.current = { ourScore: incomingOurScore, opponentScore: incomingOppScore };
+
           // Detect set changes or tournament context changes to display friendly toast
           if (cloudTeam.matchStats.setNumber && cloudTeam.matchStats.setNumber !== matchStats?.setNumber) {
             setSyncToast({
@@ -983,6 +1037,35 @@ export default function App() {
     }
 
     setMatchStats(nextStats);
+    lastScoreStateRef.current = { ourScore: nextStats.ourScore, opponentScore: nextStats.opponentScore || 0 };
+
+    const scoreEvent = {
+      id: newPoint.id,
+      type: 'point_won_by_us',
+      pointWonBy: 'us',
+      timestamp: newPoint.timestamp,
+      newScore: {
+        ourScore: nextStats.ourScore,
+        opponentScore: nextStats.opponentScore || 0,
+        setNumber: nextStats.setNumber || 1
+      },
+      scorer: {
+        name: user?.displayName || user?.email?.split('@')[0] || 'Coach',
+        email: user?.email || '',
+        uid: user?.uid || null,
+        deviceId: currentDeviceId
+      },
+      details: {
+        earnedType: pointDetails.earnedType || 'quick_point',
+        earnedTypeName: pointDetails.earnedTypeName || (pointDetails.earnedType === 'quick_point' ? 'Quick Point (+1)' : 'Point Won'),
+        earnedPlayerId: pointDetails.earnedPlayerId || null,
+        earnedPlayerName: pointDetails.earnedPlayerName || null,
+        earnedPlayerNumber: pointDetails.earnedPlayerNumber || null,
+        rotation,
+        phase
+      }
+    };
+    lastSeenScoreEventIdRef.current = scoreEvent.id;
 
     // Push score update to cloud IMMEDIATELY (0ms delay)
     syncCloudImmediately({
@@ -997,7 +1080,8 @@ export default function App() {
         subHistory,
         maxSubs,
         enforcePositionLock
-      }
+      },
+      lastScoreEvent: scoreEvent
     });
   };
 
@@ -1025,6 +1109,36 @@ export default function App() {
     }
 
     setMatchStats(nextStats);
+    lastScoreStateRef.current = { ourScore: nextStats.ourScore || 0, opponentScore: nextStats.opponentScore };
+
+    const scoreEvent = {
+      id: newPoint.id,
+      type: 'point_won_by_opponent',
+      pointWonBy: 'opponent',
+      timestamp: newPoint.timestamp,
+      newScore: {
+        ourScore: nextStats.ourScore || 0,
+        opponentScore: nextStats.opponentScore,
+        setNumber: nextStats.setNumber || 1
+      },
+      scorer: {
+        name: user?.displayName || user?.email?.split('@')[0] || 'Coach',
+        email: user?.email || '',
+        uid: user?.uid || null,
+        deviceId: currentDeviceId
+      },
+      details: {
+        errorTypeId: pointDetails.errorTypeId || 'unspecified_error',
+        errorTypeName: pointDetails.errorTypeName || (pointDetails.errorTypeId === 'unspecified_error' ? 'Opponent Point (+1)' : 'Opponent Point'),
+        errorCategory: pointDetails.errorCategory || null,
+        errorPlayerName: pointDetails.errorPlayerName || null,
+        errorPlayerNumber: pointDetails.errorPlayerNumber || null,
+        opponentName: matchStats?.opponentName || 'Opponent',
+        rotation,
+        phase
+      }
+    };
+    lastSeenScoreEventIdRef.current = scoreEvent.id;
 
     // Push opponent score update to cloud IMMEDIATELY (0ms delay)
     syncCloudImmediately({
@@ -1039,7 +1153,8 @@ export default function App() {
         subHistory,
         maxSubs,
         enforcePositionLock
-      }
+      },
+      lastScoreEvent: scoreEvent
     });
   };
 
@@ -1056,6 +1171,7 @@ export default function App() {
     };
 
     setMatchStats(nextStats);
+    lastScoreStateRef.current = { ourScore: nextStats.ourScore, opponentScore: nextStats.opponentScore };
 
     let nextRot = rotation;
     let nextPhase = phase;
@@ -1067,6 +1183,29 @@ export default function App() {
       nextPhase = lastPoint.phase;
       setPhase(lastPoint.phase);
     }
+
+    const scoreEvent = {
+      id: `undo-${Date.now()}`,
+      type: 'point_undone',
+      pointWonBy: 'undo',
+      isUndo: true,
+      timestamp: new Date().toISOString(),
+      newScore: {
+        ourScore: nextStats.ourScore,
+        opponentScore: nextStats.opponentScore,
+        setNumber: nextStats.setNumber || 1
+      },
+      scorer: {
+        name: user?.displayName || user?.email?.split('@')[0] || 'Coach',
+        email: user?.email || '',
+        uid: user?.uid || null,
+        deviceId: currentDeviceId
+      },
+      details: {
+        description: 'Point undone / score reverted by coach'
+      }
+    };
+    lastSeenScoreEventIdRef.current = scoreEvent.id;
 
     syncCloudImmediately({
       matchStats: nextStats,
@@ -1080,7 +1219,8 @@ export default function App() {
         subHistory,
         maxSubs,
         enforcePositionLock
-      }
+      },
+      lastScoreEvent: scoreEvent
     });
   };
 
@@ -1088,12 +1228,36 @@ export default function App() {
     const nextStats = {
       ...matchStats,
       ourScore: 0,
-      opponentScore: 0
+      opponentScore: 0,
+      pointHistory: []
     };
     setMatchStats(nextStats);
+    lastScoreStateRef.current = { ourScore: 0, opponentScore: 0 };
+
+    const scoreEvent = {
+      id: `reset-${Date.now()}`,
+      type: 'score_reset',
+      pointWonBy: 'undo',
+      isUndo: true,
+      timestamp: new Date().toISOString(),
+      newScore: {
+        ourScore: 0,
+        opponentScore: 0,
+        setNumber: matchStats?.setNumber || 1
+      },
+      scorer: {
+        name: user?.displayName || user?.email?.split('@')[0] || 'Coach',
+        deviceId: currentDeviceId
+      },
+      details: {
+        description: 'Score reset to 0 - 0'
+      }
+    };
+    lastSeenScoreEventIdRef.current = scoreEvent.id;
 
     syncCloudImmediately({
-      matchStats: nextStats
+      matchStats: nextStats,
+      lastScoreEvent: scoreEvent
     });
   };
 
@@ -1430,6 +1594,13 @@ export default function App() {
 
       {/* Floating Tournament Sync Notification Toast */}
       <TournamentSyncToast toast={syncToast} onDismiss={() => setSyncToast(null)} />
+
+      {/* Real-Time Co-Coach Score Update Overlay & Anti-Duplicate Alert */}
+      <RemoteScoreUpdateOverlay
+        scoreEvent={remoteScoreEvent}
+        onDismiss={() => setRemoteScoreEvent(null)}
+        autoDismissSeconds={6}
+      />
 
       {/* Navigation Tabs: Roster vs Lineup vs 6-2 vs Match Stats */}
       <div className="tabs-bar" role="tablist" aria-label="Main Navigation">

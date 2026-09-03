@@ -1579,6 +1579,7 @@ export default function App() {
         syncStatus={syncStatus}
         lastSyncTime={lastSyncTime}
         activeTeam={activeTeamObj}
+        lastScoreEvent={remoteScoreEvent || activeTeamObj?.lastScoreEvent}
         onOpenAuthModal={(tab) => {
           setAuthModalTab(tab || 'login');
           setIsAuthModalOpen(true);
@@ -1599,7 +1600,7 @@ export default function App() {
       <RemoteScoreUpdateOverlay
         scoreEvent={remoteScoreEvent}
         onDismiss={() => setRemoteScoreEvent(null)}
-        autoDismissSeconds={6}
+        autoDismissSeconds={15}
       />
 
       {/* Navigation Tabs: Roster vs Lineup vs 6-2 vs Match Stats */}

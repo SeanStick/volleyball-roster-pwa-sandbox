@@ -65,7 +65,7 @@ function playScoreChime(pointWonBy = 'us') {
 export default function RemoteScoreUpdateOverlay({
   scoreEvent,
   onDismiss,
-  autoDismissSeconds = 6
+  autoDismissSeconds = 15
 }) {
   const [timeLeft, setTimeLeft] = useState(autoDismissSeconds);
   const [isPaused, setIsPaused] = useState(false);

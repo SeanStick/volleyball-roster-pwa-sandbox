@@ -15,52 +15,7 @@ import {
   Flame,
   ArrowRight
 } from 'lucide-react';
-
-/**
- * Gentle Web Audio chime for real-time score alert
- */
-function playScoreChime(pointWonBy = 'us') {
-  try {
-    const AudioContextClass = window.AudioContext || window.webkitAudioContext;
-    if (!AudioContextClass) return;
-    const ctx = new AudioContextClass();
-    if (ctx.state === 'suspended') {
-      ctx.resume();
-    }
-    const now = ctx.currentTime;
-    const osc = ctx.createOscillator();
-    const gain = ctx.createGain();
-
-    osc.type = 'sine';
-    if (pointWonBy === 'us') {
-      // Cheerful ascending chime (C5 -> E5 -> G5)
-      osc.frequency.setValueAtTime(523.25, now);
-      osc.frequency.setValueAtTime(659.25, now + 0.1);
-      osc.frequency.setValueAtTime(783.99, now + 0.2);
-      gain.gain.setValueAtTime(0.22, now);
-      gain.gain.exponentialRampToValueAtTime(0.001, now + 0.55);
-    } else if (pointWonBy === 'undo') {
-      // Revert blip (E5 -> C5)
-      osc.frequency.setValueAtTime(659.25, now);
-      osc.frequency.setValueAtTime(523.25, now + 0.12);
-      gain.gain.setValueAtTime(0.18, now);
-      gain.gain.exponentialRampToValueAtTime(0.001, now + 0.45);
-    } else {
-      // Soft notice tone
-      osc.frequency.setValueAtTime(440, now);
-      osc.frequency.setValueAtTime(392, now + 0.12);
-      gain.gain.setValueAtTime(0.16, now);
-      gain.gain.exponentialRampToValueAtTime(0.001, now + 0.4);
-    }
-
-    osc.connect(gain);
-    gain.connect(ctx.destination);
-    osc.start(now);
-    osc.stop(now + 0.6);
-  } catch (e) {
-    // Non-critical audio
-  }
-}
+import { soundEffectsService } from '../services/soundEffectsService';
 
 export default function RemoteScoreUpdateOverlay({
   scoreEvent,
@@ -71,11 +26,11 @@ export default function RemoteScoreUpdateOverlay({
   const [isPaused, setIsPaused] = useState(false);
   const audioPlayedRef = useRef(null);
 
-  // Play audio chime once when a new event arrives
+  // Play audio chime and trigger vibration once when a new event arrives
   useEffect(() => {
     if (scoreEvent?.id && audioPlayedRef.current !== scoreEvent.id) {
       audioPlayedRef.current = scoreEvent.id;
-      playScoreChime(scoreEvent.pointWonBy);
+      soundEffectsService.playScoreAlertSound(scoreEvent.pointWonBy);
       setTimeLeft(autoDismissSeconds);
     }
   }, [scoreEvent, autoDismissSeconds]);

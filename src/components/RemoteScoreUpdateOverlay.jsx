@@ -111,6 +111,7 @@ export default function RemoteScoreUpdateOverlay({
 
   const isUsPoint = pointWonBy === 'us';
   const isOppPoint = pointWonBy === 'opponent';
+  const scorerName = scorer?.name || details?.scorerName || scoreEvent?.updatedByName || 'Co-Coach';
 
   // Determine theme colors based on rally outcome
   const accentColor = isUndo
@@ -137,7 +138,7 @@ export default function RemoteScoreUpdateOverlay({
       return {
         badge: 'POINT UNDONE',
         title: 'Score Reverted / Undone',
-        desc: details.description || 'Previous rally point was removed by co-coach.',
+        desc: details.description || `Point reverted by ${scorerName}.`,
         icon: <RotateCcw size={26} color="#f59e0b" />
       };
     }
@@ -151,14 +152,14 @@ export default function RemoteScoreUpdateOverlay({
         return {
           badge: '+1 POINT FOR US',
           title: details.earnedTypeName,
-          desc: playerStr ? `${details.earnedTypeName} ${playerStr}` : 'Point awarded to our team',
+          desc: playerStr ? `${details.earnedTypeName} ${playerStr} • Entered by ${scorerName}` : `Point awarded to our team • Entered by ${scorerName}`,
           icon: <Volleyball size={26} color="#10b981" />
         };
       }
       return {
         badge: '+1 POINT FOR US',
         title: 'Point for Our Team (US)',
-        desc: 'Direct point recorded by co-coach.',
+        desc: `Direct point entered by ${scorerName}.`,
         icon: <Volleyball size={26} color="#10b981" />
       };
     }
@@ -172,14 +173,14 @@ export default function RemoteScoreUpdateOverlay({
         return {
           badge: `+1 POINT FOR ${details.opponentName || 'OPP'}`,
           title: details.errorTypeName,
-          desc: `${details.errorTypeName} ${playerStr}`,
+          desc: `${details.errorTypeName} ${playerStr} • Entered by ${scorerName}`,
           icon: <Shield size={26} color="#ef4444" />
         };
       }
       return {
         badge: `+1 POINT FOR ${details.opponentName || 'OPPONENT'}`,
         title: `Point for ${details.opponentName || 'Opponent'}`,
-        desc: 'Point awarded to opponent.',
+        desc: `Point recorded by ${scorerName}.`,
         icon: <Shield size={26} color="#ef4444" />
       };
     }
@@ -187,7 +188,7 @@ export default function RemoteScoreUpdateOverlay({
     return {
       badge: 'SCORE ADJUSTMENT',
       title: 'Score Updated',
-      desc: 'Score adjusted by co-coach.',
+      desc: `Score adjusted by ${scorerName}.`,
       icon: <CheckCircle size={26} color="#60a5fa" />
     };
   };
@@ -246,28 +247,30 @@ export default function RemoteScoreUpdateOverlay({
             background: 'rgba(255, 255, 255, 0.02)'
           }}
         >
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.65rem' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
             <div
               style={{
-                width: '36px',
-                height: '36px',
+                width: '40px',
+                height: '40px',
                 borderRadius: '50%',
                 background: 'linear-gradient(135deg, #3b82f6, #1d4ed8)',
                 color: '#ffffff',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
+                fontWeight: 900,
+                fontSize: '1.05rem',
                 boxShadow: '0 4px 12px rgba(59, 130, 246, 0.5)'
               }}
             >
-              <User size={18} />
+              {scorerName.charAt(0).toUpperCase()}
             </div>
 
             <div>
-              <div style={{ fontSize: '0.98rem', fontWeight: 900, color: '#f8fafc', letterSpacing: '-0.2px' }}>
-                Score Entered by <strong style={{ color: '#60a5fa' }}>{scorer.name || 'Co-Coach'}</strong>
+              <div style={{ fontSize: '1.05rem', fontWeight: 900, color: '#f8fafc', letterSpacing: '-0.2px' }}>
+                Score Entered by <strong style={{ color: '#38bdf8' }}>{scorerName}</strong>
               </div>
-              <div style={{ fontSize: '0.74rem', color: '#94a3b8' }}>
+              <div style={{ fontSize: '0.76rem', color: '#94a3b8' }}>
                 Synced live across all co-coaches
               </div>
             </div>
@@ -547,11 +550,11 @@ export default function RemoteScoreUpdateOverlay({
             </div>
 
             <div style={{ flex: 1, minWidth: 0 }}>
-              <div style={{ fontSize: '0.82rem', fontWeight: 900, color: '#fef3c7' }}>
+              <div style={{ fontSize: '0.86rem', fontWeight: 900, color: '#fef3c7' }}>
                 DO NOT ENTER THIS POINT TWICE!
               </div>
-              <div style={{ fontSize: '0.74rem', color: '#fde68a', marginTop: '1px', lineHeight: 1.3 }}>
-                The scoreboard has already been updated in real-time by your co-coach.
+              <div style={{ fontSize: '0.78rem', color: '#fde68a', marginTop: '2px', lineHeight: 1.35 }}>
+                <strong style={{ color: '#ffffff' }}>{scorerName}</strong> has already recorded this point in real-time. Please do not re-enter it.
               </div>
             </div>
           </div>

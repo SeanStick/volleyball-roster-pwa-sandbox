@@ -359,26 +359,38 @@ export default function App() {
             const isRecent = Date.now() - eventTimestamp < 90000; // within last 90 seconds
 
             if (isRecent) {
-              const eventToShow = incomingScoreEvent || {
-                id: `remote-score-${Date.now()}`,
-                type: incomingOurScore > localOurScore ? 'point_won_by_us' : 'point_won_by_opponent',
-                pointWonBy: incomingOurScore > localOurScore ? 'us' : (incomingOppScore > localOppScore ? 'opponent' : 'adjust'),
-                timestamp: new Date().toISOString(),
-                newScore: {
-                  ourScore: incomingOurScore,
-                  opponentScore: incomingOppScore,
-                  setNumber: cloudTeam.matchStats.setNumber || 1
-                },
+              // Resolve the most accurate name for the person who entered the score
+              const scorerUid = incomingScoreEvent?.scorer?.uid || cloudTeam.updatedBy;
+              const memberInfo = cloudTeam.members && scorerUid ? cloudTeam.members[scorerUid] : null;
+              const resolvedName = (incomingScoreEvent?.scorer?.name && incomingScoreEvent.scorer.name !== 'Coach' && incomingScoreEvent.scorer.name !== 'Co-Coach')
+                ? incomingScoreEvent.scorer.name
+                : (memberInfo?.displayName || cloudTeam.updatedByName || incomingScoreEvent?.scorer?.name || 'Co-Coach');
+
+              const eventToShow = {
+                ...(incomingScoreEvent || {
+                  id: `remote-score-${Date.now()}`,
+                  type: incomingOurScore > localOurScore ? 'point_won_by_us' : 'point_won_by_opponent',
+                  pointWonBy: incomingOurScore > localOurScore ? 'us' : (incomingOppScore > localOppScore ? 'opponent' : 'adjust'),
+                  timestamp: new Date().toISOString(),
+                  newScore: {
+                    ourScore: incomingOurScore,
+                    opponentScore: incomingOppScore,
+                    setNumber: cloudTeam.matchStats.setNumber || 1
+                  },
+                  details: {
+                    earnedTypeName: incomingOurScore > localOurScore ? 'Point Awarded (+1)' : null,
+                    errorTypeName: incomingOppScore > localOppScore ? 'Opponent Point (+1)' : null,
+                    opponentName: cloudTeam.matchStats.opponentName || 'Opponent',
+                    rotation: cloudTeam.matchState?.rotation || rotation,
+                    phase: cloudTeam.matchState?.phase || phase
+                  }
+                }),
                 scorer: {
-                  name: cloudTeam.updatedByName || 'Co-Coach',
-                  deviceId: cloudTeam.updatedByDeviceId
-                },
-                details: {
-                  earnedTypeName: incomingOurScore > localOurScore ? 'Point Awarded (+1)' : null,
-                  errorTypeName: incomingOppScore > localOppScore ? 'Opponent Point (+1)' : null,
-                  opponentName: cloudTeam.matchStats.opponentName || 'Opponent',
-                  rotation: cloudTeam.matchState?.rotation || rotation,
-                  phase: cloudTeam.matchState?.phase || phase
+                  ...(incomingScoreEvent?.scorer || {}),
+                  name: resolvedName,
+                  email: incomingScoreEvent?.scorer?.email || memberInfo?.email || '',
+                  uid: scorerUid,
+                  deviceId: cloudTeam.updatedByDeviceId || incomingScoreEvent?.scorer?.deviceId
                 }
               };
 

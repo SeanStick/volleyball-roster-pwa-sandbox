@@ -174,6 +174,20 @@ export default function ScoreboardBar({
     }
   };
 
+  const handleFinishGameClick = () => {
+    if (!onArchiveMatch) return;
+    const opp = opponentName || matchStats?.opponentName || 'Opponent';
+    const confirmMsg = `Finish and finalize this match against ${opp} (${ourScore} - ${opponentScore})?\n\nThis will save the full match to the Archive & Match History.`;
+    if (window.confirm(confirmMsg)) {
+      const saved = onArchiveMatch(opp);
+      if (saved && onResetFullMatch) {
+        if (window.confirm('Match successfully archived! 🏆\n\nWould you like to reset the scoreboard and lineup for a fresh match?')) {
+          onResetFullMatch();
+        }
+      }
+    }
+  };
+
   // Build list of sets to display (at least 1, 2, 3, or more if reached)
   const maxSet = Math.max(3, setNumber, setHistory.length);
   const setNumbersList = Array.from({ length: maxSet }, (_, i) => i + 1);
@@ -286,6 +300,31 @@ export default function ScoreboardBar({
             >
               <Volleyball size={13} />
               <span>Start Game</span>
+            </button>
+          )}
+
+          {onArchiveMatch && (
+            <button
+              type="button"
+              onClick={handleFinishGameClick}
+              style={{
+                background: 'linear-gradient(135deg, #ef4444 0%, #dc2626 100%)',
+                border: '1px solid #ef4444',
+                borderRadius: '999px',
+                padding: '0.25rem 0.65rem',
+                color: '#ffffff',
+                fontSize: '0.76rem',
+                fontWeight: 900,
+                display: 'flex',
+                alignItems: 'center',
+                gap: '0.35rem',
+                cursor: 'pointer',
+                boxShadow: '0 2px 8px rgba(239, 68, 68, 0.4)'
+              }}
+              title="Finish and Archive Current Match"
+            >
+              <Archive size={13} />
+              <span>Finish Game</span>
             </button>
           )}
 
@@ -687,6 +726,30 @@ export default function ScoreboardBar({
             >
               <Volleyball size={13} />
               <span>Start Game</span>
+            </button>
+          )}
+
+          {/* Finish Game Action (Red) */}
+          {onArchiveMatch && (
+            <button
+              type="button"
+              className="btn btn-sm"
+              onClick={handleFinishGameClick}
+              style={{
+                background: 'linear-gradient(135deg, #ef4444 0%, #dc2626 100%)',
+                borderColor: '#ef4444',
+                color: '#ffffff',
+                fontSize: '0.78rem',
+                fontWeight: 800,
+                display: 'flex',
+                alignItems: 'center',
+                gap: '0.3rem',
+                boxShadow: '0 2px 8px rgba(239, 68, 68, 0.35)'
+              }}
+              title="Finish and Archive Current Match"
+            >
+              <Archive size={13} />
+              <span>Finish Game</span>
             </button>
           )}
 

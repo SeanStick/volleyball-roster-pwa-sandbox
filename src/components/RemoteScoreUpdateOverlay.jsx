@@ -196,7 +196,7 @@ export default function RemoteScoreUpdateOverlay({
       onTouchEnd={() => setIsPaused(false)}
       style={{
         position: 'fixed',
-        top: '1rem',
+        top: 'calc(max(env(safe-area-inset-top, 0px), 16px) + 0.5rem)',
         left: '50%',
         transform: 'translateX(-50%)',
         width: '92%',

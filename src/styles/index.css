@@ -86,11 +86,14 @@ body::before {
   background: #334155;
 }
 
-/* App Container */
+/* App Container with iOS Dynamic Island / Safe Area Inset Support */
 .app-container {
   max-width: 1200px;
   margin: 0 auto;
-  padding: 1rem 1.25rem 5rem 1.25rem;
+  padding-top: calc(max(env(safe-area-inset-top, 0px), 0px) + 0.85rem);
+  padding-right: calc(max(env(safe-area-inset-right, 0px), 0px) + 1.25rem);
+  padding-bottom: calc(max(env(safe-area-inset-bottom, 0px), 0px) + 5rem);
+  padding-left: calc(max(env(safe-area-inset-left, 0px), 0px) + 1.25rem);
   min-height: 100vh;
   display: flex;
   flex-direction: column;
@@ -108,10 +111,10 @@ body::before {
   align-items: center;
   justify-content: space-between;
   position: sticky;
-  top: 0.75rem;
+  top: calc(max(env(safe-area-inset-top, 0px), 0px) + 0.5rem);
   z-index: 100;
   box-shadow: var(--shadow-md);
-  margin-bottom: 1.5rem;
+  margin-bottom: 1.25rem;
 }
 
 .brand-wrapper {
@@ -822,9 +825,25 @@ body::before {
   color: var(--accent-orange) !important;
 }
 
-@media (max-width: 520px) {
+@media (max-width: 680px) {
   .hide-mobile {
-    display: none;
+    display: none !important;
+  }
+}
+
+/* =========================================================================
+   📱 iOS PWA Standalone Mode (Added to Home Screen / Web App)
+   Ensures the header is NEVER clipped or covered by the Dynamic Island / Notch
+   ========================================================================= */
+@media all and (display-mode: standalone), (display-mode: fullscreen) {
+  .app-container {
+    padding-top: calc(max(env(safe-area-inset-top, 0px), 54px) + 0.4rem) !important;
+  }
+  .header-glass {
+    top: calc(max(env(safe-area-inset-top, 0px), 54px) + 0.2rem) !important;
+  }
+  .remote-score-overlay {
+    top: calc(max(env(safe-area-inset-top, 0px), 54px) + 0.5rem) !important;
   }
 }
 
@@ -856,11 +875,14 @@ body::before {
 
 @media (max-width: 640px) {
   .app-container {
-    padding: 0.35rem 0.5rem calc(5.5rem + env(safe-area-inset-bottom, 0px)) 0.5rem;
+    padding-top: calc(max(env(safe-area-inset-top, 0px), 0px) + 0.4rem);
+    padding-right: calc(max(env(safe-area-inset-right, 0px), 0px) + 0.5rem);
+    padding-bottom: calc(5.5rem + env(safe-area-inset-bottom, 0px));
+    padding-left: calc(max(env(safe-area-inset-left, 0px), 0px) + 0.5rem);
   }
   .header-glass {
-    top: 0.25rem;
-    padding: 0.35rem 0.65rem;
+    top: calc(max(env(safe-area-inset-top, 0px), 0px) + 0.25rem);
+    padding: 0.4rem 0.65rem;
     margin-bottom: 0.5rem;
     gap: 0.5rem;
     min-height: 44px;

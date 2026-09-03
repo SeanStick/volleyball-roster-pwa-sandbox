@@ -16,7 +16,8 @@ import {
   ExternalLink,
   Check,
   PenTool,
-  Dumbbell
+  Dumbbell,
+  Volleyball
 } from 'lucide-react';
 
 export default function UserMenu({

@@ -24,21 +24,19 @@
     <!-- Modern Athletic Typography -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <!-- Service Worker Auto-Update & Cache Busting -->
+    <!-- Emergency Service Worker Uninstaller & Cache Purge -->
     <script>
       (function() {
         if ('serviceWorker' in navigator) {
-          var refreshing = false;
-          navigator.serviceWorker.addEventListener('controllerchange', function() {
-            if (!refreshing) {
-              refreshing = true;
-              window.location.reload();
-            }
-          });
           navigator.serviceWorker.getRegistrations().then(function(regs) {
             for (var i = 0; i < regs.length; i++) {
-              regs[i].update();
+              regs[i].unregister();
             }
+          });
+        }
+        if ('caches' in window) {
+          caches.keys().then(function(keys) {
+            keys.forEach(function(k) { caches.delete(k); });
           });
         }
       })();

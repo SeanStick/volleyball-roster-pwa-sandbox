@@ -3,28 +3,19 @@ import ReactDOM from 'react-dom/client';
 import App from './App.jsx';
 import './styles/index.css';
 
-// Register Service Worker for PWA Offline Support
-if ('serviceWorker' in navigator && process.env.NODE_ENV === 'production') {
-  window.addEventListener('load', () => {
-    // Purge any stale legacy caches immediately
-    if ('caches' in window) {
-      caches.keys().then((names) => {
-        names.forEach((name) => {
-          if (name !== 'gostandoverthere-v3') {
-            caches.delete(name);
-          }
-        });
-      });
+// Unregister any legacy Service Workers & Clear all caches
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.getRegistrations().then((registrations) => {
+    for (const reg of registrations) {
+      reg.unregister();
     }
-
-    navigator.serviceWorker.register('/sw.js')
-      .then((registration) => {
-        console.log('Go Stand Over There PWA ServiceWorker registered:', registration.scope);
-        registration.update();
-      })
-      .catch((error) => {
-        console.error('ServiceWorker registration failed:', error);
-      });
+  });
+}
+if ('caches' in window) {
+  caches.keys().then((names) => {
+    names.forEach((name) => {
+      caches.delete(name);
+    });
   });
 }
 

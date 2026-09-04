@@ -1,7 +1,5 @@
-const CACHE_NAME = 'gostandoverthere-v2';
+const CACHE_NAME = 'gostandoverthere-v3';
 const STATIC_ASSETS = [
-  '/',
-  '/index.html',
   '/manifest.webmanifest',
   '/favicon.svg',
   '/icon.svg'

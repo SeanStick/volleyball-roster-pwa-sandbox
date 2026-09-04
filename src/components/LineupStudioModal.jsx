@@ -41,6 +41,13 @@ const PAIR_COLORS = {
   pair3: { border: '#f59e0b', bg: 'rgba(245, 158, 11, 0.18)', badge: '#fcd34d', name: 'Middles (3 ⇄ 6)' }
 };
 
+const getTargetRoleForZone = (zoneKey) => {
+  if (zoneKey === 'pos1' || zoneKey === 'pos4') return 'setter';
+  if (zoneKey === 'pos2' || zoneKey === 'pos5') return 'outside';
+  if (zoneKey === 'pos3' || zoneKey === 'pos6') return 'middle';
+  return 'libero';
+};
+
 export default function LineupStudioModal({
   isOpen,
   onClose,
@@ -114,6 +121,39 @@ export default function LineupStudioModal({
     return validate62Formation(lineup, roster);
   }, [lineup, roster]);
 
+  // Filter candidates for selected zone
+  const targetRole = selectedZone ? getTargetRoleForZone(selectedZone) : null;
+  const candidateList = useMemo(() => {
+    if (!selectedZone) return [];
+
+    const isLiberoSlot = selectedZone === 'libero';
+    const isFrontRow = selectedZone === 'pos2' || selectedZone === 'pos3' || selectedZone === 'pos4';
+
+    return roster.map(player => {
+      const pStats = statsMap[player.id] || {};
+      const fitScore = computePositionFitScore(player, targetRole, statsMap);
+      const isCurrentlyInZone = isLiberoSlot ? selectedLiberoId === player.id : lineup[selectedZone] === player.id;
+      const isAlreadyOnCourt = Object.values(lineup).includes(player.id) && !isCurrentlyInZone;
+      const isLiberoRuleBlocked = isFrontRow && (player.position === 'Libero' || player.isLibero);
+
+      return {
+        player,
+        stats: pStats,
+        fitScore,
+        isCurrentlyInZone,
+        isAlreadyOnCourt,
+        isLiberoRuleBlocked,
+        isUnavailable: player.status === 'Injured' || player.status === 'Absent' || player.status === 'Out'
+      };
+    }).sort((a, b) => {
+      if (a.isCurrentlyInZone) return -1;
+      if (b.isCurrentlyInZone) return 1;
+      if (a.isLiberoRuleBlocked && !b.isLiberoRuleBlocked) return 1;
+      if (!a.isLiberoRuleBlocked && b.isLiberoRuleBlocked) return -1;
+      return b.fitScore - a.fitScore;
+    });
+  }, [selectedZone, roster, lineup, selectedLiberoId, targetRole, statsMap]);
+
   if (!isOpen) return null;
 
   const getPlayer = (id) => roster.find(p => p.id === id);
@@ -124,13 +164,6 @@ export default function LineupStudioModal({
     if (zoneKey === 'pos2' || zoneKey === 'pos5') return PAIR_COLORS.pair2;
     if (zoneKey === 'pos3' || zoneKey === 'pos6') return PAIR_COLORS.pair3;
     return { border: 'rgba(255,255,255,0.1)', bg: 'rgba(255,255,255,0.03)', badge: '#fff' };
-  };
-
-  const getTargetRoleForZone = (zoneKey) => {
-    if (zoneKey === 'pos1' || zoneKey === 'pos4') return 'setter';
-    if (zoneKey === 'pos2' || zoneKey === 'pos5') return 'outside';
-    if (zoneKey === 'pos3' || zoneKey === 'pos6') return 'middle';
-    return 'libero';
   };
 
   // Assign player to active zone
@@ -219,39 +252,6 @@ export default function LineupStudioModal({
     confetti({ particleCount: 70, spread: 80, origin: { y: 0.4 } });
     onClose();
   };
-
-  // Filter candidates for selected zone
-  const targetRole = selectedZone ? getTargetRoleForZone(selectedZone) : null;
-  const candidateList = useMemo(() => {
-    if (!selectedZone) return [];
-
-    const isLiberoSlot = selectedZone === 'libero';
-    const isFrontRow = selectedZone === 'pos2' || selectedZone === 'pos3' || selectedZone === 'pos4';
-
-    return roster.map(player => {
-      const pStats = statsMap[player.id] || {};
-      const fitScore = computePositionFitScore(player, targetRole, statsMap);
-      const isCurrentlyInZone = isLiberoSlot ? selectedLiberoId === player.id : lineup[selectedZone] === player.id;
-      const isAlreadyOnCourt = Object.values(lineup).includes(player.id) && !isCurrentlyInZone;
-      const isLiberoRuleBlocked = isFrontRow && (player.position === 'Libero' || player.isLibero);
-
-      return {
-        player,
-        stats: pStats,
-        fitScore,
-        isCurrentlyInZone,
-        isAlreadyOnCourt,
-        isLiberoRuleBlocked,
-        isUnavailable: player.status === 'Injured' || player.status === 'Absent' || player.status === 'Out'
-      };
-    }).sort((a, b) => {
-      if (a.isCurrentlyInZone) return -1;
-      if (b.isCurrentlyInZone) return 1;
-      if (a.isLiberoRuleBlocked && !b.isLiberoRuleBlocked) return 1;
-      if (!a.isLiberoRuleBlocked && b.isLiberoRuleBlocked) return -1;
-      return b.fitScore - a.fitScore;
-    });
-  }, [selectedZone, roster, lineup, selectedLiberoId, targetRole, statsMap]);
 
   return (
     <div

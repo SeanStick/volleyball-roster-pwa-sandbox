@@ -2371,20 +2371,22 @@ export default function App() {
       />
 
       {/* 📋 6-2 Make a Lineup & Rotation Studio */}
-      <LineupStudioModal
-        isOpen={isLineupStudioOpen}
-        onClose={() => setIsLineupStudioOpen(false)}
-        roster={roster}
-        lineup={lineup}
-        startingLineup={startingLineup}
-        matchStats={matchStats}
-        matchHistory={matchHistory}
-        savedPresets={savedLineupPresets}
-        onSavePreset={handleSaveLineupPreset}
-        onDeletePreset={handleDeleteLineupPreset}
-        onApplyLineup={handleApplyLineupFromStudio}
-        onUpdateRosterPlayer={handleUpdateRosterPlayerStatus}
-      />
+      {isLineupStudioOpen && (
+        <LineupStudioModal
+          isOpen={isLineupStudioOpen}
+          onClose={() => setIsLineupStudioOpen(false)}
+          roster={roster}
+          lineup={lineup}
+          startingLineup={startingLineup}
+          matchStats={matchStats}
+          matchHistory={matchHistory}
+          savedPresets={savedLineupPresets}
+          onSavePreset={handleSaveLineupPreset}
+          onDeletePreset={handleDeleteLineupPreset}
+          onApplyLineup={handleApplyLineupFromStudio}
+          onUpdateRosterPlayer={handleUpdateRosterPlayerStatus}
+        />
+      )}
     </div>
   );
 }

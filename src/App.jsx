@@ -40,6 +40,9 @@ import TournamentSyncToast from './components/TournamentSyncToast';
 import RemoteScoreUpdateOverlay from './components/RemoteScoreUpdateOverlay';
 import FirebaseSettingsModal from './components/FirebaseSettingsModal';
 import DrillCenterModal from './components/DrillCenterModal';
+import GameCenterModal from './components/GameCenterModal';
+import SetBreakModal from './components/SetBreakModal';
+import MatchRecapModal from './components/MatchRecapModal';
 import { storageService, DEFAULT_TEAM_ID } from './services/storageService';
 import { firebaseService } from './services/firebaseService';
 import { rotateLineupClockwise, checkLineupFrontRowLiberoViolation } from './services/volleyballRules';
@@ -77,6 +80,12 @@ export default function App() {
   const [isMatchSetupModalOpen, setIsMatchSetupModalOpen] = useState(false);
   const [isMatchWizardOpen, setIsMatchWizardOpen] = useState(false);
   const [isTournamentDayHubOpen, setIsTournamentDayHubOpen] = useState(false);
+  const [isGameCenterOpen, setIsGameCenterOpen] = useState(false);
+  const [gameCenterInitialTab, setGameCenterInitialTab] = useState('start');
+  const [isSetBreakOpen, setIsSetBreakOpen] = useState(false);
+  const [isMatchRecapOpen, setIsMatchRecapOpen] = useState(false);
+  const [lastCompletedSet, setLastCompletedSet] = useState(null);
+  const [daySchedule, setDaySchedule] = useState(() => storageService.getDaySchedule());
   const [isFirebaseSettingsModalOpen, setIsFirebaseSettingsModalOpen] = useState(false);
   const [isPlayerModalOpen, setIsPlayerModalOpen] = useState(false);
   const [playerToEdit, setPlayerToEdit] = useState(null);
@@ -190,6 +199,7 @@ export default function App() {
       },
       matchStats,
       matchHistory,
+      daySchedule,
       updatedAt: now,
       updatedByDeviceId: currentDeviceId,
       ...bundleOverrides
@@ -207,7 +217,7 @@ export default function App() {
       console.error('Immediate sync error:', err);
       setSyncStatus('error');
     });
-  }, [user, activeTeamId, teams, teamSettings, roster, lineup, startingLineup, rotation, phase, liberoExchanges, liberoServingRotation, subHistory, maxSubs, enforcePositionLock, matchStats, matchHistory, currentDeviceId]);
+  }, [user, activeTeamId, teams, teamSettings, roster, lineup, startingLineup, rotation, phase, liberoExchanges, liberoServingRotation, subHistory, maxSubs, enforcePositionLock, matchStats, matchHistory, daySchedule, currentDeviceId]);
 
   // -------------------------------------------------------------
   // Check URL Join Invite Parameter on Startup (?join=VB-CODE)
@@ -447,7 +457,13 @@ export default function App() {
           storageService.saveMatchHistory(cloudTeam.matchHistory);
         }
 
-        // 6. Share Code & Members
+        // 6. Day Schedule
+        if (Array.isArray(cloudTeam.daySchedule)) {
+          setDaySchedule(cloudTeam.daySchedule);
+          storageService.saveDaySchedule(cloudTeam.daySchedule);
+        }
+
+        // 7. Share Code & Members
         if (cloudTeam.shareCode) {
           setTeams(prevTeams => prevTeams.map(t => t.id === cloudTeam.id ? { ...t, shareCode: cloudTeam.shareCode, members: cloudTeam.members || t.members } : t));
         }
@@ -1273,7 +1289,20 @@ export default function App() {
     });
   };
 
-  const handleStartNewSet = () => {
+  const handleOpenSetBreak = () => {
+    const isOurSet = (matchStats?.ourScore || 0) > (matchStats?.opponentScore || 0);
+    const currentSubs = (subHistory || []).filter(s => !s.isLiberoExchange).length;
+    setLastCompletedSet({
+      setNumber: matchStats?.setNumber || 1,
+      ourScore: matchStats?.ourScore || 0,
+      opponentScore: matchStats?.opponentScore || 0,
+      winner: isOurSet ? 'us' : 'opponent',
+      subsCount: currentSubs
+    });
+    setIsSetBreakOpen(true);
+  };
+
+  const handleConfirmStartNextSet = ({ nextSetNumber, nextPhase, useSameLineup = true } = {}) => {
     const isOurSet = (matchStats?.ourScore || 0) > (matchStats?.opponentScore || 0);
     const currentSubs = (subHistory || []).filter(s => !s.isLiberoExchange).length;
     const ourTOsUsed = 2 - (matchStats?.ourTimeoutsRemaining ?? 2);
@@ -1289,12 +1318,14 @@ export default function App() {
       opponentTimeoutsUsed: oppTOsUsed
     };
 
-    const nextSetNumber = (matchStats?.setNumber || 1) + 1;
+    const targetSetNumber = nextSetNumber || ((matchStats?.setNumber || 1) + 1);
+    const targetPhase = nextPhase || (phase === 'serve' ? 'receive' : 'serve');
+
     const nextStats = {
       ...matchStats,
       ourScore: 0,
       opponentScore: 0,
-      setNumber: nextSetNumber,
+      setNumber: targetSetNumber,
       ourSetsWon: isOurSet ? (matchStats?.ourSetsWon || 0) + 1 : (matchStats?.ourSetsWon || 0),
       opponentSetsWon: !isOurSet ? (matchStats?.opponentSetsWon || 0) + 1 : (matchStats?.opponentSetsWon || 0),
       ourTimeoutsRemaining: 2,
@@ -1302,18 +1333,18 @@ export default function App() {
       setHistory: [...(matchStats?.setHistory || []), completedSet]
     };
 
-    const newLineup = startingLineup || lineup;
+    const newLineup = useSameLineup ? (startingLineup || lineup) : lineup;
 
     setMatchStats(nextStats);
     setLineup(newLineup);
     setRotation(1);
-    setPhase('serve');
+    setPhase(targetPhase);
     setSubHistory([]);
     confetti({ particleCount: 60, spread: 70, origin: { y: 0.3 } });
 
     setSyncToast({
-      title: `🏐 Set ${nextSetNumber} Started`,
-      message: `Set ${matchStats?.setNumber || 1} finished (${completedSet.ourScore}-${completedSet.opponentScore}). Starting Set ${nextSetNumber} (0-0, 2 Timeouts each).`,
+      title: `🏐 Set ${targetSetNumber} Started`,
+      message: `Set ${matchStats?.setNumber || 1} finished (${completedSet.ourScore}-${completedSet.opponentScore}). ${targetPhase === 'serve' ? 'We Serve First' : 'We Receive First'} (0-0).`,
       type: 'new_set'
     });
 
@@ -1323,7 +1354,7 @@ export default function App() {
         lineup: newLineup,
         startingLineup,
         rotation: 1,
-        phase: 'serve',
+        phase: targetPhase,
         liberoExchanges,
         liberoServingRotation,
         subHistory: [],
@@ -1333,64 +1364,76 @@ export default function App() {
     });
   };
 
-  const handleSelectSetNumber = (targetSetNumber) => {
-    if (targetSetNumber === matchStats?.setNumber) return;
+  const handleStartNewSet = () => {
+    handleOpenSetBreak();
+  };
 
-    // Check if target set already exists in setHistory
-    const pastSetIndex = matchStats?.setHistory?.findIndex(s => s.setNumber === targetSetNumber);
-    let nextStats;
-
-    if (pastSetIndex !== -1 && pastSetIndex !== undefined) {
-      const pastSet = matchStats.setHistory[pastSetIndex];
-      const currentAsSet = {
-        setNumber: matchStats.setNumber,
-        ourScore: matchStats.ourScore,
-        opponentScore: matchStats.opponentScore,
-        winner: matchStats.ourScore > matchStats.opponentScore ? 'us' : 'opponent'
-      };
-
-      const updatedHistory = matchStats.setHistory.filter(s => s.setNumber !== targetSetNumber);
-      updatedHistory.push(currentAsSet);
-
-      nextStats = {
-        ...matchStats,
-        setNumber: targetSetNumber,
-        ourScore: pastSet.ourScore || 0,
-        opponentScore: pastSet.opponentScore || 0,
-        setHistory: updatedHistory
-      };
-    } else {
-      nextStats = {
-        ...matchStats,
-        setNumber: targetSetNumber,
-        ourScore: 0,
-        opponentScore: 0
-      };
-    }
-
-    setMatchStats(nextStats);
-
-    setSyncToast({
-      title: `🏐 Switched to Set ${targetSetNumber}`,
-      message: `Active score: ${nextStats.ourScore} - ${nextStats.opponentScore}`,
-      type: 'new_set'
-    });
-
-    syncCloudImmediately({
-      matchStats: nextStats
+  const handleQuickStartScrimmage = () => {
+    handleStartFreshMatch({
+      opponentName: 'Practice / Scrimmage',
+      tournamentName: matchStats?.tournamentName || 'Practice',
+      courtNumber: matchStats?.courtNumber || 'Court 1',
+      matchStage: 'Scrimmage',
+      matchFormat: '1 Set (to 25)',
+      targetPoints: 25,
+      maxSubs: maxSubs || 12,
+      phase: 'serve',
+      rotation: 1,
+      lineup: lineup || startingLineup
     });
   };
 
-  const handleArchiveMatch = (customOpponentName = null) => {
-    const defaultOpp = customOpponentName || matchStats?.opponentName || 'Opponent';
-    const opp = customOpponentName !== null ? customOpponentName : window.prompt('Enter Opponent Team Name for match archive:', defaultOpp);
-    if (opp !== null && opp.trim() !== '') {
-      const archived = storageService.archiveCurrentMatch(matchStats, opp.trim(), {
-        tournamentName: matchStats?.tournamentName,
-        courtNumber: matchStats?.courtNumber,
-        matchStage: matchStats?.matchStage,
-        matchFormat: matchStats?.matchFormat
-      });
+  const handleStartScheduledMatch = (schedItem) => {
+    handleStartFreshMatch({
+      opponentName: schedItem.opponentName,
+      tournamentName: matchStats?.tournamentName || 'Tournament Day',
+      courtNumber: schedItem.courtNumber || matchStats?.courtNumber || 'Court 1',
+      matchStage: schedItem.matchStage || 'Match',
+      matchFormat: schedItem.format || 'Best of 3 (25, 25, 15)',
+      targetPoints: 25,
+      maxSubs: maxSubs || 12,
+      phase: 'serve',
+      rotation: 1,
+      lineup: startingLineup || lineup
+    });
+
+    const updated = daySchedule.map(s =>
+      s.id === schedItem.id ? { ...s, status: 'in_progress' } : s
+    );
+    setDaySchedule(updated);
+    storageService.saveDaySchedule(updated);
+    syncCloudImmediately({ daySchedule: updated });
+  };
+
+  const handleUpdateDaySchedule = (newSchedule) => {
+    setDaySchedule(newSchedule);
+    storageService.saveDaySchedule(newSchedule);
+    syncCloudImmediately({ daySchedule: newSchedule });
+  };
+
+  const handleArchiveMatch = (customOpponentOrOptions = null) => {
+    let opp = matchStats?.opponentName || 'Opponent';
+    let overrides = {
+      tournamentName: matchStats?.tournamentName,
+      courtNumber: matchStats?.courtNumber,
+      matchStage: matchStats?.matchStage,
+      matchFormat: matchStats?.matchFormat
+    };
+
+    if (typeof customOpponentOrOptions === 'string') {
+      opp = customOpponentOrOptions;
+    } else if (customOpponentOrOptions && typeof customOpponentOrOptions === 'object') {
+      if (customOpponentOrOptions.opponentName) opp = customOpponentOrOptions.opponentName;
+      if (customOpponentOrOptions.tournamentName) overrides.tournamentName = customOpponentOrOptions.tournamentName;
+      if (customOpponentOrOptions.courtNumber) overrides.courtNumber = customOpponentOrOptions.courtNumber;
+    } else if (customOpponentOrOptions === null) {
+      const promptRes = window.prompt('Enter Opponent Team Name for match archive:', opp);
+      if (!promptRes || promptRes.trim() === '') return false;
+      opp = promptRes;
+    }
+
+    if (opp && opp.trim() !== '') {
+      const archived = storageService.archiveCurrentMatch(matchStats, opp.trim(), overrides);
       if (archived) {
         const nextHistory = storageService.getMatchHistory();
         setMatchHistory(nextHistory);
@@ -1398,7 +1441,7 @@ export default function App() {
 
         setSyncToast({
           title: '🏆 Match Saved to Archive',
-          message: `Saved vs ${opp.trim()} (${matchStats.tournamentName || 'Tournament'} • ${matchStats.courtNumber || 'Court 1'})`,
+          message: `Saved vs ${opp.trim()} (${overrides.tournamentName || 'Tournament'} • ${overrides.courtNumber || 'Court 1'})`,
           type: 'new_match'
         });
 
@@ -1711,12 +1754,24 @@ export default function App() {
           onRallyWonByOpponent={handleRallyWonByOpponent}
           onUndoLastPoint={handleUndoLastPoint}
           onResetScore={handleResetScore}
-          onStartNewSet={handleStartNewSet}
+          onStartNewSet={handleOpenSetBreak}
           onArchiveMatch={handleArchiveMatch}
           onResetFullMatch={handleResetFullMatch}
-          onOpenMatchSetup={() => setIsMatchSetupModalOpen(true)}
+          onOpenMatchSetup={() => {
+            setGameCenterInitialTab('start');
+            setIsGameCenterOpen(true);
+          }}
           onOpenMatchWizard={() => setIsMatchWizardOpen(true)}
-          onOpenTournamentDayHub={() => setIsTournamentDayHubOpen(true)}
+          onOpenTournamentDayHub={() => {
+            setGameCenterInitialTab('schedule');
+            setIsGameCenterOpen(true);
+          }}
+          onOpenGameCenter={() => {
+            setGameCenterInitialTab('start');
+            setIsGameCenterOpen(true);
+          }}
+          onOpenSetBreak={handleOpenSetBreak}
+          onOpenMatchRecap={() => setIsMatchRecapOpen(true)}
           onSelectSetNumber={handleSelectSetNumber}
           onCallTimeout={handleCallTimeout}
           onOpenSubModal={() => setActiveTab('court')}
@@ -1734,7 +1789,10 @@ export default function App() {
         <>
           {/* Quick Start Game Banner */}
           <div
-            onClick={() => setIsMatchWizardOpen(true)}
+            onClick={() => {
+              setGameCenterInitialTab('start');
+              setIsGameCenterOpen(true);
+            }}
             style={{
               background: 'linear-gradient(135deg, rgba(16, 185, 129, 0.25), rgba(5, 150, 105, 0.35))',
               border: '1.5px solid rgba(16, 185, 129, 0.6)',
@@ -2102,6 +2160,53 @@ export default function App() {
         onOpenMatchWizard={() => setIsMatchWizardOpen(true)}
         onOpenShareModal={handleOpenShare}
         activeTeam={activeTeamObj}
+      />
+
+      {/* Unified Game Operations Center */}
+      <GameCenterModal
+        isOpen={isGameCenterOpen}
+        onClose={() => setIsGameCenterOpen(false)}
+        initialTab={gameCenterInitialTab}
+        matchStats={matchStats}
+        matchHistory={matchHistory}
+        daySchedule={daySchedule}
+        onUpdateDaySchedule={handleUpdateDaySchedule}
+        onUpdateMatchDetails={handleUpdateMatchDetails}
+        onStartFreshMatch={handleStartFreshMatch}
+        onQuickStartScrimmage={handleQuickStartScrimmage}
+        onStartScheduledMatch={handleStartScheduledMatch}
+        onArchiveMatch={handleArchiveMatch}
+        onDeleteMatchHistory={handleDeleteMatchHistory}
+        onOpenPdfExport={() => setActiveTab('stats')}
+        onOpenMatchWizard={() => setIsMatchWizardOpen(true)}
+        roster={roster}
+        lineup={lineup}
+      />
+
+      {/* Guided Set Intermission & Side Switch Break Modal */}
+      <SetBreakModal
+        isOpen={isSetBreakOpen}
+        onClose={() => setIsSetBreakOpen(false)}
+        completedSet={lastCompletedSet}
+        matchStats={matchStats}
+        roster={roster}
+        lineup={lineup}
+        startingLineup={startingLineup}
+        currentPhase={phase}
+        onConfirmStartNextSet={handleConfirmStartNextSet}
+        onOpenMatchRecap={() => setIsMatchRecapOpen(true)}
+      />
+
+      {/* Broadcast Post-Match Box Score & Recap Modal */}
+      <MatchRecapModal
+        isOpen={isMatchRecapOpen}
+        onClose={() => setIsMatchRecapOpen(false)}
+        matchStats={matchStats}
+        roster={roster}
+        onConfirmArchive={handleArchiveMatch}
+        onOpenPdfExport={() => setActiveTab('stats')}
+        onStartNextMatchFromQueue={handleStartScheduledMatch}
+        nextScheduledMatch={daySchedule.find(s => s.status === 'upcoming' || s.status === 'ready')}
       />
 
       {/* Firebase Cloud Settings Modal */}

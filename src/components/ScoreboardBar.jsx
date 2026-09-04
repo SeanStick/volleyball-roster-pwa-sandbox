@@ -38,6 +38,9 @@ export default function ScoreboardBar({
   onOpenMatchSetup,
   onOpenMatchWizard,
   onOpenTournamentDayHub,
+  onOpenGameCenter,
+  onOpenSetBreak,
+  onOpenMatchRecap,
   onSelectSetNumber,
   onCallTimeout,
   onOpenSubModal,
@@ -166,6 +169,10 @@ export default function ScoreboardBar({
   };
 
   const handleFinishSetClick = () => {
+    if (onOpenSetBreak) {
+      onOpenSetBreak();
+      return;
+    }
     const isOurLead = ourScore > opponentScore;
     const confirmMsg = `Finish Set ${setNumber} (${ourScore} - ${opponentScore})?\n\nWinner: ${isOurLead ? 'US' : opponentName || 'Opponent'}\n\nAdvance to Set ${setNumber + 1} (0-0)?`;
     if (window.confirm(confirmMsg)) {
@@ -175,6 +182,10 @@ export default function ScoreboardBar({
   };
 
   const handleFinishGameClick = () => {
+    if (onOpenMatchRecap) {
+      onOpenMatchRecap();
+      return;
+    }
     if (!onArchiveMatch) return;
     const opp = opponentName || matchStats?.opponentName || 'Opponent';
     const confirmMsg = `Finish and finalize this match against ${opp} (${ourScore} - ${opponentScore})?\n\nThis will save the full match to the Archive & Match History.`;
@@ -281,7 +292,7 @@ export default function ScoreboardBar({
           {onOpenMatchWizard && (
             <button
               type="button"
-              onClick={onOpenMatchWizard}
+              onClick={onOpenGameCenter || onOpenMatchWizard}
               style={{
                 background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
                 border: '1px solid #10b981',
@@ -330,7 +341,7 @@ export default function ScoreboardBar({
 
           <button
             type="button"
-            onClick={onOpenTournamentDayHub}
+            onClick={onOpenGameCenter || onOpenTournamentDayHub}
             style={{
               background: 'linear-gradient(135deg, rgba(59, 130, 246, 0.25), rgba(30, 58, 138, 0.35))',
               border: '1px solid rgba(59, 130, 246, 0.5)',
@@ -344,16 +355,16 @@ export default function ScoreboardBar({
               gap: '0.3rem',
               cursor: 'pointer'
             }}
-            title="Open Tournament Day Hub"
+            title="Open Game Operations Center"
           >
             <Trophy size={12} color="#60a5fa" />
-            <span>Day Hub</span>
+            <span>Game Center</span>
           </button>
         </div>
 
         {/* Center: Location & Opponent (Click to Quick Edit) */}
         <div
-          onClick={onOpenMatchSetup}
+          onClick={onOpenGameCenter || onOpenMatchSetup}
           style={{
             display: 'flex',
             alignItems: 'center',
@@ -386,7 +397,7 @@ export default function ScoreboardBar({
 
         {/* Right: Sets Summary */}
         <div
-          onClick={onOpenTournamentDayHub}
+          onClick={onOpenGameCenter || onOpenTournamentDayHub}
           style={{
             display: 'flex',
             alignItems: 'center',
@@ -711,7 +722,7 @@ export default function ScoreboardBar({
             <button
               type="button"
               className="btn btn-sm"
-              onClick={onOpenMatchWizard}
+              onClick={onOpenGameCenter || onOpenMatchWizard}
               style={{
                 background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
                 borderColor: '#10b981',

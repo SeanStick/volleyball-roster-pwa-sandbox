@@ -7,9 +7,17 @@ const ACTIVE_TAB_KEY = 'gostandoverthere_active_tab_v1';
 const TEAMS_LIST_KEY = 'gostandoverthere_teams_list_v1';
 const ACTIVE_TEAM_ID_KEY = 'gostandoverthere_active_team_id_v1';
 const CACHED_USER_KEY = 'gostandoverthere_cached_user_v1';
+const DAY_SCHEDULE_KEY = 'gostandoverthere_day_schedule_v1';
 const LEGACY_ROSTER_KEY = 'spikesync_volleyball_roster_v1';
 const LEGACY_TEAM_KEY = 'spikesync_team_settings_v1';
 export const DEFAULT_TEAM_ID = 'team-default';
+
+export const DEFAULT_DAY_SCHEDULE = [
+  { id: 'sched-1', matchStage: 'Match 1', opponentName: 'Thunderbolts VC', courtNumber: 'Court 1', time: '08:00 AM', format: 'Best of 3 (25, 25, 15)', status: 'completed' },
+  { id: 'sched-2', matchStage: 'Match 2', opponentName: 'Apex Volleyball', courtNumber: 'Court 1', time: '10:00 AM', format: 'Best of 3 (25, 25, 15)', status: 'ready' },
+  { id: 'sched-3', matchStage: 'Match 3', opponentName: 'Skyline Elite', courtNumber: 'Court 1', time: '12:00 PM', format: 'Best of 3 (25, 25, 15)', status: 'upcoming' },
+  { id: 'sched-4', matchStage: 'Playoffs', opponentName: 'Gold Bracket', courtNumber: 'Court 2', time: '02:00 PM', format: 'Best of 3 (25, 25, 15)', status: 'upcoming' }
+];
 
 export const INITIAL_MATCH_STATS = {
   tournamentName: 'Midwest Qualifier 2026',
@@ -606,6 +614,32 @@ export const storageService = {
     }
   },
 
+  getDaySchedule() {
+    try {
+      const data = localStorage.getItem(DAY_SCHEDULE_KEY);
+      if (!data) {
+        this.saveDaySchedule(DEFAULT_DAY_SCHEDULE);
+        return DEFAULT_DAY_SCHEDULE;
+      }
+      const parsed = JSON.parse(data);
+      if (Array.isArray(parsed) && parsed.length > 0) {
+        return parsed;
+      }
+      return DEFAULT_DAY_SCHEDULE;
+    } catch (e) {
+      console.error('Error reading day schedule:', e);
+      return DEFAULT_DAY_SCHEDULE;
+    }
+  },
+
+  saveDaySchedule(scheduleList) {
+    try {
+      localStorage.setItem(DAY_SCHEDULE_KEY, JSON.stringify(scheduleList));
+    } catch (e) {
+      console.error('Error saving day schedule:', e);
+    }
+  },
+
   getFullTeamBundle(teamId = null) {
     const targetId = teamId || this.getActiveTeamId();
     return {
@@ -615,6 +649,7 @@ export const storageService = {
       matchState: this.getMatchState(),
       matchStats: this.getMatchStats(),
       matchHistory: this.getMatchHistory(),
+      daySchedule: this.getDaySchedule(),
       updatedAt: new Date().toISOString()
     };
   },
@@ -626,6 +661,7 @@ export const storageService = {
     if (bundle.matchState) this.saveMatchState(bundle.matchState);
     if (bundle.matchStats) this.saveMatchStats(bundle.matchStats);
     if (Array.isArray(bundle.matchHistory)) this.saveMatchHistory(bundle.matchHistory);
+    if (Array.isArray(bundle.daySchedule)) this.saveDaySchedule(bundle.daySchedule);
     if (bundle.teamId) this.setActiveTeamId(bundle.teamId);
   }
 };

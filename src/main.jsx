@@ -58,7 +58,8 @@ class AppErrorBoundary extends React.Component {
     } catch (e) {
       console.warn('Cache clear error:', e);
     }
-    window.location.reload(true);
+    // Force cache bust by navigating with timestamp
+    window.location.href = window.location.pathname + '?t=' + Date.now();
   };
 
   render() {

@@ -803,70 +803,102 @@ export default function CourtView({
 
   return (
     <div className="court-container">
-      {/* Quick Start Game Banner */}
-      {onOpenMatchWizard && (
-        <div
-          onClick={onOpenMatchWizard}
-          style={{
-            background: 'linear-gradient(135deg, rgba(16, 185, 129, 0.25), rgba(5, 150, 105, 0.35))',
-            border: '1.5px solid rgba(16, 185, 129, 0.6)',
-            borderRadius: 'var(--radius-lg)',
-            padding: '0.75rem 1.1rem',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'space-between',
-            marginBottom: '0.85rem',
-            cursor: 'pointer',
-            boxShadow: '0 4px 15px rgba(16, 185, 129, 0.25)',
-            transition: 'all 0.2s ease'
-          }}
-        >
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-            <div
-              style={{
-                width: '36px',
-                height: '36px',
-                borderRadius: '10px',
-                background: 'linear-gradient(135deg, #10b981, #059669)',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                color: '#ffffff',
-                boxShadow: '0 4px 12px rgba(16, 185, 129, 0.4)',
-                flexShrink: 0
-              }}
-            >
-              <VolleyballIcon size={20} />
-            </div>
-            <div>
-              <div style={{ fontSize: '0.92rem', fontWeight: 900, color: '#f8fafc' }}>
-                Start New Game & Lineup Wizard
-              </div>
-              <div style={{ fontSize: '0.75rem', color: '#a7f3d0' }}>
-                1-tap 6-2 lineup auto-fill, opponent setup & coin toss
-              </div>
-            </div>
-          </div>
-
-          <button
-            type="button"
-            className="btn btn-primary btn-sm"
+      {/* Quick Action Banners (Start Game & Lineup Studio) */}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '0.75rem', marginBottom: '0.85rem' }}>
+        {onOpenMatchWizard && (
+          <div
+            onClick={onOpenMatchWizard}
             style={{
-              background: '#10b981',
-              borderColor: '#10b981',
-              fontWeight: 900,
-              fontSize: '0.82rem',
+              background: 'linear-gradient(135deg, rgba(16, 185, 129, 0.2), rgba(5, 150, 105, 0.3))',
+              border: '1.5px solid rgba(16, 185, 129, 0.5)',
+              borderRadius: 'var(--radius-lg)',
+              padding: '0.75rem 1rem',
               display: 'flex',
               alignItems: 'center',
-              gap: '0.35rem',
-              flexShrink: 0
+              justifyContent: 'space-between',
+              cursor: 'pointer',
+              boxShadow: '0 4px 15px rgba(16, 185, 129, 0.2)',
+              transition: 'all 0.2s ease'
             }}
           >
-            <span>Start Game</span>
-            <ArrowRight size={14} />
-          </button>
-        </div>
-      )}
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+              <div
+                style={{
+                  width: '36px',
+                  height: '36px',
+                  borderRadius: '10px',
+                  background: 'linear-gradient(135deg, #10b981, #059669)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  color: '#ffffff',
+                  boxShadow: '0 4px 12px rgba(16, 185, 129, 0.4)',
+                  flexShrink: 0
+                }}
+              >
+                <VolleyballIcon size={20} />
+              </div>
+              <div>
+                <div style={{ fontSize: '0.9rem', fontWeight: 900, color: '#f8fafc' }}>
+                  Start Match Wizard
+                </div>
+                <div style={{ fontSize: '0.73rem', color: '#a7f3d0' }}>
+                  Match setup, opponent & coin toss
+                </div>
+              </div>
+            </div>
+
+            <span style={{ fontSize: '0.8rem', fontWeight: 900, color: '#34d399' }}>Start →</span>
+          </div>
+        )}
+
+        {onOpenLineupStudio && (
+          <div
+            onClick={onOpenLineupStudio}
+            style={{
+              background: 'linear-gradient(135deg, rgba(168, 85, 247, 0.2), rgba(126, 34, 206, 0.3))',
+              border: '1.5px solid rgba(168, 85, 247, 0.5)',
+              borderRadius: 'var(--radius-lg)',
+              padding: '0.75rem 1rem',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              cursor: 'pointer',
+              boxShadow: '0 4px 15px rgba(168, 85, 247, 0.2)',
+              transition: 'all 0.2s ease'
+            }}
+          >
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+              <div
+                style={{
+                  width: '36px',
+                  height: '36px',
+                  borderRadius: '10px',
+                  background: 'linear-gradient(135deg, #a855f7, #7c3aed)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  color: '#ffffff',
+                  boxShadow: '0 4px 12px rgba(168, 85, 247, 0.4)',
+                  flexShrink: 0
+                }}
+              >
+                <Sparkles size={20} />
+              </div>
+              <div>
+                <div style={{ fontSize: '0.9rem', fontWeight: 900, color: '#f8fafc' }}>
+                  Make a Lineup (6-2 Studio)
+                </div>
+                <div style={{ fontSize: '0.73rem', color: '#e9d5ff' }}>
+                  AI recommendations, presets & stats
+                </div>
+              </div>
+            </div>
+
+            <span style={{ fontSize: '0.8rem', fontWeight: 900, color: '#c084fc' }}>Open Studio →</span>
+          </div>
+        )}
+      </div>
 
       {/* Court Top Controls Header */}
       <div className="court-header">
@@ -883,6 +915,32 @@ export default function CourtView({
               <RotateCw size={16} />
             </button>
           </div>
+
+          {onOpenLineupStudio && (
+            <button
+              type="button"
+              className="btn btn-sm"
+              onClick={onOpenLineupStudio}
+              style={{
+                background: 'linear-gradient(135deg, #a855f7 0%, #7c3aed 100%)',
+                border: '1px solid #a855f7',
+                color: '#ffffff',
+                fontWeight: 800,
+                fontSize: '0.78rem',
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '0.35rem',
+                padding: '0.3rem 0.65rem',
+                borderRadius: '8px',
+                boxShadow: '0 2px 8px rgba(168, 85, 247, 0.35)',
+                cursor: 'pointer'
+              }}
+              title="Open 6-2 Make a Lineup Studio, AI Position Fit & Preset Manager"
+            >
+              <Sparkles size={13} />
+              <span>Lineup Studio</span>
+            </button>
+          )}
 
           {/* Small Serving / Receiving Phase Indicator */}
           <div

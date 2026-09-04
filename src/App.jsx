@@ -1879,69 +1879,100 @@ export default function App() {
 
       {activeTab === 'roster' && (
         <>
-          {/* Quick Start Game Banner */}
-          <div
-            onClick={() => {
-              setGameCenterInitialTab('start');
-              setIsGameCenterOpen(true);
-            }}
-            style={{
-              background: 'linear-gradient(135deg, rgba(16, 185, 129, 0.25), rgba(5, 150, 105, 0.35))',
-              border: '1.5px solid rgba(16, 185, 129, 0.6)',
-              borderRadius: 'var(--radius-lg)',
-              padding: '0.85rem 1.15rem',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'space-between',
-              marginBottom: '1rem',
-              cursor: 'pointer',
-              boxShadow: '0 4px 15px rgba(16, 185, 129, 0.25)',
-              transition: 'all 0.2s ease'
-            }}
-          >
-            <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-              <div
-                style={{
-                  width: '38px',
-                  height: '38px',
-                  borderRadius: '10px',
-                  background: 'linear-gradient(135deg, #10b981, #059669)',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  color: '#ffffff',
-                  boxShadow: '0 4px 12px rgba(16, 185, 129, 0.4)',
-                  flexShrink: 0
-                }}
-              >
-                <VolleyballIcon size={22} />
-              </div>
-              <div>
-                <div style={{ fontSize: '0.95rem', fontWeight: 900, color: '#f8fafc' }}>
-                  Ready to Play a Game?
-                </div>
-                <div style={{ fontSize: '0.76rem', color: '#a7f3d0' }}>
-                  Tap here to launch the 3-Step Match & Lineup Wizard
-                </div>
-              </div>
-            </div>
-
-            <button
-              type="button"
-              className="btn btn-primary btn-sm"
+          {/* Quick Action Banners: Start Game & Make a Lineup Studio */}
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '0.75rem', marginBottom: '1rem' }}>
+            {/* Quick Start Game Banner */}
+            <div
+              onClick={() => {
+                setGameCenterInitialTab('start');
+                setIsGameCenterOpen(true);
+              }}
               style={{
-                background: '#10b981',
-                borderColor: '#10b981',
-                fontWeight: 900,
-                fontSize: '0.82rem',
+                background: 'linear-gradient(135deg, rgba(16, 185, 129, 0.2), rgba(5, 150, 105, 0.3))',
+                border: '1.5px solid rgba(16, 185, 129, 0.5)',
+                borderRadius: 'var(--radius-lg)',
+                padding: '0.85rem 1rem',
                 display: 'flex',
                 alignItems: 'center',
-                gap: '0.35rem'
+                justifyContent: 'space-between',
+                cursor: 'pointer',
+                boxShadow: '0 4px 15px rgba(16, 185, 129, 0.2)',
+                transition: 'all 0.2s ease'
               }}
             >
-              <span>Start Game</span>
-              <ArrowRight size={14} />
-            </button>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                <div
+                  style={{
+                    width: '38px',
+                    height: '38px',
+                    borderRadius: '10px',
+                    background: 'linear-gradient(135deg, #10b981, #059669)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    color: '#ffffff',
+                    boxShadow: '0 4px 12px rgba(16, 185, 129, 0.4)',
+                    flexShrink: 0
+                  }}
+                >
+                  <VolleyballIcon size={22} />
+                </div>
+                <div>
+                  <div style={{ fontSize: '0.92rem', fontWeight: 900, color: '#f8fafc' }}>
+                    Start Game Wizard
+                  </div>
+                  <div style={{ fontSize: '0.74rem', color: '#a7f3d0' }}>
+                    Match setup & coin toss
+                  </div>
+                </div>
+              </div>
+              <span style={{ fontSize: '0.8rem', fontWeight: 900, color: '#34d399' }}>Start →</span>
+            </div>
+
+            {/* 📋 6-2 Make a Lineup Studio Banner */}
+            <div
+              onClick={() => setIsLineupStudioOpen(true)}
+              style={{
+                background: 'linear-gradient(135deg, rgba(168, 85, 247, 0.2), rgba(126, 34, 206, 0.3))',
+                border: '1.5px solid rgba(168, 85, 247, 0.5)',
+                borderRadius: 'var(--radius-lg)',
+                padding: '0.85rem 1rem',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                cursor: 'pointer',
+                boxShadow: '0 4px 15px rgba(168, 85, 247, 0.2)',
+                transition: 'all 0.2s ease'
+              }}
+            >
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                <div
+                  style={{
+                    width: '38px',
+                    height: '38px',
+                    borderRadius: '10px',
+                    background: 'linear-gradient(135deg, #a855f7, #7c3aed)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    color: '#ffffff',
+                    boxShadow: '0 4px 12px rgba(168, 85, 247, 0.4)',
+                    flexShrink: 0
+                  }}
+                >
+                  <Sparkles size={22} />
+                </div>
+                <div>
+                  <div style={{ fontSize: '0.92rem', fontWeight: 900, color: '#f8fafc' }}>
+                    Make a Lineup (6-2 Studio)
+                  </div>
+                  <div style={{ fontSize: '0.74rem', color: '#e9d5ff' }}>
+                    AI stats, presets & injury subs
+                  </div>
+                </div>
+              </div>
+              <span style={{ fontSize: '0.8rem', fontWeight: 900, color: '#c084fc' }}>Open Studio →</span>
+            </div>
           </div>
 
           {/* Stats Ribbon (Roster Size, Captain, Starting 6, Setters) */}

@@ -361,6 +361,30 @@ export default function ScoreboardBar({
             <Trophy size={12} color="#60a5fa" />
             <span>Game Center</span>
           </button>
+
+          {onOpenLineupStudio && (
+            <button
+              type="button"
+              onClick={onOpenLineupStudio}
+              style={{
+                background: 'linear-gradient(135deg, rgba(168, 85, 247, 0.25), rgba(126, 34, 206, 0.35))',
+                border: '1px solid rgba(168, 85, 247, 0.6)',
+                borderRadius: '999px',
+                padding: '0.2rem 0.6rem',
+                color: '#e9d5ff',
+                fontSize: '0.74rem',
+                fontWeight: 800,
+                display: 'flex',
+                alignItems: 'center',
+                gap: '0.3rem',
+                cursor: 'pointer'
+              }}
+              title="Open 6-2 Make a Lineup Studio, AI Position Fit & Presets"
+            >
+              <Sparkles size={12} color="#c084fc" />
+              <span>Lineup Studio</span>
+            </button>
+          )}
         </div>
 
         {/* Center: Location & Opponent (Click to Quick Edit) */}
@@ -762,6 +786,29 @@ export default function ScoreboardBar({
             >
               <Archive size={13} />
               <span>Finish Game</span>
+            </button>
+          )}
+
+          {/* Lineup Studio Action (Purple) */}
+          {onOpenLineupStudio && (
+            <button
+              type="button"
+              className="btn btn-sm"
+              onClick={onOpenLineupStudio}
+              style={{
+                background: 'linear-gradient(135deg, rgba(168, 85, 247, 0.3), rgba(126, 34, 206, 0.45))',
+                border: '1px solid rgba(168, 85, 247, 0.6)',
+                color: '#e9d5ff',
+                fontSize: '0.78rem',
+                fontWeight: 800,
+                display: 'flex',
+                alignItems: 'center',
+                gap: '0.3rem'
+              }}
+              title="Open 6-2 Make a Lineup Studio"
+            >
+              <Sparkles size={13} color="#c084fc" />
+              <span>Lineup Studio</span>
             </button>
           )}
 

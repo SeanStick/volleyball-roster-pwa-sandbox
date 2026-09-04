@@ -1378,6 +1378,16 @@ export default function App() {
     handleOpenSetBreak();
   };
 
+  const handleSelectSetNumber = (targetSetNum) => {
+    if (!targetSetNum || targetSetNum === matchStats?.setNumber) return;
+    const nextStats = {
+      ...matchStats,
+      setNumber: targetSetNum
+    };
+    setMatchStats(nextStats);
+    syncCloudImmediately({ matchStats: nextStats });
+  };
+
   const handleQuickStartScrimmage = () => {
     handleStartFreshMatch({
       opponentName: 'Practice / Scrimmage',

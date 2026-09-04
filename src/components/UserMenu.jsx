@@ -16,9 +16,9 @@ import {
   ExternalLink,
   Check,
   PenTool,
-  Dumbbell,
-  Volleyball
+  Dumbbell
 } from 'lucide-react';
+import VolleyballIcon from './icons/VolleyballIcon';
 
 export default function UserMenu({
   user,
@@ -639,7 +639,7 @@ export default function UserMenu({
                   marginBottom: '4px'
                 }}
               >
-                <Volleyball size={16} />
+                <VolleyballIcon size={16} />
                 <span>Start Match & Lineup Wizard</span>
               </button>
             )}

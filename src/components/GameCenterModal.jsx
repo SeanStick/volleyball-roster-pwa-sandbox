@@ -19,9 +19,9 @@ import {
   Zap,
   Clock,
   Shield,
-  Volleyball,
   CheckCircle2
 } from 'lucide-react';
+import VolleyballIcon from './icons/VolleyballIcon';
 import confetti from 'canvas-confetti';
 
 const QUICK_COURTS = ['Ct 1', 'Ct 2', 'Ct 3', 'Ct 4', 'Ct 5', 'Ct 6', 'Ct 7', 'Ct 8', 'Main Gym'];
@@ -575,7 +575,7 @@ export default function GameCenterModal({
                         cursor: 'pointer'
                       }}
                     >
-                      <Volleyball size={14} color="#10b981" />
+                      <VolleyballIcon size={14} color="#10b981" />
                       <span>We Serve First</span>
                     </button>
 

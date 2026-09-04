@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { X, Check, Star, Award, Shield, User, Volleyball, ArrowLeftRight } from 'lucide-react';
+import { X, Check, Star, Award, Shield, User, ArrowLeftRight } from 'lucide-react';
+import VolleyballIcon from './icons/VolleyballIcon';
 import JerseyVisualizer from './JerseyVisualizer';
 
 const POSITIONS = [
@@ -266,7 +267,7 @@ export default function PlayerModal({ isOpen, onClose, onSave, playerToEdit, tea
               title="Designate this player to serve first for the team at the start of the match"
             >
               <span style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', fontSize: '0.82rem', fontWeight: '600' }}>
-                <Volleyball size={15} color={formData.isFirstServer ? '#3b82f6' : 'var(--text-muted)'} />
+                <VolleyballIcon size={15} color={formData.isFirstServer ? '#3b82f6' : 'var(--text-muted)'} />
                 1st Server
               </span>
               <input

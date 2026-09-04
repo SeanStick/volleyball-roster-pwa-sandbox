@@ -14,10 +14,10 @@ import {
   BarChart3,
   Cloud,
   Share2,
-  Volleyball,
   ArrowRight,
   Dumbbell
 } from 'lucide-react';
+import VolleyballIcon from './components/icons/VolleyballIcon';
 import confetti from 'canvas-confetti';
 import Navbar from './components/Navbar';
 import PlayerCard from './components/PlayerCard';
@@ -1904,7 +1904,7 @@ export default function App() {
                   flexShrink: 0
                 }}
               >
-                <Volleyball size={22} />
+                <VolleyballIcon size={22} />
               </div>
               <div>
                 <div style={{ fontSize: '0.95rem', fontWeight: 900, color: '#f8fafc' }}>

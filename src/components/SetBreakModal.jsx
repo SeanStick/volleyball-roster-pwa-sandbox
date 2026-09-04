@@ -8,12 +8,12 @@ import {
   Pause,
   Clock,
   Shield,
-  Volleyball,
   CheckCircle2,
   Users,
   Sparkles,
   Shuffle
 } from 'lucide-react';
+import VolleyballIcon from './icons/VolleyballIcon';
 import confetti from 'canvas-confetti';
 
 export default function SetBreakModal({
@@ -264,7 +264,7 @@ export default function SetBreakModal({
                   cursor: 'pointer'
                 }}
               >
-                <Volleyball size={15} color="#10b981" />
+                <VolleyballIcon size={15} color="#10b981" />
                 <span>We Serve First</span>
               </button>
 

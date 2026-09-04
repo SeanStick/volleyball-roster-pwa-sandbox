@@ -4,7 +4,6 @@ import {
   RotateCcw,
   Sparkles,
   Shield,
-  Volleyball,
   ArrowRight,
   Compass,
   Check,
@@ -18,6 +17,7 @@ import {
   Film,
   Archive
 } from 'lucide-react';
+import VolleyballIcon from './icons/VolleyballIcon';
 import confetti from 'canvas-confetti';
 import { FORMATIONS_62_DATA } from '../services/formations62Data';
 import { FORMATION_ANIMATIONS } from '../services/formationAnimationsData';
@@ -630,7 +630,7 @@ export default function FormationsView({
           >
             {!isReceivePhase ? (
               <>
-                <Volleyball size={12} />
+                <VolleyballIcon size={12} />
                 <span>SERVING</span>
               </>
             ) : (
@@ -650,7 +650,7 @@ export default function FormationsView({
               className={`phase-btn ${!isReceivePhase ? 'active-serve' : ''}`}
               onClick={() => setPhase && setPhase('serve')}
             >
-              <Volleyball size={16} />
+              <VolleyballIcon size={16} />
               <span>Serving (Base Defense)</span>
             </button>
 
@@ -736,7 +736,7 @@ export default function FormationsView({
             style={isAnimationActive ? { background: 'linear-gradient(135deg, #f59e0b, #d97706)', borderColor: '#f59e0b' } : {}}
             title={isAnimationActive ? 'Rally Simulator is Active' : 'Switch to Interactive Board'}
           >
-            <Volleyball size={14} className={isPlaying ? 'anim-spin' : ''} />
+            <VolleyballIcon size={14} className={isPlaying ? 'anim-spin' : ''} />
             <span>{isAnimationActive ? '🎬 Rally Simulator: ON' : '🎬 Rally Simulator: OFF'}</span>
           </button>
 
@@ -958,7 +958,7 @@ export default function FormationsView({
                   border: `1px solid ${!isReceivePhase ? '#10b981' : '#3b82f6'}`
                 }}
               >
-                {!isReceivePhase ? <Volleyball size={12} /> : <Shield size={12} />}
+                {!isReceivePhase ? <VolleyballIcon size={12} /> : <Shield size={12} />}
                 <span>{!isReceivePhase ? 'WE ARE SERVING' : 'WE ARE RECEIVING'}</span>
               </span>
               <span style={{ fontSize: '0.78rem', color: '#cbd5e1', fontWeight: 800 }}>

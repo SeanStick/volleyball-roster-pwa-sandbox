@@ -13,7 +13,6 @@ import {
   CheckCircle,
   AlertTriangle,
   Plus,
-  Volleyball,
   Award,
   ArrowRight,
   GripVertical,
@@ -22,6 +21,7 @@ import {
   Archive,
   Flag
 } from 'lucide-react';
+import VolleyballIcon from './icons/VolleyballIcon';
 import confetti from 'canvas-confetti';
 import {
   FRONT_ROW_ZONES,
@@ -836,7 +836,7 @@ export default function CourtView({
                 flexShrink: 0
               }}
             >
-              <Volleyball size={20} />
+              <VolleyballIcon size={20} />
             </div>
             <div>
               <div style={{ fontSize: '0.92rem', fontWeight: 900, color: '#f8fafc' }}>
@@ -908,7 +908,7 @@ export default function CourtView({
           >
             {phase === 'serve' ? (
               <>
-                <Volleyball size={12} />
+                <VolleyballIcon size={12} />
                 <span>SERVING</span>
               </>
             ) : (
@@ -942,7 +942,7 @@ export default function CourtView({
               className={`phase-btn ${phase === 'serve' ? 'active-serve' : ''}`}
               onClick={() => setPhase('serve')}
             >
-              <Volleyball size={15} />
+              <VolleyballIcon size={15} />
               <span>Serving</span>
             </button>
 
@@ -1106,7 +1106,7 @@ export default function CourtView({
               }}
               title="Open the step-by-step match & lineup wizard"
             >
-              <Volleyball size={14} /> <span>Match Wizard</span>
+              <VolleyballIcon size={14} /> <span>Match Wizard</span>
             </button>
           )}
 

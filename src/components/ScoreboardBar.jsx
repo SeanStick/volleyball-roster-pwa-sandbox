@@ -19,10 +19,10 @@ import {
   ArrowLeftRight,
   Shield,
   Volume2,
-  AlertCircle,
-  Volleyball
+  AlertCircle
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
+import VolleyballIcon from './icons/VolleyballIcon';
 import QuickPointModal from './QuickPointModal';
 
 export default function ScoreboardBar({
@@ -310,7 +310,7 @@ export default function ScoreboardBar({
               }}
               title="Start New Match / Lineup Wizard"
             >
-              <Volleyball size={13} />
+              <VolleyballIcon size={13} />
               <span>Start Game</span>
             </button>
           )}
@@ -736,7 +736,7 @@ export default function ScoreboardBar({
               }}
               title="Start New Volleyball Match"
             >
-              <Volleyball size={13} />
+              <VolleyballIcon size={13} />
               <span>Start Game</span>
             </button>
           )}

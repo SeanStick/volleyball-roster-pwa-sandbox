@@ -1,5 +1,6 @@
 import React from 'react';
-import { Volleyball, Sparkles, UserCheck, ShieldAlert, X, ArrowRight, Award } from 'lucide-react';
+import { Sparkles, UserCheck, ShieldAlert, X, ArrowRight, Award } from 'lucide-react';
+import VolleyballIcon from './icons/VolleyballIcon';
 
 export default function LiberoServingPromptModal({
   isOpen,
@@ -38,7 +39,7 @@ export default function LiberoServingPromptModal({
               justifyContent: 'center',
               boxShadow: '0 4px 12px rgba(2, 132, 199, 0.4)'
             }}>
-              <Volleyball size={22} color="#ffffff" />
+              <VolleyballIcon size={22} color="#ffffff" />
             </div>
             <div>
               <h2 className="modal-title" style={{ fontSize: '1.15rem', color: '#38bdf8' }}>

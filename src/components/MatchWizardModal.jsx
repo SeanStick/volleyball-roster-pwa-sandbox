@@ -13,7 +13,6 @@ import {
   ArrowLeft,
   Users,
   Shield,
-  Volleyball,
   ChevronRight,
   Zap,
   Sliders,
@@ -22,6 +21,7 @@ import {
   HelpCircle,
   Plus
 } from 'lucide-react';
+import VolleyballIcon from './icons/VolleyballIcon';
 import confetti from 'canvas-confetti';
 import { FRONT_ROW_ZONES, BACK_ROW_ZONES, ZONE_LABELS } from '../services/volleyballRules';
 
@@ -279,7 +279,7 @@ export default function MatchWizardModal({
                 boxShadow: '0 4px 15px rgba(16, 185, 129, 0.4)'
               }}
             >
-              <Volleyball size={22} />
+              <VolleyballIcon size={22} />
             </div>
             <div>
               <h3 style={{ fontSize: '1.08rem', fontWeight: 900, color: '#f8fafc', margin: 0 }}>
@@ -849,7 +849,7 @@ export default function MatchWizardModal({
                     transition: 'all 0.15s ease'
                   }}
                 >
-                  <Volleyball size={28} color={servingFirst ? '#34d399' : '#94a3b8'} />
+                  <VolleyballIcon size={28} color={servingFirst ? '#34d399' : '#94a3b8'} />
                   <span style={{ fontWeight: 900, fontSize: '0.95rem' }}>We Serve First</span>
                   <span style={{ fontSize: '0.72rem', color: '#6ee7b7', textAlign: 'center' }}>
                     #{getPlayer(wizardLineup.pos1)?.number || '1'} {getPlayer(wizardLineup.pos1)?.name.split(' ')[0] || 'Player'} Serves in Zone 1

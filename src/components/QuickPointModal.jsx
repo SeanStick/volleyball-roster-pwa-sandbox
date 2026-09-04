@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { X, Trophy, AlertTriangle, Sparkles, User, Users, Volleyball, Shield, ArrowRight, Zap, Check, ShieldAlert, Footprints } from 'lucide-react';
+import { X, Trophy, AlertTriangle, Sparkles, User, Users, Shield, ArrowRight, Zap, Check, ShieldAlert, Footprints } from 'lucide-react';
 import {
   VOLLEYBALL_ERRORS,
   ERROR_CATEGORIES,

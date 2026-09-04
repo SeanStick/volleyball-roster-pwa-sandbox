@@ -6,7 +6,6 @@ import {
   FastForward,
   ChevronRight,
   ChevronLeft,
-  Volleyball,
   Repeat,
   Sparkles,
   Info,

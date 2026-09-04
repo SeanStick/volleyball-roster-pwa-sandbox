@@ -4,7 +4,6 @@ import {
   Trophy,
   AlertTriangle,
   Sparkles,
-  Volleyball,
   Shield,
   RotateCw,
   ArrowRight,
@@ -14,6 +13,7 @@ import {
   User,
   Info
 } from 'lucide-react';
+import VolleyballIcon from './icons/VolleyballIcon';
 import { VOLLEYBALL_ERRORS, ERROR_CATEGORIES, POINT_EARNED_TYPES } from '../services/matchStatsService';
 import { ZONE_LABELS } from '../services/volleyballRules';
 
@@ -148,7 +148,7 @@ export default function RallyOutcomeModal({
         <div className="rally-modal-header">
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.65rem' }}>
             <div className={`rally-phase-avatar ${isReceivePhase ? 'receive' : 'serve'}`}>
-              {isReceivePhase ? <Shield size={20} color="#34d399" /> : <Volleyball size={20} color="#60a5fa" />}
+              {isReceivePhase ? <Shield size={20} color="#34d399" /> : <VolleyballIcon size={20} color="#60a5fa" />}
             </div>
             <div>
               <div style={{ display: 'flex', alignItems: 'center', gap: '0.45rem' }}>

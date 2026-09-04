@@ -1,5 +1,6 @@
 import React from 'react';
-import { Plus, Database, Volleyball, Layers, Share2, Dumbbell, PenTool } from 'lucide-react';
+import { Plus, Database, Layers, Share2, Dumbbell, PenTool } from 'lucide-react';
+import VolleyballIcon from './icons/VolleyballIcon';
 import UserMenu from './UserMenu';
 
 export default function Navbar({
@@ -25,7 +26,7 @@ export default function Navbar({
     <header className="header-glass">
       <div className="brand-wrapper">
         <div className="brand-icon">
-          <Volleyball size={20} color="#ffffff" />
+          <VolleyballIcon size={20} color="#ffffff" />
         </div>
         
         <div style={{ display: 'flex', flexDirection: 'column', minWidth: 0, overflow: 'hidden' }}>

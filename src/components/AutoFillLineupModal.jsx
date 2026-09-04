@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import {
   Sparkles,
-  Volleyball,
   Shield,
   RotateCw,
   CheckCircle,
@@ -9,6 +8,7 @@ import {
   UserCheck,
   Info
 } from 'lucide-react';
+import VolleyballIcon from './icons/VolleyballIcon';
 import confetti from 'canvas-confetti';
 import { generate62LineupForServeState, ZONE_LABELS } from '../services/volleyballRules';
 
@@ -109,7 +109,7 @@ export default function AutoFillLineupModal({
               >
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                   <span style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', fontWeight: 800, color: '#93c5fd', fontSize: '0.95rem' }}>
-                    <Volleyball size={18} color="#3b82f6" />
+                    <VolleyballIcon size={18} color="#3b82f6" />
                     Team Serves 1st
                   </span>
                   {serveState === 'serve' && <CheckCircle size={16} color="#3b82f6" />}

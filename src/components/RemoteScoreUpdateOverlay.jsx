@@ -1,7 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import {
   X,
-  Volleyball,
   User,
   Shield,
   Zap,
@@ -15,6 +14,7 @@ import {
   Flame,
   ArrowRight
 } from 'lucide-react';
+import VolleyballIcon from './icons/VolleyballIcon';
 import { soundEffectsService } from '../services/soundEffectsService';
 
 export default function RemoteScoreUpdateOverlay({
@@ -108,14 +108,14 @@ export default function RemoteScoreUpdateOverlay({
           badge: '+1 POINT FOR US',
           title: details.earnedTypeName,
           desc: playerStr ? `${details.earnedTypeName} ${playerStr} • Entered by ${scorerName}` : `Point awarded to our team • Entered by ${scorerName}`,
-          icon: <Volleyball size={26} color="#10b981" />
+          icon: <VolleyballIcon size={26} color="#10b981" />
         };
       }
       return {
         badge: '+1 POINT FOR US',
         title: 'Point for Our Team (US)',
         desc: `Direct point entered by ${scorerName}.`,
-        icon: <Volleyball size={26} color="#10b981" />
+        icon: <VolleyballIcon size={26} color="#10b981" />
       };
     }
 

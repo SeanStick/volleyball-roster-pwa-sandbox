@@ -3,7 +3,6 @@ import {
   X,
   Sparkles,
   Shield,
-  Volleyball,
   CheckCircle2,
   AlertTriangle,
   Users,
@@ -20,6 +19,7 @@ import {
   Info,
   ChevronRight
 } from 'lucide-react';
+import VolleyballIcon from './icons/VolleyballIcon';
 import confetti from 'canvas-confetti';
 import {
   FRONT_ROW_ZONES,
@@ -308,7 +308,7 @@ export default function LineupStudioModal({
                 boxShadow: '0 4px 14px rgba(168, 85, 247, 0.4)'
               }}
             >
-              <Volleyball size={20} />
+              <VolleyballIcon size={20} />
             </div>
             <div>
               <div style={{ fontSize: '1.1rem', fontWeight: 950, color: '#ffffff' }}>

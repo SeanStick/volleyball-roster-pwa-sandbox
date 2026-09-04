@@ -80,9 +80,14 @@ class AppErrorBoundary extends React.Component {
           <h2 style={{ fontSize: '1.4rem', fontWeight: 800, marginBottom: '0.5rem', color: '#ff6b35' }}>
             Go Stand Over There
           </h2>
-          <p style={{ color: '#94a3b8', fontSize: '0.9rem', maxWidth: '380px', marginBottom: '1.5rem', lineHeight: 1.5 }}>
+          <p style={{ color: '#94a3b8', fontSize: '0.9rem', maxWidth: '380px', marginBottom: '1rem', lineHeight: 1.5 }}>
             An update was loaded. Tap below to refresh your app and get the latest version.
           </p>
+          {this.state.error?.message && (
+            <div style={{ color: '#f87171', fontSize: '0.74rem', marginBottom: '1.2rem', maxWidth: '380px', wordBreak: 'break-word', background: 'rgba(239, 68, 68, 0.15)', border: '1px solid rgba(239, 68, 68, 0.3)', padding: '0.45rem 0.65rem', borderRadius: '6px' }}>
+              {this.state.error.message}
+            </div>
+          )}
           <button
             onClick={this.handleHardRefresh}
             style={{

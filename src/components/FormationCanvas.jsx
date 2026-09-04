@@ -1,5 +1,5 @@
 import React, { useRef, useState, useCallback } from 'react';
-import { Volleyball, ArrowUpRight, Shield } from 'lucide-react';
+import { ArrowUpRight, Shield } from 'lucide-react';
 
 export default function FormationCanvas({
   positions = {},

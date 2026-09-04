@@ -8,9 +8,43 @@ const TEAMS_LIST_KEY = 'gostandoverthere_teams_list_v1';
 const ACTIVE_TEAM_ID_KEY = 'gostandoverthere_active_team_id_v1';
 const CACHED_USER_KEY = 'gostandoverthere_cached_user_v1';
 const DAY_SCHEDULE_KEY = 'gostandoverthere_day_schedule_v1';
+const SAVED_LINEUPS_KEY = 'gostandoverthere_saved_lineups_v1';
 const LEGACY_ROSTER_KEY = 'spikesync_volleyball_roster_v1';
 const LEGACY_TEAM_KEY = 'spikesync_team_settings_v1';
 export const DEFAULT_TEAM_ID = 'team-default';
+
+export const DEFAULT_SAVED_LINEUPS = [
+  {
+    id: 'preset-default-62',
+    name: 'Tournament Starting 6-2',
+    description: 'Textbook 6-2 rotation: S1 serving first in Zone 1, S2 in Zone 4, and Libero replacing Middle 2.',
+    lineup: {
+      pos1: 'p-1', // Reese Stickrod (Setter 1)
+      pos2: 'p-2', // Gracyn Brandt (OH 1)
+      pos3: 'p-3', // Lexi Wright (Middle 1)
+      pos4: 'p-6', // Baylee King (Setter 2 / Opposite)
+      pos5: 'p-7', // Aliza Jackson (OH 2)
+      pos6: 'p-4'  // Tierney Hicks (Middle 2 / DS)
+    },
+    liberoId: 'p-5', // Lucy Wetrich (Libero)
+    createdAt: '2026-08-20T12:00:00.000Z'
+  },
+  {
+    id: 'preset-defense-heavy',
+    name: 'Defensive Boost (DS Back-Row)',
+    description: 'Defensive configuration with DS Tierney Hicks covering back-row receive alongside Libero Lucy Wetrich.',
+    lineup: {
+      pos1: 'p-1',
+      pos2: 'p-2',
+      pos3: 'p-3',
+      pos4: 'p-6',
+      pos5: 'p-4',
+      pos6: 'p-7'
+    },
+    liberoId: 'p-5',
+    createdAt: '2026-08-20T12:00:00.000Z'
+  }
+];
 
 export const DEFAULT_DAY_SCHEDULE = [
   { id: 'sched-1', matchStage: 'Match 1', opponentName: 'Thunderbolts VC', courtNumber: 'Court 1', time: '08:00 AM', format: 'Best of 3 (25, 25, 15)', status: 'completed' },
@@ -640,6 +674,64 @@ export const storageService = {
     }
   },
 
+  getSavedLineups() {
+    try {
+      const data = localStorage.getItem(SAVED_LINEUPS_KEY);
+      if (!data) {
+        this.saveSavedLineups(DEFAULT_SAVED_LINEUPS);
+        return DEFAULT_SAVED_LINEUPS;
+      }
+      const parsed = JSON.parse(data);
+      if (Array.isArray(parsed) && parsed.length > 0) {
+        return parsed;
+      }
+      return DEFAULT_SAVED_LINEUPS;
+    } catch (e) {
+      console.error('Error reading saved lineups:', e);
+      return DEFAULT_SAVED_LINEUPS;
+    }
+  },
+
+  saveSavedLineups(lineupsList) {
+    try {
+      localStorage.setItem(SAVED_LINEUPS_KEY, JSON.stringify(lineupsList));
+    } catch (e) {
+      console.error('Error saving saved lineups:', e);
+    }
+  },
+
+  saveLineupPreset(name, lineupObj, liberoId = null, description = '') {
+    try {
+      const existing = this.getSavedLineups();
+      const newPreset = {
+        id: `preset-${Date.now()}`,
+        name: name.trim() || `Lineup Preset ${existing.length + 1}`,
+        description: description.trim() || 'Custom 6-2 configuration',
+        lineup: { ...lineupObj },
+        liberoId: liberoId || null,
+        createdAt: new Date().toISOString()
+      };
+      const updated = [newPreset, ...existing];
+      this.saveSavedLineups(updated);
+      return newPreset;
+    } catch (e) {
+      console.error('Error creating lineup preset:', e);
+      return null;
+    }
+  },
+
+  deleteLineupPreset(presetId) {
+    try {
+      const existing = this.getSavedLineups();
+      const filtered = existing.filter(p => p.id !== presetId);
+      this.saveSavedLineups(filtered);
+      return filtered;
+    } catch (e) {
+      console.error('Error deleting lineup preset:', e);
+      return [];
+    }
+  },
+
   getFullTeamBundle(teamId = null) {
     const targetId = teamId || this.getActiveTeamId();
     return {
@@ -650,6 +742,7 @@ export const storageService = {
       matchStats: this.getMatchStats(),
       matchHistory: this.getMatchHistory(),
       daySchedule: this.getDaySchedule(),
+      savedLineups: this.getSavedLineups(),
       updatedAt: new Date().toISOString()
     };
   },
@@ -662,6 +755,7 @@ export const storageService = {
     if (bundle.matchStats) this.saveMatchStats(bundle.matchStats);
     if (Array.isArray(bundle.matchHistory)) this.saveMatchHistory(bundle.matchHistory);
     if (Array.isArray(bundle.daySchedule)) this.saveDaySchedule(bundle.daySchedule);
+    if (Array.isArray(bundle.savedLineups)) this.saveSavedLineups(bundle.savedLineups);
     if (bundle.teamId) this.setActiveTeamId(bundle.teamId);
   }
 };

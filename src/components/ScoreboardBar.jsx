@@ -41,6 +41,7 @@ export default function ScoreboardBar({
   onOpenGameCenter,
   onOpenSetBreak,
   onOpenMatchRecap,
+  onOpenLineupStudio,
   onSelectSetNumber,
   onCallTimeout,
   onOpenSubModal,

@@ -6,6 +6,7 @@ export default function Navbar({
   onOpenAddModal,
   onOpenImportExportModal,
   onOpenMatchWizard,
+  onOpenLineupStudio,
   onOpenDrillsModal,
   onOpenWhiteboard,
   user,
@@ -168,6 +169,7 @@ export default function Navbar({
           onOpenShareModal={onOpenShareModal}
           onOpenFirebaseSettingsModal={onOpenFirebaseSettingsModal}
           onOpenMatchWizard={onOpenMatchWizard}
+          onOpenLineupStudio={onOpenLineupStudio}
           onOpenWhiteboard={onOpenWhiteboard}
           onOpenDrills={onOpenDrillsModal}
           onManualSync={onManualSync}

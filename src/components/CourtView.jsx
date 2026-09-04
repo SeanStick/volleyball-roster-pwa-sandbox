@@ -71,6 +71,7 @@ export default function CourtView({
   onUpdatePlayerPosition,
   matchStats,
   onOpenMatchWizard,
+  onOpenLineupStudio,
   onRallyWonByUs,
   onRallyWonByOpponent,
   onStartNewSet,
@@ -1110,6 +1111,27 @@ export default function CourtView({
           )}
 
           {/* Auto-fill & Clear Actions */}
+          {onOpenLineupStudio && (
+            <button
+              type="button"
+              className="btn btn-sm"
+              onClick={onOpenLineupStudio}
+              style={{
+                background: 'linear-gradient(135deg, #a855f7 0%, #7c3aed 100%)',
+                borderColor: '#a855f7',
+                color: '#ffffff',
+                fontWeight: 800,
+                fontSize: '0.8rem',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '0.35rem',
+                boxShadow: '0 3px 12px rgba(168, 85, 247, 0.35)'
+              }}
+              title="Open 6-2 Lineup Studio & Preset Manager"
+            >
+              <Sparkles size={14} /> <span>Lineup Studio</span>
+            </button>
+          )}
           <button className="btn btn-secondary btn-sm" onClick={handleAutoFillStarters} title="Auto-fill starting lineup with smart volleyball roles">
             <Sparkles size={14} color="#f59e0b" /> Auto-Fill Starting 6
           </button>

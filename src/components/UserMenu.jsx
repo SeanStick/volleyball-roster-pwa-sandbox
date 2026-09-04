@@ -31,6 +31,7 @@ export default function UserMenu({
   onOpenShareModal,
   onOpenFirebaseSettingsModal,
   onOpenMatchWizard,
+  onOpenLineupStudio,
   onOpenWhiteboard,
   onOpenDrills,
   onManualSync,
@@ -640,6 +641,42 @@ export default function UserMenu({
               >
                 <Volleyball size={16} />
                 <span>Start Match & Lineup Wizard</span>
+              </button>
+            )}
+
+            {/* 📋 6-2 Make a Lineup & Rotation Studio */}
+            {onOpenLineupStudio && (
+              <button
+                type="button"
+                onClick={() => {
+                  setIsOpen(false);
+                  onOpenLineupStudio();
+                }}
+                style={{
+                  width: '100%',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '0.6rem',
+                  padding: '0.6rem 0.75rem',
+                  background: 'linear-gradient(135deg, rgba(139, 92, 246, 0.2), rgba(124, 58, 237, 0.3))',
+                  border: '1px solid rgba(139, 92, 246, 0.4)',
+                  borderRadius: 'var(--radius-sm)',
+                  color: '#c4b5fd',
+                  fontSize: '0.84rem',
+                  fontWeight: 800,
+                  cursor: 'pointer',
+                  textAlign: 'left',
+                  boxShadow: '0 2px 8px rgba(139, 92, 246, 0.2)',
+                  marginBottom: '3px'
+                }}
+              >
+                <Layers size={16} color="#a78bfa" />
+                <div style={{ display: 'flex', flexDirection: 'column' }}>
+                  <span>6-2 Lineup Studio</span>
+                  <span style={{ fontSize: '0.66rem', color: '#ddd6fe', fontWeight: 500 }}>
+                    AI stats, presets & injury sub
+                  </span>
+                </div>
               </button>
             )}
 

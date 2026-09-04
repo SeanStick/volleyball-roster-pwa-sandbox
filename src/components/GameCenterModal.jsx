@@ -58,6 +58,7 @@ export default function GameCenterModal({
   onDeleteMatchHistory,
   onOpenPdfExport,
   onOpenMatchWizard,
+  onOpenLineupStudio,
   roster = [],
   lineup = {}
 }) {
@@ -627,6 +628,35 @@ export default function GameCenterModal({
                   <span>Launch Tournament Match</span>
                 </button>
               </div>
+
+              {/* 6-2 Lineup Studio Link */}
+              {onOpenLineupStudio && (
+                <div style={{ textAlign: 'center', marginTop: '0.2rem' }}>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      onClose();
+                      onOpenLineupStudio();
+                    }}
+                    style={{
+                      background: 'rgba(168, 85, 247, 0.15)',
+                      border: '1px solid rgba(168, 85, 247, 0.4)',
+                      borderRadius: '10px',
+                      padding: '0.5rem 0.85rem',
+                      color: '#d8b4fe',
+                      fontSize: '0.8rem',
+                      fontWeight: 800,
+                      cursor: 'pointer',
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: '0.4rem'
+                    }}
+                  >
+                    <Sparkles size={14} color="#c084fc" />
+                    <span>Open 6-2 Lineup Studio & Preset Builder ➔</span>
+                  </button>
+                </div>
+              )}
 
               {/* Advanced Wizard Link */}
               {onOpenMatchWizard && (

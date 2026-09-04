@@ -328,6 +328,47 @@ export function validate62Formation(lineup = {}, roster = []) {
   const issues = [];
   const suggestedRoleUpdates = [];
 
+  // 1. Check for Duplicate Players across zones
+  const seenPlayerIds = new Set();
+  Object.entries(lineup).forEach(([zoneKey, pId]) => {
+    if (!pId) return;
+    if (seenPlayerIds.has(pId)) {
+      const p = getPlayer(pId);
+      issues.push({
+        type: 'duplicate_player',
+        severity: 'error',
+        message: `Duplicate Player Violation: ${p?.name || 'Player'} is assigned to multiple zones simultaneously.`
+      });
+    }
+    seenPlayerIds.add(pId);
+  });
+
+  // 2. Check for Libero in Front-Row (Rule 19.3.1)
+  FRONT_ROW_ZONES.forEach(zk => {
+    const p = players[zk];
+    if (p && (p.position === 'Libero' || p.isLibero)) {
+      issues.push({
+        type: 'libero_front_row',
+        severity: 'error',
+        zoneKey: zk,
+        message: `Rule 19.3.1 Violation: ${p.name} is a Libero and cannot be placed in front-row ${ZONE_LABELS[zk]?.name}.`
+      });
+    }
+  });
+
+  // 3. Check for Unavailable / Injured players in lineup
+  Object.entries(players).forEach(([zk, p]) => {
+    if (p && (p.status === 'Injured' || p.status === 'Absent' || p.status === 'Out')) {
+      issues.push({
+        type: 'player_unavailable',
+        severity: 'warning',
+        zoneKey: zk,
+        playerId: p.id,
+        message: `${p.name} in ${ZONE_LABELS[zk]?.name} is currently marked as ${p.status}.`
+      });
+    }
+  });
+
   // Verify all 6 slots are filled
   const filledSlots = Object.entries(players).filter(([k, v]) => Boolean(v));
   if (filledSlots.length < 6) {
@@ -336,39 +377,37 @@ export function validate62Formation(lineup = {}, roster = []) {
       isValid62: false,
       isValid61: false,
       isComplete: false,
-      issues: [{ type: 'incomplete_lineup', severity: 'error', message: `Lineup has only ${filledSlots.length}/6 positions assigned.` }],
+      issues: [{ type: 'incomplete_lineup', severity: 'error', message: `Lineup has only ${filledSlots.length}/6 positions assigned.` }, ...issues],
       pairsSummary: null,
       autoCorrectLineup: fallback62,
       suggestedRoleUpdates: []
     };
   }
 
-  // Normalize role keys
-  const getNormRole = (p) => {
-    if (!p) return 'UNKNOWN';
-    if (p.position === 'Setter') return 'S';
-    if (p.position === 'Opposite Hitter' || p.position === 'Right Side') return 'RS';
-    if (p.position === 'Outside Hitter') return 'OH';
-    if (p.position === 'Middle Blocker') return 'MB';
-    if (p.position === 'Libero' || p.isLibero) return 'L';
-    if (p.position === 'Defensive Specialist') return 'DS';
-    return p.position || 'Unknown';
-  };
-
-  const roles = {
-    pos1: getNormRole(players.pos1),
-    pos2: getNormRole(players.pos2),
-    pos3: getNormRole(players.pos3),
-    pos4: getNormRole(players.pos4),
-    pos5: getNormRole(players.pos5),
-    pos6: getNormRole(players.pos6),
+  // Role matching supporting both Primary AND Secondary positions
+  const hasRole = (p, targetRole) => {
+    if (!p) return false;
+    const prim = (p.position || '').toLowerCase();
+    const sec = (p.secondaryPosition || '').toLowerCase();
+    if (targetRole === 'setter') {
+      return prim.includes('setter') || prim.includes('opposite') || prim.includes('right side') ||
+             sec.includes('setter') || sec.includes('right side') || sec.includes('opposite');
+    }
+    if (targetRole === 'outside') {
+      return prim.includes('outside') || sec.includes('outside');
+    }
+    if (targetRole === 'middle') {
+      return prim.includes('middle') || prim.includes('libero') || p.isLibero || prim.includes('defensive') ||
+             sec.includes('middle') || sec.includes('defensive') || sec.includes('libero');
+    }
+    return false;
   };
 
   // Check 3-zone diagonal pairs (opposite across court)
   const pairs = [
-    { name: 'Pair 1 (Zones 1 ⇄ 4)', posA: 'pos1', posB: 'pos4', pA: players.pos1, pB: players.pos4, rA: roles.pos1, rB: roles.pos4 },
-    { name: 'Pair 2 (Zones 2 ⇄ 5)', posA: 'pos2', posB: 'pos5', pA: players.pos2, pB: players.pos5, rA: roles.pos2, rB: roles.pos5 },
-    { name: 'Pair 3 (Zones 3 ⇄ 6)', posA: 'pos3', posB: 'pos6', pA: players.pos3, pB: players.pos6, rA: roles.pos3, rB: roles.pos6 }
+    { name: 'Pair 1 (Zones 1 ⇄ 4)', posA: 'pos1', posB: 'pos4', pA: players.pos1, pB: players.pos4 },
+    { name: 'Pair 2 (Zones 2 ⇄ 5)', posA: 'pos2', posB: 'pos5', pA: players.pos2, pB: players.pos5 },
+    { name: 'Pair 3 (Zones 3 ⇄ 6)', posA: 'pos3', posB: 'pos6', pA: players.pos3, pB: players.pos6 }
   ];
 
   let setterPair = null;
@@ -376,10 +415,9 @@ export function validate62Formation(lineup = {}, roster = []) {
   let middlePair = null;
 
   for (const pair of pairs) {
-    const isSetterPair = (pair.rA === 'S' || pair.rA === 'RS') && (pair.rB === 'S' || pair.rB === 'RS');
-    const bothOH = pair.rA === 'OH' && pair.rB === 'OH';
-    const bothMBorL = (pair.rA === 'MB' || pair.rA === 'L' || pair.rA === 'DS') &&
-                      (pair.rB === 'MB' || pair.rB === 'L' || pair.rB === 'DS');
+    const isSetterPair = hasRole(pair.pA, 'setter') && hasRole(pair.pB, 'setter');
+    const bothOH = hasRole(pair.pA, 'outside') && hasRole(pair.pB, 'outside');
+    const bothMBorL = hasRole(pair.pA, 'middle') && hasRole(pair.pB, 'middle');
 
     if (isSetterPair) {
       setterPair = pair;

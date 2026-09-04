@@ -43,6 +43,7 @@ import DrillCenterModal from './components/DrillCenterModal';
 import GameCenterModal from './components/GameCenterModal';
 import SetBreakModal from './components/SetBreakModal';
 import MatchRecapModal from './components/MatchRecapModal';
+import LineupStudioModal from './components/LineupStudioModal';
 import { storageService, DEFAULT_TEAM_ID } from './services/storageService';
 import { firebaseService } from './services/firebaseService';
 import { rotateLineupClockwise, checkLineupFrontRowLiberoViolation } from './services/volleyballRules';
@@ -86,6 +87,8 @@ export default function App() {
   const [isMatchRecapOpen, setIsMatchRecapOpen] = useState(false);
   const [lastCompletedSet, setLastCompletedSet] = useState(null);
   const [daySchedule, setDaySchedule] = useState(() => storageService.getDaySchedule());
+  const [isLineupStudioOpen, setIsLineupStudioOpen] = useState(false);
+  const [savedLineupPresets, setSavedLineupPresets] = useState(() => storageService.getSavedLineups());
   const [isFirebaseSettingsModalOpen, setIsFirebaseSettingsModalOpen] = useState(false);
   const [isPlayerModalOpen, setIsPlayerModalOpen] = useState(false);
   const [playerToEdit, setPlayerToEdit] = useState(null);
@@ -200,6 +203,7 @@ export default function App() {
       matchStats,
       matchHistory,
       daySchedule,
+      savedLineups: savedLineupPresets,
       updatedAt: now,
       updatedByDeviceId: currentDeviceId,
       ...bundleOverrides
@@ -217,7 +221,7 @@ export default function App() {
       console.error('Immediate sync error:', err);
       setSyncStatus('error');
     });
-  }, [user, activeTeamId, teams, teamSettings, roster, lineup, startingLineup, rotation, phase, liberoExchanges, liberoServingRotation, subHistory, maxSubs, enforcePositionLock, matchStats, matchHistory, daySchedule, currentDeviceId]);
+  }, [user, activeTeamId, teams, teamSettings, roster, lineup, startingLineup, rotation, phase, liberoExchanges, liberoServingRotation, subHistory, maxSubs, enforcePositionLock, matchStats, matchHistory, daySchedule, savedLineupPresets, currentDeviceId]);
 
   // -------------------------------------------------------------
   // Check URL Join Invite Parameter on Startup (?join=VB-CODE)
@@ -463,7 +467,13 @@ export default function App() {
           storageService.saveDaySchedule(cloudTeam.daySchedule);
         }
 
-        // 7. Share Code & Members
+        // 7. Saved Lineups Presets
+        if (Array.isArray(cloudTeam.savedLineups)) {
+          setSavedLineupPresets(cloudTeam.savedLineups);
+          storageService.saveSavedLineups(cloudTeam.savedLineups);
+        }
+
+        // 8. Share Code & Members
         if (cloudTeam.shareCode) {
           setTeams(prevTeams => prevTeams.map(t => t.id === cloudTeam.id ? { ...t, shareCode: cloudTeam.shareCode, members: cloudTeam.members || t.members } : t));
         }
@@ -1463,6 +1473,76 @@ export default function App() {
     });
   };
 
+  const handleSaveLineupPreset = (name, lineupObj, liberoId = null, description = '') => {
+    const newPreset = storageService.saveLineupPreset(name, lineupObj, liberoId, description);
+    if (newPreset) {
+      const updated = storageService.getSavedLineups();
+      setSavedLineupPresets(updated);
+      setSyncToast({
+        title: '💾 Lineup Preset Saved',
+        message: `Saved "${name}" to team presets.`,
+        type: 'new_match'
+      });
+      syncCloudImmediately({
+        savedLineups: updated
+      });
+    }
+  };
+
+  const handleDeleteLineupPreset = (presetId) => {
+    const updated = storageService.deleteLineupPreset(presetId);
+    setSavedLineupPresets(updated);
+    syncCloudImmediately({
+      savedLineups: updated
+    });
+  };
+
+  const handleApplyLineupFromStudio = (newLineup, newLiberoId = null) => {
+    setLineup(newLineup);
+    setStartingLineup(newLineup);
+    setRotation(1);
+    setPhase('serve');
+
+    const nextExchanges = {};
+    if (newLiberoId) {
+      const mbOnBench = roster.find(p => p.position === 'Middle Blocker' && !Object.values(newLineup).includes(p.id));
+      if (mbOnBench) {
+        nextExchanges[newLiberoId] = mbOnBench.id;
+      }
+    }
+    setLiberoExchanges(nextExchanges);
+    setLiberoServingRotation(null);
+
+    setSyncToast({
+      title: '📋 Lineup Applied to Match',
+      message: 'Starting 6 updated to selected 6-2 rotation.',
+      type: 'new_match'
+    });
+
+    syncCloudImmediately({
+      matchState: {
+        lineup: newLineup,
+        startingLineup: newLineup,
+        rotation: 1,
+        phase: 'serve',
+        liberoExchanges: nextExchanges,
+        liberoServingRotation: null,
+        subHistory: [],
+        maxSubs,
+        enforcePositionLock
+      }
+    });
+  };
+
+  const handleUpdateRosterPlayerStatus = (playerId, updates) => {
+    const updatedRoster = roster.map(p => p.id === playerId ? { ...p, ...updates } : p);
+    setRoster(updatedRoster);
+    storageService.saveRoster(updatedRoster);
+    syncCloudImmediately({
+      roster: updatedRoster
+    });
+  };
+
   const handleResetFullMatch = () => {
     const fresh = storageService.resetFullMatch();
     setMatchStats(fresh);
@@ -1628,6 +1708,7 @@ export default function App() {
         onOpenAddModal={handleOpenAdd}
         onOpenImportExportModal={() => setIsImportExportModalOpen(true)}
         onOpenMatchWizard={() => setIsMatchWizardOpen(true)}
+        onOpenLineupStudio={() => setIsLineupStudioOpen(true)}
         onOpenDrillsModal={() => setActiveTab('drills')}
         onOpenWhiteboard={() => setActiveTab('whiteboard')}
         user={user}
@@ -1775,6 +1856,7 @@ export default function App() {
           onSelectSetNumber={handleSelectSetNumber}
           onCallTimeout={handleCallTimeout}
           onOpenSubModal={() => setActiveTab('court')}
+          onOpenLineupStudio={() => setIsLineupStudioOpen(true)}
           subHistory={subHistory}
           maxSubs={maxSubs}
           lineup={lineup}
@@ -2000,6 +2082,7 @@ export default function App() {
           setEnforcePositionLock={setEnforcePositionLock}
           onUpdatePlayerPosition={handleUpdatePlayerPosition}
           matchStats={matchStats}
+          onOpenLineupStudio={() => setIsLineupStudioOpen(true)}
           onOpenMatchWizard={() => setIsMatchWizardOpen(true)}
           onRallyWonByUs={handleRallyWonByUs}
           onRallyWonByOpponent={handleRallyWonByOpponent}
@@ -2179,6 +2262,7 @@ export default function App() {
         onDeleteMatchHistory={handleDeleteMatchHistory}
         onOpenPdfExport={() => setActiveTab('stats')}
         onOpenMatchWizard={() => setIsMatchWizardOpen(true)}
+        onOpenLineupStudio={() => setIsLineupStudioOpen(true)}
         roster={roster}
         lineup={lineup}
       />
@@ -2243,6 +2327,22 @@ export default function App() {
       <DrillCenterModal
         isOpen={isDrillsModalOpen}
         onClose={() => setIsDrillsModalOpen(false)}
+      />
+
+      {/* 📋 6-2 Make a Lineup & Rotation Studio */}
+      <LineupStudioModal
+        isOpen={isLineupStudioOpen}
+        onClose={() => setIsLineupStudioOpen(false)}
+        roster={roster}
+        lineup={lineup}
+        startingLineup={startingLineup}
+        matchStats={matchStats}
+        matchHistory={matchHistory}
+        savedPresets={savedLineupPresets}
+        onSavePreset={handleSaveLineupPreset}
+        onDeletePreset={handleDeleteLineupPreset}
+        onApplyLineup={handleApplyLineupFromStudio}
+        onUpdateRosterPlayer={handleUpdateRosterPlayerStatus}
       />
     </div>
   );

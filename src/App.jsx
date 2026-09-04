@@ -2123,6 +2123,10 @@ export default function App() {
           setEnforcePositionLock={setEnforcePositionLock}
           onUpdatePlayerPosition={handleUpdatePlayerPosition}
           matchStats={matchStats}
+          savedPresets={savedLineupPresets}
+          onSavePreset={handleSaveLineupPreset}
+          onDeletePreset={handleDeleteLineupPreset}
+          onApplyPresetLineup={handleApplyLineupFromStudio}
           onOpenLineupStudio={() => setIsLineupStudioOpen(true)}
           onOpenMatchWizard={() => setIsMatchWizardOpen(true)}
           onRallyWonByUs={handleRallyWonByUs}

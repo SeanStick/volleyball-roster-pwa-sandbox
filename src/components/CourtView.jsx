@@ -19,7 +19,8 @@ import {
   Move,
   Check,
   Archive,
-  Flag
+  Flag,
+  FolderOpen
 } from 'lucide-react';
 import VolleyballIcon from './icons/VolleyballIcon';
 import confetti from 'canvas-confetti';
@@ -47,6 +48,7 @@ import SubstitutionLogModal from './SubstitutionLogModal';
 import Formation62MismatchModal from './Formation62MismatchModal';
 import AutoFillLineupModal from './AutoFillLineupModal';
 import RallyOutcomeModal from './RallyOutcomeModal';
+import LoadSavedLineupModal from './LoadSavedLineupModal';
 
 export default function CourtView({
   roster,
@@ -70,6 +72,10 @@ export default function CourtView({
   setEnforcePositionLock,
   onUpdatePlayerPosition,
   matchStats,
+  savedPresets = [],
+  onApplyPresetLineup,
+  onSavePreset,
+  onDeletePreset,
   onOpenMatchWizard,
   onOpenLineupStudio,
   onRallyWonByUs,
@@ -83,6 +89,9 @@ export default function CourtView({
   // 6-2 System Validation
   const validation62 = validate62Formation(lineup, roster);
   const [is62ModalOpen, setIs62ModalOpen] = useState(false);
+
+  // Load Saved Lineup Preset Modal
+  const [isLoadLineupModalOpen, setIsLoadLineupModalOpen] = useState(false);
 
   // Archive success toast
   const [isArchiveSuccess, setIsArchiveSuccess] = useState(false);
@@ -942,6 +951,30 @@ export default function CourtView({
             </button>
           )}
 
+          {/* 📂 Load Saved Lineup Preset Quick Action */}
+          <button
+            type="button"
+            className="btn btn-sm"
+            onClick={() => setIsLoadLineupModalOpen(true)}
+            style={{
+              background: 'linear-gradient(135deg, rgba(59, 130, 246, 0.25), rgba(30, 58, 138, 0.35))',
+              border: '1.5px solid rgba(59, 130, 246, 0.6)',
+              color: '#93c5fd',
+              fontWeight: 800,
+              fontSize: '0.78rem',
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '0.35rem',
+              padding: '0.3rem 0.65rem',
+              borderRadius: '8px',
+              cursor: 'pointer'
+            }}
+            title="Load a saved lineup preset directly into the 6-position court"
+          >
+            <FolderOpen size={13} color="#60a5fa" />
+            <span>Load Lineup {savedPresets?.length > 0 ? `(${savedPresets.length})` : ''}</span>
+          </button>
+
           {/* Small Serving / Receiving Phase Indicator */}
           <div
             className={`phase-status-indicator ${phase === 'serve' ? 'is-serving' : 'is-receiving'}`}
@@ -1190,6 +1223,16 @@ export default function CourtView({
               <Sparkles size={14} /> <span>Lineup Studio</span>
             </button>
           )}
+          <button
+            type="button"
+            className="btn btn-secondary btn-sm"
+            onClick={() => setIsLoadLineupModalOpen(true)}
+            style={{ borderColor: 'rgba(59, 130, 246, 0.5)', color: '#93c5fd' }}
+            title="Load a saved lineup preset into the 6 position court"
+          >
+            <FolderOpen size={14} color="#60a5fa" />
+            <span>Load Lineup {savedPresets?.length > 0 ? `(${savedPresets.length})` : ''}</span>
+          </button>
           <button className="btn btn-secondary btn-sm" onClick={handleAutoFillStarters} title="Auto-fill starting lineup with smart volleyball roles">
             <Sparkles size={14} color="#f59e0b" /> Auto-Fill Starting 6
           </button>
@@ -1531,6 +1574,39 @@ export default function CourtView({
         onRallyWonByOpponent={onRallyWonByOpponent}
         onDirectAdvanceOnly={handleDirectAdvanceOnly}
       />
+
+      {/* 9. Load Saved Lineup Preset Modal */}
+      {isLoadLineupModalOpen && (
+        <LoadSavedLineupModal
+          isOpen={isLoadLineupModalOpen}
+          onClose={() => setIsLoadLineupModalOpen(false)}
+          savedPresets={savedPresets}
+          currentLineup={lineup || startingLineup}
+          roster={roster}
+          onApplyPreset={(presetLineup, liberoId) => {
+            if (onApplyPresetLineup) {
+              onApplyPresetLineup(presetLineup, liberoId);
+            } else {
+              setLineup(presetLineup);
+              setStartingLineup(presetLineup);
+              setRotation(1);
+              setPhase('serve');
+            }
+          }}
+          onSaveCurrentAsPreset={(name, desc) => {
+            if (onSavePreset) {
+              const activeLibero = roster.find(p => p.position === 'Libero' || p.isLibero);
+              onSavePreset(name, lineup || startingLineup, activeLibero?.id || null, desc);
+            }
+          }}
+          onDeletePreset={(presetId) => {
+            if (onDeletePreset) {
+              onDeletePreset(presetId);
+            }
+          }}
+          onOpenLineupStudio={onOpenLineupStudio}
+        />
+      )}
     </div>
   );
 }

@@ -17,12 +17,18 @@ self.addEventListener('install', (event) => {
 self.addEventListener('activate', (event) => {
   event.waitUntil(
     caches.keys().then((cacheNames) => {
-      return Promise.all(
-        cacheNames
-          .filter((name) => name !== CACHE_NAME)
-          .map((name) => caches.delete(name))
-      );
-    }).then(() => self.clients.claim())
+      return Promise.all(cacheNames.map((name) => caches.delete(name)));
+    })
+      .then(() => self.clients.claim())
+      .then(() => {
+        return self.clients.matchAll({ type: 'window' }).then((clients) => {
+          clients.forEach((client) => {
+            if (client.navigate && client.url) {
+              client.navigate(client.url);
+            }
+          });
+        });
+      })
   );
 });
 
@@ -39,15 +45,11 @@ self.addEventListener('fetch', (event) => {
   // Network-First for navigation (HTML page loads) so updates are immediate
   if (event.request.mode === 'navigate') {
     event.respondWith(
-      fetch(event.request)
+      fetch(event.request, { cache: 'no-cache' })
         .then((networkResponse) => {
-          if (networkResponse && networkResponse.status === 200) {
-            const copy = networkResponse.clone();
-            caches.open(CACHE_NAME).then((cache) => cache.put(event.request, copy));
-          }
           return networkResponse;
         })
-        .catch(() => caches.match(event.request) || caches.match('/index.html'))
+        .catch(() => caches.match('/index.html') || caches.match('/'))
     );
     return;
   }

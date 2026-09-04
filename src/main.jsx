@@ -49,8 +49,9 @@ class AppErrorBoundary extends React.Component {
     } catch (e) {
       console.warn('Cache clear error:', e);
     }
-    // Force cache bust by navigating with timestamp
-    window.location.href = window.location.pathname + '?t=' + Date.now();
+    // Hard navigate to fresh timestamp URL
+    const targetUrl = window.location.origin + window.location.pathname + '?refresh=' + Date.now();
+    window.location.replace(targetUrl);
   };
 
   render() {
@@ -80,22 +81,39 @@ class AppErrorBoundary extends React.Component {
               {this.state.error.message}
             </div>
           )}
-          <button
-            onClick={this.handleHardRefresh}
-            style={{
-              padding: '0.75rem 1.5rem',
-              backgroundColor: '#10b981',
-              color: '#ffffff',
-              border: 'none',
-              borderRadius: '999px',
-              fontSize: '0.95rem',
-              fontWeight: 800,
-              cursor: 'pointer',
-              boxShadow: '0 4px 14px rgba(16, 185, 129, 0.4)'
-            }}
-          >
-            🔄 Refresh & Update App
-          </button>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.65rem', alignItems: 'center' }}>
+            <button
+              onClick={this.handleHardRefresh}
+              style={{
+                padding: '0.75rem 1.6rem',
+                backgroundColor: '#10b981',
+                color: '#ffffff',
+                border: 'none',
+                borderRadius: '999px',
+                fontSize: '0.95rem',
+                fontWeight: 800,
+                cursor: 'pointer',
+                boxShadow: '0 4px 14px rgba(16, 185, 129, 0.4)'
+              }}
+            >
+              🔄 Refresh & Update App
+            </button>
+            <button
+              onClick={() => this.setState({ hasError: false, error: null })}
+              style={{
+                padding: '0.5rem 1.2rem',
+                backgroundColor: 'rgba(255, 255, 255, 0.08)',
+                color: '#94a3b8',
+                border: '1px solid rgba(255, 255, 255, 0.18)',
+                borderRadius: '999px',
+                fontSize: '0.82rem',
+                fontWeight: 700,
+                cursor: 'pointer'
+              }}
+            >
+              Dismiss & Continue
+            </button>
+          </div>
         </div>
       );
     }

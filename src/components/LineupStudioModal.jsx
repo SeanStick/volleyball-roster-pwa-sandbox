@@ -45,7 +45,9 @@ export default function LineupStudioModal({
   isOpen,
   onClose,
   roster = [],
+  lineup: propLineup,
   currentLineup = {},
+  startingLineup: propStartingLineup,
   currentStartingLineup = {},
   matchStats = null,
   matchHistory = [],
@@ -55,6 +57,9 @@ export default function LineupStudioModal({
   onApplyLineup,
   onUpdateRosterPlayer
 }) {
+  const activeLineupInput = propLineup || currentLineup || {};
+  const activeStartingLineupInput = propStartingLineup || currentStartingLineup || {};
+
   // Active editing lineup
   const [lineup, setLineup] = useState({
     pos1: null,
@@ -80,7 +85,7 @@ export default function LineupStudioModal({
   // Initialize from current lineup when opened
   useEffect(() => {
     if (isOpen) {
-      const initial = currentStartingLineup?.pos1 ? currentStartingLineup : (currentLineup?.pos1 ? currentLineup : {});
+      const initial = activeStartingLineupInput?.pos1 ? activeStartingLineupInput : (activeLineupInput?.pos1 ? activeLineupInput : {});
       setLineup({
         pos1: initial.pos1 || null,
         pos2: initial.pos2 || null,
@@ -97,7 +102,7 @@ export default function LineupStudioModal({
       setIsSavingPreset(false);
       setShowAvailabilityDrawer(false);
     }
-  }, [isOpen, currentLineup, currentStartingLineup, roster]);
+  }, [isOpen, activeLineupInput, activeStartingLineupInput, roster]);
 
   // Aggregate stats from history & current match
   const statsMap = useMemo(() => {

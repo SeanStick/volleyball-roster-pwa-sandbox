@@ -1309,6 +1309,87 @@ export default function App() {
     });
   };
 
+  const handleUpdatePoint = (pointId, updatedPointData, isOverturn = false) => {
+    if (!matchStats?.pointHistory) return;
+    const existingIndex = matchStats.pointHistory.findIndex(p => p.id === pointId);
+    if (existingIndex === -1) return;
+
+    const oldPoint = matchStats.pointHistory[existingIndex];
+    const newHistory = [...matchStats.pointHistory];
+    newHistory[existingIndex] = { ...oldPoint, ...updatedPointData };
+
+    let nextOurScore = matchStats.ourScore || 0;
+    let nextOppScore = matchStats.opponentScore || 0;
+
+    // If referee overturned the call
+    if (isOverturn && oldPoint.pointWonBy !== updatedPointData.pointWonBy) {
+      if (updatedPointData.pointWonBy === 'us') {
+        nextOurScore = nextOurScore + 1;
+        nextOppScore = Math.max(0, nextOppScore - 1);
+      } else {
+        nextOurScore = Math.max(0, nextOurScore - 1);
+        nextOppScore = nextOppScore + 1;
+      }
+    }
+
+    const nextStats = {
+      ...matchStats,
+      ourScore: nextOurScore,
+      opponentScore: nextOppScore,
+      pointHistory: newHistory
+    };
+
+    setMatchStats(nextStats);
+    lastScoreStateRef.current = { ourScore: nextOurScore, opponentScore: nextOppScore };
+
+    syncCloudImmediately({
+      matchStats: nextStats,
+      matchState: {
+        lineup,
+        startingLineup,
+        rotation,
+        phase,
+        liberoExchanges,
+        liberoServingRotation,
+        subHistory,
+        maxSubs,
+        enforcePositionLock
+      }
+    });
+  };
+
+  const handleDeletePointById = (pointId) => {
+    if (!matchStats?.pointHistory) return;
+    const pointToDelete = matchStats.pointHistory.find(p => p.id === pointId);
+    if (!pointToDelete) return;
+
+    const newHistory = matchStats.pointHistory.filter(p => p.id !== pointId);
+    const nextStats = {
+      ...matchStats,
+      ourScore: pointToDelete.pointWonBy === 'us' ? Math.max(0, matchStats.ourScore - 1) : matchStats.ourScore,
+      opponentScore: pointToDelete.pointWonBy === 'opponent' ? Math.max(0, matchStats.opponentScore - 1) : matchStats.opponentScore,
+      pointHistory: newHistory
+    };
+
+    setMatchStats(nextStats);
+    lastScoreStateRef.current = { ourScore: nextStats.ourScore, opponentScore: nextStats.opponentScore };
+
+    syncCloudImmediately({
+      matchStats: nextStats,
+      matchState: {
+        lineup,
+        startingLineup,
+        rotation,
+        phase,
+        liberoExchanges,
+        liberoServingRotation,
+        subHistory,
+        maxSubs,
+        enforcePositionLock
+      }
+    });
+  };
+
   const handleResetScore = () => {
     const nextStats = {
       ...matchStats,
@@ -1921,6 +2002,8 @@ export default function App() {
           roster={roster}
           rotation={rotation}
           phase={phase}
+          onUpdatePoint={handleUpdatePoint}
+          onDeletePoint={handleDeletePointById}
           onNavigateTab={(tab) => setActiveTab(tab)}
         />
       )}
@@ -2239,6 +2322,8 @@ export default function App() {
           onArchiveMatch={handleArchiveMatch}
           onDeleteMatchHistory={handleDeleteMatchHistory}
           onOpenMatchSetup={() => setIsMatchSetupModalOpen(true)}
+          onUpdatePoint={handleUpdatePoint}
+          onDeletePoint={handleDeletePointById}
         />
       )}
 

@@ -1525,10 +1525,12 @@ export default function CourtView({
         targetZoneKey={subTargetZone}
         currentLineup={lineup}
         roster={roster}
+        startingLineup={startingLineup}
         subHistory={subHistory}
         onExecuteSub={handleExecuteSub}
         maxSubs={maxSubs}
         enforcePositionLock={enforcePositionLock}
+        onTogglePositionLock={() => setEnforcePositionLock(prev => !prev)}
       />
 
       {/* 5. Substitution History Log Modal */}

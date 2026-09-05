@@ -1,10 +1,11 @@
 import React from 'react';
-import { ArrowLeftRight, X, ShieldAlert, CheckCircle, AlertCircle, Shield, Sparkles } from 'lucide-react';
+import { ArrowLeftRight, X, ShieldAlert, CheckCircle, AlertCircle, Shield, Sparkles, Lock, Star } from 'lucide-react';
 import {
   ZONE_LABELS,
   FRONT_ROW_ZONES,
   BACK_ROW_ZONES,
-  checkSubstitutionLegality
+  checkSubstitutionLegality,
+  getSubstitutionPairLocks
 } from '../services/volleyballRules';
 
 export default function SubModal({
@@ -13,10 +14,12 @@ export default function SubModal({
   targetZoneKey,
   currentLineup,
   roster,
+  startingLineup = {},
   subHistory = [],
   onExecuteSub,
   maxSubs = 12,
-  enforcePositionLock = false
+  enforcePositionLock = false,
+  onTogglePositionLock
 }) {
   if (!isOpen || !targetZoneKey) return null;
 
@@ -31,6 +34,11 @@ export default function SubModal({
 
   // Count subs used
   const regularSubsUsed = subHistory.filter(s => !s.isLiberoExchange).length;
+
+  // Pair Locks under USAV Rule 15.6 / NFHS Rule 10-3
+  const { playerToStarter } = getSubstitutionPairLocks(subHistory, startingLineup, roster);
+  const currentOccupantStarterId = currentOccupant ? (playerToStarter.get(currentOccupant.id) || currentOccupant.id) : null;
+  const designatedPartner = currentOccupantStarterId ? benchPlayers.find(p => playerToStarter.get(p.id) === currentOccupantStarterId) : null;
 
   return (
     <div className="modal-overlay" onClick={onClose} style={{ zIndex: 1050 }}>
@@ -68,13 +76,13 @@ export default function SubModal({
           </button>
         </div>
 
-        {/* Current Occupant Card */}
+        {/* Current Occupant Card with Pair Lock Status */}
         <div style={{
           background: 'rgba(15, 23, 42, 0.7)',
           border: '1px solid var(--border-glass)',
           borderRadius: 'var(--radius-md)',
           padding: '0.85rem 1rem',
-          marginBottom: '1.25rem',
+          marginBottom: '1rem',
           display: 'flex',
           justifyContent: 'space-between',
           alignItems: 'center'
@@ -110,40 +118,92 @@ export default function SubModal({
           </div>
         </div>
 
-        {/* Rule Notes */}
-        {isFrontRow ? (
-          <div style={{
-            background: 'rgba(239, 68, 68, 0.1)',
-            border: '1px solid rgba(239, 68, 68, 0.3)',
-            borderRadius: 'var(--radius-sm)',
-            padding: '0.6rem 0.85rem',
-            marginBottom: '1rem',
-            fontSize: '0.78rem',
-            color: '#fca5a5',
-            display: 'flex',
-            alignItems: 'center',
-            gap: '0.5rem'
-          }}>
-            <ShieldAlert size={16} color="#ef4444" style={{ flexShrink: 0 }} />
-            <span><strong>Rule 19.3:</strong> Liberos are strictly prohibited in the front row (Zones 4, 3, 2).</span>
-          </div>
-        ) : (
-          <div style={{
-            background: 'rgba(139, 92, 246, 0.1)',
-            border: '1px solid rgba(139, 92, 246, 0.3)',
-            borderRadius: 'var(--radius-sm)',
-            padding: '0.6rem 0.85rem',
-            marginBottom: '1rem',
-            fontSize: '0.78rem',
-            color: '#c4b5fd',
-            display: 'flex',
-            alignItems: 'center',
-            gap: '0.5rem'
-          }}>
-            <Sparkles size={16} color="#a78bfa" style={{ flexShrink: 0 }} />
-            <span><strong>Back Row:</strong> Libero replacements are free exchanges (not counted towards set sub limits).</span>
+        {/* Designated Legal Partner Card (USAV Rule 15.6) */}
+        {designatedPartner && (
+          <div
+            style={{
+              background: 'linear-gradient(135deg, rgba(245, 158, 11, 0.15) 0%, rgba(180, 83, 9, 0.25) 100%)',
+              border: '1.5px solid #f59e0b',
+              borderRadius: 'var(--radius-md)',
+              padding: '0.75rem 1rem',
+              marginBottom: '1rem',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              gap: '0.65rem'
+            }}
+          >
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.65rem' }}>
+              <div
+                style={{
+                  width: '32px',
+                  height: '32px',
+                  borderRadius: '50%',
+                  background: '#f59e0b',
+                  color: '#0f172a',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  fontWeight: 900,
+                  fontSize: '0.88rem'
+                }}
+              >
+                #{designatedPartner.number}
+              </div>
+              <div>
+                <div style={{ fontSize: '0.72rem', fontWeight: 800, color: '#fcd34d', textTransform: 'uppercase' }}>
+                  ⭐ USAV Rule 15.6 Designated Partner
+                </div>
+                <div style={{ fontSize: '0.92rem', fontWeight: 900, color: '#ffffff' }}>
+                  {designatedPartner.name} ({designatedPartner.position})
+                </div>
+                <div style={{ fontSize: '0.7rem', color: '#fde68a' }}>
+                  Tied with #{currentOccupant?.number} {currentOccupant?.name?.split(' ')[0]} in this rotational slot
+                </div>
+              </div>
+            </div>
+
+            <button
+              type="button"
+              onClick={() => onExecuteSub(targetZoneKey, designatedPartner, currentOccupant, false)}
+              className="btn btn-sm"
+              style={{
+                background: 'linear-gradient(135deg, #f59e0b, #d97706)',
+                color: '#0f172a',
+                fontWeight: 900,
+                border: 'none',
+                boxShadow: '0 2px 8px rgba(245, 158, 11, 0.4)',
+                whiteSpace: 'nowrap'
+              }}
+            >
+              <CheckCircle size={14} />
+              <span>Legal Sub In</span>
+            </button>
           </div>
         )}
+
+        {/* Rule Notes & Strict Sub Lock Toggle */}
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.85rem' }}>
+          <div style={{ fontSize: '0.76rem', color: 'var(--text-secondary)' }}>
+            {isFrontRow ? (
+              <span style={{ color: '#fca5a5' }}><strong>Rule 19.3:</strong> Liberos prohibited in front row</span>
+            ) : (
+              <span style={{ color: '#c4b5fd' }}><strong>Back Row:</strong> Libero replacement is a free exchange</span>
+            )}
+          </div>
+
+          {onTogglePositionLock && (
+            <label style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', cursor: 'pointer', fontSize: '0.74rem', color: '#f1f5f9' }}>
+              <input
+                type="checkbox"
+                checked={enforcePositionLock}
+                onChange={onTogglePositionLock}
+                style={{ accentColor: '#f59e0b', width: '14px', height: '14px' }}
+              />
+              <span style={{ fontWeight: 700 }}>Strict USAV/NFHS Lock</span>
+            </label>
+          )}
+        </div>
 
         {/* Bench Substitutes Selection List */}
         <div>
@@ -184,18 +244,21 @@ export default function SubModal({
                   targetZoneKey,
                   currentLineup,
                   subHistory,
-                  { maxSubs, enforcePositionLock }
+                  { maxSubs, enforcePositionLock, startingLineup, roster }
                 );
 
                 const isLibero = player.position === 'Libero' || player.isLibero;
+                const isDesignatedPartner = designatedPartner?.id === player.id;
 
                 return (
                   <div
                     key={player.id}
                     className={`sub-player-row ${legality.isLegal ? 'is-legal' : 'is-illegal'}`}
                     style={{
-                      background: legality.isLegal ? 'rgba(30, 41, 59, 0.7)' : 'rgba(30, 20, 20, 0.4)',
-                      border: `1px solid ${legality.isLegal ? (legality.isLiberoExchange ? '#8b5cf6' : 'var(--border-glass)') : 'rgba(239, 68, 68, 0.4)'}`,
+                      background: isDesignatedPartner
+                        ? 'rgba(245, 158, 11, 0.15)'
+                        : legality.isLegal ? 'rgba(30, 41, 59, 0.7)' : 'rgba(30, 20, 20, 0.4)',
+                      border: `1px solid ${isDesignatedPartner ? '#f59e0b' : legality.isLegal ? (legality.isLiberoExchange ? '#8b5cf6' : 'var(--border-glass)') : 'rgba(239, 68, 68, 0.4)'}`,
                       borderRadius: 'var(--radius-md)',
                       padding: '0.75rem 1rem',
                       display: 'flex',
@@ -216,8 +279,20 @@ export default function SubModal({
                         #{player.number}
                       </div>
                       <div>
-                        <div style={{ fontWeight: 800, color: '#ffffff', fontSize: '0.92rem' }}>
-                          {player.name}
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                          <span style={{ fontWeight: 800, color: '#ffffff', fontSize: '0.92rem' }}>
+                            {player.name}
+                          </span>
+                          {isDesignatedPartner && (
+                            <span style={{ background: 'rgba(245, 158, 11, 0.25)', border: '1px solid #f59e0b', color: '#fde68a', fontSize: '0.65rem', fontWeight: 800, padding: '1px 5px', borderRadius: '4px' }}>
+                              ⭐ Legal Partner
+                            </span>
+                          )}
+                          {legality.isPairLocked && (
+                            <span style={{ background: 'rgba(239, 68, 68, 0.2)', border: '1px solid #ef4444', color: '#fca5a5', fontSize: '0.65rem', fontWeight: 800, padding: '1px 5px', borderRadius: '4px', display: 'flex', alignItems: 'center', gap: '2px' }}>
+                              <Lock size={9} /> Pair Locked
+                            </span>
+                          )}
                         </div>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', marginTop: '0.2rem' }}>
                           <span className="badge-position" style={{ fontSize: '0.68rem', padding: '0.1rem 0.4rem' }}>

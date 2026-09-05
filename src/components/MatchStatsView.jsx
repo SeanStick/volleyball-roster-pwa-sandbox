@@ -25,7 +25,8 @@ import {
   Check,
   Zap,
   Info,
-  Settings
+  Settings,
+  Edit3
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
 import {
@@ -39,6 +40,7 @@ import {
   VOLLEYBALL_ERRORS
 } from '../services/matchStatsService';
 import { storageService } from '../services/storageService';
+import RallyEditModal from './RallyEditModal';
 
 export default function MatchStatsView({
   matchStats,
@@ -52,7 +54,9 @@ export default function MatchStatsView({
   matchHistory = [],
   onArchiveMatch,
   onDeleteMatchHistory,
-  onOpenMatchSetup
+  onOpenMatchSetup,
+  onUpdatePoint,
+  onDeletePoint
 }) {
   const [selectedSetFilter, setSelectedSetFilter] = useState('ALL');
   const [suggestionFilter, setSuggestionFilter] = useState('ALL'); // 'ALL' | 'CRITICAL' | 'TACTICAL' | 'ROTATION' | 'HISTORICAL'
@@ -60,6 +64,7 @@ export default function MatchStatsView({
   const [tableSortAsc, setTableSortAsc] = useState(false);
   const [isArchiveSuccess, setIsArchiveSuccess] = useState(false);
   const [tournamentFilter, setTournamentFilter] = useState('ALL');
+  const [pointToEdit, setPointToEdit] = useState(null);
 
   const {
     tournamentName = 'Tournament',
@@ -1059,7 +1064,15 @@ export default function MatchStatsView({
                     </span>
                     <button
                       className="btn-icon btn-sm"
-                      onClick={() => handleDeletePoint(pt.id)}
+                      onClick={() => setPointToEdit(pt)}
+                      title="Edit rally details or overturn call"
+                      style={{ color: '#c084fc', padding: '0.2rem' }}
+                    >
+                      <Edit3 size={13} />
+                    </button>
+                    <button
+                      className="btn-icon btn-sm"
+                      onClick={() => onDeletePoint ? onDeletePoint(pt.id) : handleDeletePoint(pt.id)}
                       title="Delete this rally entry"
                       style={{ color: '#ef4444', padding: '0.2rem' }}
                     >
@@ -1186,6 +1199,30 @@ export default function MatchStatsView({
           </div>
         )}
       </div>
+
+      {/* Rally Log Quick-Editor Modal */}
+      {pointToEdit && (
+        <RallyEditModal
+          isOpen={!!pointToEdit}
+          onClose={() => setPointToEdit(null)}
+          point={pointToEdit}
+          roster={roster}
+          onSavePoint={(pointId, updatedData, isOverturned) => {
+            if (onUpdatePoint) {
+              onUpdatePoint(pointId, updatedData, isOverturned);
+            }
+            setPointToEdit(null);
+          }}
+          onDeletePoint={(pointId) => {
+            if (onDeletePoint) {
+              onDeletePoint(pointId);
+            } else {
+              handleDeletePoint(pointId);
+            }
+            setPointToEdit(null);
+          }}
+        />
+      )}
     </div>
   );
 }

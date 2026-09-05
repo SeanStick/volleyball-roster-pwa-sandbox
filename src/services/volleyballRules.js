@@ -243,15 +243,24 @@ export function checkSubstitutionLegality(player, zoneKey, currentLineup, subHis
     };
   }
 
-  // RULE 6: Position-locking rule (if enforced)
-  if (enforcePositionLock) {
-    const previousEntry = subHistory.find(s => s.incomingPlayerId === player.id || s.outgoingPlayerId === player.id);
-    if (previousEntry && previousEntry.zoneKey !== zoneKey) {
-      return {
-        isLegal: false,
-        reason: `Position Lock Violation: ${player.name} is locked to rotational Zone ${ZONE_LABELS[previousEntry.zoneKey]?.num || ''} for this set.`,
-        isLiberoExchange: false
-      };
+  // RULE 6: Strict USAV / NFHS Position & Pair-Locking Rule (Rule 15.6 / Rule 10-3)
+  if (enforcePositionLock && !isLibero) {
+    const { playerToStarter } = getSubstitutionPairLocks(subHistory, options.startingLineup, options.roster);
+    const playerStarterId = playerToStarter.get(player.id);
+    const currentOccupantId = currentLineup[zoneKey];
+    const currentOccupantStarterId = currentOccupantId ? playerToStarter.get(currentOccupantId) : null;
+
+    if (playerStarterId) {
+      // Player is already locked to a rotational slot!
+      if (currentOccupantId && playerStarterId !== currentOccupantStarterId && playerStarterId !== currentOccupantId) {
+        const partner = options.roster?.find(p => p.id === playerStarterId);
+        return {
+          isLegal: false,
+          isPairLocked: true,
+          reason: `Rule 15.6 Pair Lock: ${player.name} is tied to #${partner?.number || ''} ${partner?.name || 'starter'} and cannot enter another position.`,
+          isLiberoExchange: false
+        };
+      }
     }
   }
 
@@ -260,6 +269,44 @@ export function checkSubstitutionLegality(player, zoneKey, currentLineup, subHis
     reason: null,
     isLiberoExchange: false
   };
+}
+
+/**
+ * Computes substitution pairing locks for the set (USAV Rule 15.6 / NFHS Rule 10-3).
+ * When Sub A enters for Starter B, they are tied to that position slot.
+ * Only Sub A and Starter B can legally exchange in that slot for the remainder of the set.
+ */
+export function getSubstitutionPairLocks(subHistory = [], startingLineup = {}, roster = []) {
+  const regularSubs = subHistory.filter(s => !s.isLiberoExchange);
+  const pairMap = new Map(); // starterId -> Set of playerIds in this slot
+  const playerToStarter = new Map(); // playerId -> starterId
+
+  const startingIds = new Set(Object.values(startingLineup || {}).filter(Boolean));
+
+  regularSubs.forEach(sub => {
+    const { outgoingPlayerId, incomingPlayerId } = sub;
+    if (!outgoingPlayerId || !incomingPlayerId) return;
+
+    const starterId = playerToStarter.get(outgoingPlayerId) ||
+                      (startingIds.has(outgoingPlayerId) ? outgoingPlayerId : null) ||
+                      playerToStarter.get(incomingPlayerId) ||
+                      (startingIds.has(incomingPlayerId) ? incomingPlayerId : null);
+
+    if (starterId) {
+      playerToStarter.set(outgoingPlayerId, starterId);
+      playerToStarter.set(incomingPlayerId, starterId);
+      if (!pairMap.has(starterId)) pairMap.set(starterId, new Set());
+      pairMap.get(starterId).add(outgoingPlayerId);
+      pairMap.get(starterId).add(incomingPlayerId);
+    } else {
+      playerToStarter.set(outgoingPlayerId, outgoingPlayerId);
+      playerToStarter.set(incomingPlayerId, outgoingPlayerId);
+      if (!pairMap.has(outgoingPlayerId)) pairMap.set(outgoingPlayerId, new Set([outgoingPlayerId, incomingPlayerId]));
+      else pairMap.get(outgoingPlayerId).add(incomingPlayerId);
+    }
+  });
+
+  return { pairMap, playerToStarter };
 }
 
 /**

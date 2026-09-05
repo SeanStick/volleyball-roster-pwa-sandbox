@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   RotateCcw,
   RefreshCw,
@@ -19,11 +19,17 @@ import {
   ArrowLeftRight,
   Shield,
   Volume2,
-  AlertCircle
+  AlertCircle,
+  Mic,
+  MicOff,
+  Zap,
+  ArrowRightLeft
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
 import VolleyballIcon from './icons/VolleyballIcon';
 import QuickPointModal from './QuickPointModal';
+import RallyEditModal from './RallyEditModal';
+import { voiceScoreService } from '../services/voiceScoreService';
 
 export default function ScoreboardBar({
   matchStats,
@@ -45,6 +51,8 @@ export default function ScoreboardBar({
   onSelectSetNumber,
   onCallTimeout,
   onOpenSubModal,
+  onUpdatePoint,
+  onDeletePoint,
   subHistory = [],
   maxSubs = 12,
   lineup = {},
@@ -119,9 +127,179 @@ export default function ScoreboardBar({
     setTimeoutSeconds(60);
   };
 
-  // Fast +1 US Action
-  const handlePlusUs = () => {
-    if (isTrackingEnabled) {
+  // ⚡ 1-Tap Quick Score vs Detailed Stat Mode
+  const [isDirectScoreMode, setIsDirectScoreMode] = useState(() => {
+    try {
+      const saved = localStorage.getItem('gostandoverthere_direct_score');
+      return saved === 'true';
+    } catch {
+      return false;
+    }
+  });
+
+  const handleToggleDirectScoreMode = () => {
+    setIsDirectScoreMode(prev => {
+      const next = !prev;
+      try {
+        localStorage.setItem('gostandoverthere_direct_score', String(next));
+      } catch {}
+      return next;
+    });
+  };
+
+  // ✏️ Rally Edit / Overturn Modal State
+  const [isEditRallyModalOpen, setIsEditRallyModalOpen] = useState(false);
+  const [pointToEdit, setPointToEdit] = useState(null);
+
+  // 🎙️ Voice Scorekeeper State
+  const [isVoiceActive, setIsVoiceActive] = useState(false);
+  const [voiceFeedback, setVoiceFeedback] = useState(null);
+  const voiceTimeoutRef = useRef(null);
+  const longPressTimerRef = useRef(null);
+
+  // Most recent point in pointHistory
+  const lastPoint = pointHistory && pointHistory.length > 0 ? pointHistory[pointHistory.length - 1] : null;
+
+  const handleOpenEditPoint = (pt = null) => {
+    const target = pt || lastPoint;
+    if (target) {
+      setPointToEdit(target);
+      setIsEditRallyModalOpen(true);
+    }
+  };
+
+  // Voice Command Listener
+  const handleToggleVoiceScorekeeper = () => {
+    if (isVoiceActive) {
+      voiceScoreService.stopListening();
+      setIsVoiceActive(false);
+      setVoiceFeedback(null);
+    } else {
+      if (!voiceScoreService.isSupported()) {
+        alert('Voice speech recognition is not supported in this browser. Please use Chrome or Safari.');
+        return;
+      }
+      const success = voiceScoreService.startListening({
+        onStateChange: (listening) => setIsVoiceActive(listening),
+        onTranscript: (text) => {
+          setVoiceFeedback({ text: `Heard: "${text}"`, type: 'transcript' });
+        },
+        onError: (err) => {
+          setVoiceFeedback({ text: err, type: 'error' });
+          if (voiceTimeoutRef.current) clearTimeout(voiceTimeoutRef.current);
+          voiceTimeoutRef.current = setTimeout(() => setVoiceFeedback(null), 4000);
+        },
+        onCommand: (cmd) => {
+          handleVoiceCommand(cmd);
+        }
+      });
+      if (success) {
+        setIsVoiceActive(true);
+        setVoiceFeedback({ text: 'Listening: Say "Kill 14", "Ace 3", or "Point Us"...', type: 'info' });
+      }
+    }
+  };
+
+  const handleVoiceCommand = (cmd) => {
+    if (!cmd) return;
+    setVoiceFeedback({ text: `✓ Executed: ${cmd.description}`, type: 'action' });
+    if (voiceTimeoutRef.current) clearTimeout(voiceTimeoutRef.current);
+    voiceTimeoutRef.current = setTimeout(() => {
+      setVoiceFeedback(prev => (prev?.type === 'action' ? null : prev));
+    }, 3500);
+
+    let matchedPlayer = null;
+    if (cmd.jerseyNumber !== null && Array.isArray(roster)) {
+      matchedPlayer = roster.find(p => Number(p.number) === Number(cmd.jerseyNumber));
+    }
+
+    if (cmd.action === 'kill') {
+      onRallyWonByUs({
+        pointWonBy: 'us',
+        earnedType: 'kill',
+        earnedTypeName: 'Attack Kill',
+        earnedPlayerId: matchedPlayer?.id || null,
+        earnedPlayerName: matchedPlayer?.name || (cmd.jerseyNumber ? `#${cmd.jerseyNumber}` : null),
+        earnedPlayerNumber: matchedPlayer?.number || cmd.jerseyNumber || null,
+        rotation,
+        phase,
+        setNumber
+      });
+      confetti({ particleCount: 35, spread: 50, origin: { y: 0.25 } });
+    } else if (cmd.action === 'ace') {
+      const serverId = lineup?.pos1;
+      const serverPlayer = roster.find(p => p.id === serverId);
+      const player = matchedPlayer || serverPlayer;
+
+      onRallyWonByUs({
+        pointWonBy: 'us',
+        earnedType: 'ace',
+        earnedTypeName: 'Service Ace',
+        earnedPlayerId: player?.id || null,
+        earnedPlayerName: player?.name || null,
+        earnedPlayerNumber: player?.number || null,
+        rotation,
+        phase,
+        setNumber
+      });
+      confetti({ particleCount: 35, spread: 50, origin: { y: 0.25 } });
+    } else if (cmd.action === 'block') {
+      onRallyWonByUs({
+        pointWonBy: 'us',
+        earnedType: 'block',
+        earnedTypeName: 'Block Kill',
+        earnedPlayerId: matchedPlayer?.id || null,
+        earnedPlayerName: matchedPlayer?.name || null,
+        earnedPlayerNumber: matchedPlayer?.number || null,
+        rotation,
+        phase,
+        setNumber
+      });
+      confetti({ particleCount: 35, spread: 50, origin: { y: 0.25 } });
+    } else if (cmd.action === 'point_us') {
+      onRallyWonByUs({
+        pointWonBy: 'us',
+        earnedType: 'quick_point',
+        rotation,
+        phase,
+        setNumber
+      });
+      confetti({ particleCount: 25, spread: 45, origin: { y: 0.2 } });
+    } else if (cmd.action === 'point_opponent') {
+      onRallyWonByOpponent({
+        pointWonBy: 'opponent',
+        errorTypeId: cmd.errorType || 'unspecified_error',
+        rotation,
+        phase,
+        setNumber
+      });
+    } else if (cmd.action === 'timeout') {
+      handleStartTimeoutTimer(cmd.team || 'us');
+    } else if (cmd.action === 'undo') {
+      onUndoLastPoint();
+    }
+  };
+
+  // Cleanup voice on unmount
+  useEffect(() => {
+    return () => {
+      voiceScoreService.stopListening();
+    };
+  }, []);
+
+  // Fast +1 US Action (Instant 0ms in Direct Score Mode, or opens detailed modal)
+  const handlePlusUs = (forceDetailed = false) => {
+    if (isDirectScoreMode && !forceDetailed) {
+      onRallyWonByUs({
+        pointWonBy: 'us',
+        earnedType: 'quick_point',
+        earnedTypeName: 'Quick Point (+1)',
+        rotation,
+        phase,
+        setNumber
+      });
+      confetti({ particleCount: 25, spread: 45, origin: { y: 0.2 } });
+    } else if (isTrackingEnabled || forceDetailed) {
       setScoringTeam('us');
       setIsPointModalOpen(true);
     } else {
@@ -137,8 +315,17 @@ export default function ScoreboardBar({
   };
 
   // Fast +1 OPP Action
-  const handlePlusOpponent = () => {
-    if (isTrackingEnabled) {
+  const handlePlusOpponent = (forceDetailed = false) => {
+    if (isDirectScoreMode && !forceDetailed) {
+      onRallyWonByOpponent({
+        pointWonBy: 'opponent',
+        errorTypeId: 'unspecified_error',
+        errorTypeName: 'Opponent Point (+1)',
+        rotation,
+        phase,
+        setNumber
+      });
+    } else if (isTrackingEnabled || forceDetailed) {
       setScoringTeam('opponent');
       setIsPointModalOpen(true);
     } else {
@@ -150,6 +337,24 @@ export default function ScoreboardBar({
         setNumber
       });
     }
+  };
+
+  // Long-press handling for opening detailed modal in direct score mode
+  const handleUsMouseDown = () => {
+    longPressTimerRef.current = setTimeout(() => {
+      handlePlusUs(true);
+    }, 500);
+  };
+  const handleUsMouseUp = () => {
+    if (longPressTimerRef.current) clearTimeout(longPressTimerRef.current);
+  };
+  const handleOppMouseDown = () => {
+    longPressTimerRef.current = setTimeout(() => {
+      handlePlusOpponent(true);
+    }, 500);
+  };
+  const handleOppMouseUp = () => {
+    if (longPressTimerRef.current) clearTimeout(longPressTimerRef.current);
   };
 
   // Toggle Detailed Stats Tracking
@@ -574,6 +779,58 @@ export default function ScoreboardBar({
       )}
 
       {/* =========================================================================
+          🎙️ VOICE SCOREKEEPER FEEDBACK BANNER (When Active)
+         ========================================================================= */}
+      {(isVoiceActive || voiceFeedback) && (
+        <div
+          style={{
+            background: voiceFeedback?.type === 'error'
+              ? 'rgba(239, 68, 68, 0.95)'
+              : voiceFeedback?.type === 'action'
+              ? 'linear-gradient(90deg, #10b981 0%, #059669 100%)'
+              : 'linear-gradient(90deg, #7c3aed 0%, #4c1d95 100%)',
+            color: '#ffffff',
+            padding: '0.4rem 0.85rem',
+            fontSize: '0.78rem',
+            fontWeight: 800,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            boxShadow: '0 2px 12px rgba(0, 0, 0, 0.45)',
+            borderBottom: '1px solid rgba(255, 255, 255, 0.2)',
+            animation: 'fadeIn 0.2s ease-out',
+            zIndex: 90
+          }}
+        >
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+            <Mic size={15} className={isVoiceActive ? 'animate-pulse' : ''} />
+            <span>{voiceFeedback?.text || 'Listening: Speak calls like "Kill 14", "Ace 3", "Point Us", "Timeout"...'}</span>
+          </div>
+
+          <button
+            type="button"
+            onClick={() => {
+              voiceScoreService.stopListening();
+              setIsVoiceActive(false);
+              setVoiceFeedback(null);
+            }}
+            style={{
+              background: 'rgba(0, 0, 0, 0.25)',
+              border: 'none',
+              borderRadius: '6px',
+              color: '#ffffff',
+              padding: '0.2rem 0.5rem',
+              fontSize: '0.7rem',
+              cursor: 'pointer',
+              fontWeight: 800
+            }}
+          >
+            Turn Off Voice
+          </button>
+        </div>
+      )}
+
+      {/* =========================================================================
           🔢 4. MAIN LIVE SCOREBOARD RIBBON WITH TIMEOUTS & SUBS
          ========================================================================= */}
       <div className="scoreboard-ribbon">
@@ -615,39 +872,121 @@ export default function ScoreboardBar({
           </div>
         </div>
 
-        {/* Center: Live Digits & Quick Add Buttons */}
-        <div className="scoreboard-score-group">
-          {/* US Score & +1 Button */}
-          <div className="scoreboard-team-box">
-            <span className="scoreboard-team-label">US</span>
-            <div className="scoreboard-digit us">{ourScore}</div>
-            <button
-              className="btn-score-add us"
-              onClick={handlePlusUs}
-              title="Award point to Our Team (+1 Us)"
-            >
-              <Plus size={16} /> <span>US</span>
-            </button>
+        {/* Center: Live Digits & Quick Add Buttons + Recent Point Chip */}
+        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+          <div className="scoreboard-score-group">
+            {/* US Score & +1 Button */}
+            <div className="scoreboard-team-box">
+              <span className="scoreboard-team-label">US</span>
+              <div className="scoreboard-digit us">{ourScore}</div>
+              <button
+                className="btn-score-add us"
+                onClick={() => handlePlusUs()}
+                onMouseDown={handleUsMouseDown}
+                onMouseUp={handleUsMouseUp}
+                onTouchStart={handleUsMouseDown}
+                onTouchEnd={handleUsMouseUp}
+                title={isDirectScoreMode ? "1-Tap Direct Score (+1 Us). Hold to open detailed stats" : "Award point to Our Team (+1 Us)"}
+              >
+                <Plus size={16} /> <span>US</span>
+              </button>
+            </div>
+
+            <div className="scoreboard-vs-divider">:</div>
+
+            {/* OPP Score & +1 Button */}
+            <div className="scoreboard-team-box">
+              <button
+                className="btn-score-add opp"
+                onClick={() => handlePlusOpponent()}
+                onMouseDown={handleOppMouseDown}
+                onMouseUp={handleOppMouseUp}
+                onTouchStart={handleOppMouseDown}
+                onTouchEnd={handleOppMouseUp}
+                title={isDirectScoreMode ? "1-Tap Direct Score (+1 Opp). Hold to open detailed stats" : "Award point to Opponent"}
+              >
+                <Plus size={16} /> <span>OPP</span>
+              </button>
+              <div className="scoreboard-digit opp">{opponentScore}</div>
+              <span className="scoreboard-team-label">{(opponentName || 'OPP').slice(0, 5)}</span>
+            </div>
           </div>
 
-          <div className="scoreboard-vs-divider">:</div>
-
-          {/* OPP Score & +1 Button */}
-          <div className="scoreboard-team-box">
-            <button
-              className="btn-score-add opp"
-              onClick={handlePlusOpponent}
-              title="Award point to Opponent (+1 Opponent / Team Error)"
+          {/* ✏️ Recent Point Chip (Tap to edit player, error, or referee overturn) */}
+          {lastPoint && (
+            <div
+              onClick={() => handleOpenEditPoint(lastPoint)}
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '0.35rem',
+                padding: '0.15rem 0.55rem',
+                borderRadius: '999px',
+                background: lastPoint.pointWonBy === 'us' ? 'rgba(16, 185, 129, 0.15)' : 'rgba(239, 68, 68, 0.15)',
+                border: `1px solid ${lastPoint.pointWonBy === 'us' ? 'rgba(16, 185, 129, 0.35)' : 'rgba(239, 68, 68, 0.35)'}`,
+                color: lastPoint.pointWonBy === 'us' ? '#a7f3d0' : '#fca5a5',
+                fontSize: '0.7rem',
+                fontWeight: 700,
+                cursor: 'pointer',
+                marginTop: '0.2rem',
+                transition: 'all 0.15s ease'
+              }}
+              title="Click to edit credited player, change error, or referee overturn"
             >
-              <Plus size={16} /> <span>OPP</span>
-            </button>
-            <div className="scoreboard-digit opp">{opponentScore}</div>
-            <span className="scoreboard-team-label">{(opponentName || 'OPP').slice(0, 5)}</span>
-          </div>
+              <span>
+                Last: <strong>{lastPoint.pointWonBy === 'us' ? 'US' : 'OPP'}</strong> • {lastPoint.earnedTypeName || lastPoint.errorTypeName || 'Point'}
+                {lastPoint.earnedPlayerName ? ` (#${lastPoint.earnedPlayerNumber || ''} ${lastPoint.earnedPlayerName.split(' ')[0]})` : ''}
+                {lastPoint.earnedType === 'quick_point' ? ' [+ Tag Hitter]' : ''}
+              </span>
+              <Edit3 size={11} />
+            </div>
+          )}
         </div>
 
         {/* Right: Quick Controls + ⏱️ TIMEOUT BUTTONS */}
         <div className="scoreboard-action-group">
+          {/* 🎙️ Hands-Free Voice Scorekeeper Toggle */}
+          <button
+            type="button"
+            className={`btn btn-sm ${isVoiceActive ? 'btn-primary' : 'btn-secondary'}`}
+            onClick={handleToggleVoiceScorekeeper}
+            style={{
+              background: isVoiceActive ? 'linear-gradient(135deg, #a855f7 0%, #7c3aed 100%)' : 'rgba(255, 255, 255, 0.05)',
+              borderColor: isVoiceActive ? '#a855f7' : 'rgba(255, 255, 255, 0.15)',
+              color: isVoiceActive ? '#ffffff' : '#cbd5e1',
+              fontSize: '0.74rem',
+              fontWeight: 800,
+              boxShadow: isVoiceActive ? '0 0 14px rgba(168, 85, 247, 0.6)' : 'none',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '0.3rem',
+              padding: '0.35rem 0.55rem'
+            }}
+            title={isVoiceActive ? 'Voice listening active. Say "Kill 14", "Ace 3", or "Point Us"' : 'Turn on hands-free voice scorekeeper'}
+          >
+            {isVoiceActive ? <Mic size={13} className="animate-pulse" /> : <MicOff size={13} />}
+            <span>{isVoiceActive ? 'Listening...' : 'Voice'}</span>
+          </button>
+
+          {/* ⚡ 1-Tap Quick Score vs Detailed Stats Mode Toggle */}
+          <button
+            type="button"
+            className={`btn btn-sm ${isDirectScoreMode ? 'btn-primary' : 'btn-secondary'}`}
+            onClick={handleToggleDirectScoreMode}
+            style={isDirectScoreMode ? {
+              background: 'linear-gradient(135deg, #f59e0b 0%, #d97706 100%)',
+              borderColor: '#f59e0b',
+              color: '#0f172a',
+              fontWeight: 900,
+              fontSize: '0.74rem',
+              padding: '0.35rem 0.55rem'
+            } : { fontSize: '0.74rem', color: 'var(--text-muted)', padding: '0.35rem 0.55rem' }}
+            title={isDirectScoreMode ? '1-Tap Direct Score is ON. Tap +1 to score in 0ms (Hold button to open detailed stats)' : 'Detailed Stat Mode is ON. Opens modal on every point'}
+          >
+            <Zap size={12} color={isDirectScoreMode ? '#0f172a' : 'currentColor'} />
+            <span>{isDirectScoreMode ? '1-Tap: ON' : '1-Tap: OFF'}</span>
+          </button>
+
           {/* ⏱️ US Timeout Button & Dots */}
           <button
             type="button"
@@ -839,6 +1178,34 @@ export default function ScoreboardBar({
         phase={phase}
         currentScore={matchStats}
       />
+
+      {/* Rally Log Quick-Editor Modal */}
+      {isEditRallyModalOpen && pointToEdit && (
+        <RallyEditModal
+          isOpen={isEditRallyModalOpen}
+          onClose={() => {
+            setIsEditRallyModalOpen(false);
+            setPointToEdit(null);
+          }}
+          point={pointToEdit}
+          roster={roster}
+          courtLineup={lineup}
+          onSavePoint={(pointId, updatedData, isOverturned) => {
+            if (onUpdatePoint) {
+              onUpdatePoint(pointId, updatedData, isOverturned);
+            }
+            setIsEditRallyModalOpen(false);
+            setPointToEdit(null);
+          }}
+          onDeletePoint={(pointId) => {
+            if (onDeletePoint) {
+              onDeletePoint(pointId);
+            }
+            setIsEditRallyModalOpen(false);
+            setPointToEdit(null);
+          }}
+        />
+      )}
     </>
   );
 }

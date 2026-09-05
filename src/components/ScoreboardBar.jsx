@@ -29,6 +29,7 @@ import confetti from 'canvas-confetti';
 import VolleyballIcon from './icons/VolleyballIcon';
 import QuickPointModal from './QuickPointModal';
 import RallyEditModal from './RallyEditModal';
+import TimeoutAdvisorModal from './TimeoutAdvisorModal';
 import { voiceScoreService } from '../services/voiceScoreService';
 
 export default function ScoreboardBar({
@@ -59,6 +60,9 @@ export default function ScoreboardBar({
   roster = [],
   rotation = 1,
   phase = 'serve',
+  userRole = 'head_coach',
+  isCoachOrAssistant = true,
+  onOpenWhiteboard,
   onNavigateTab
 }) {
   const [isPointModalOpen, setIsPointModalOpen] = useState(false);
@@ -67,6 +71,7 @@ export default function ScoreboardBar({
   // Timeout Countdown Timer State
   const [activeTimeout, setActiveTimeout] = useState(null); // { team: 'us'|'opponent', secondsLeft: 60 }
   const [timeoutSeconds, setTimeoutSeconds] = useState(60);
+  const [isTimeoutAdvisorOpen, setIsTimeoutAdvisorOpen] = useState(false);
 
   const {
     courtNumber = 'Court 1',
@@ -120,11 +125,15 @@ export default function ScoreboardBar({
     }
     setActiveTimeout(team);
     setTimeoutSeconds(60);
+    if (isCoachOrAssistant) {
+      setIsTimeoutAdvisorOpen(true);
+    }
   };
 
   const handleEndTimeoutTimer = () => {
     setActiveTimeout(null);
     setTimeoutSeconds(60);
+    setIsTimeoutAdvisorOpen(false);
   };
 
   // ⚡ 1-Tap Quick Score vs Detailed Stat Mode
@@ -443,7 +452,32 @@ export default function ScoreboardBar({
             </div>
           </div>
 
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.65rem' }}>
+            {isCoachOrAssistant && (
+              <button
+                type="button"
+                onClick={() => setIsTimeoutAdvisorOpen(true)}
+                style={{
+                  background: 'linear-gradient(135deg, rgba(168, 85, 247, 0.95), rgba(126, 34, 206, 0.95))',
+                  color: '#ffffff',
+                  border: '1px solid rgba(255, 255, 255, 0.35)',
+                  borderRadius: '8px',
+                  padding: '0.35rem 0.65rem',
+                  fontSize: '0.76rem',
+                  fontWeight: 800,
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '0.3rem',
+                  cursor: 'pointer',
+                  boxShadow: '0 2px 10px rgba(168, 85, 247, 0.4)'
+                }}
+                title="Open In-Game Tactical & Motivational Huddle Advisor"
+              >
+                <Sparkles size={13} color="#fdf4ff" />
+                <span>🧠 Huddle Advisor</span>
+              </button>
+            )}
+
             <div
               style={{
                 fontFamily: 'monospace',
@@ -1204,6 +1238,24 @@ export default function ScoreboardBar({
             setIsEditRallyModalOpen(false);
             setPointToEdit(null);
           }}
+        />
+      )}
+
+      {/* In-Game Tactical & Motivational Timeout Advisor Modal */}
+      {isTimeoutAdvisorOpen && (
+        <TimeoutAdvisorModal
+          isOpen={isTimeoutAdvisorOpen}
+          onClose={() => setIsTimeoutAdvisorOpen(false)}
+          activeTimeout={activeTimeout || 'us'}
+          timeoutSeconds={timeoutSeconds}
+          onEndTimeout={handleEndTimeoutTimer}
+          matchStats={matchStats}
+          rotation={rotation}
+          phase={phase}
+          roster={roster}
+          courtLineup={lineup}
+          opponentName={opponentName}
+          onOpenWhiteboard={onOpenWhiteboard}
         />
       )}
     </>

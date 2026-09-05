@@ -16,6 +16,8 @@ export default function Navbar({
   lastSyncTime,
   activeTeam,
   lastScoreEvent,
+  userRole,
+  onUpdateUserRole,
   onOpenAuthModal,
   onOpenTeamManagerModal,
   onOpenShareModal,
@@ -179,6 +181,8 @@ export default function Navbar({
           lastSyncTime={lastSyncTime}
           activeTeam={activeTeam}
           lastScoreEvent={lastScoreEvent}
+          userRole={userRole}
+          onUpdateUserRole={onUpdateUserRole}
           onOpenAuthModal={onOpenAuthModal}
           onOpenTeamManagerModal={onOpenTeamManagerModal}
           onOpenShareModal={onOpenShareModal}

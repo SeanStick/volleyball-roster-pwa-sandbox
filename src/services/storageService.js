@@ -230,7 +230,8 @@ export const INITIAL_TEAM_SETTINGS = {
   season: '2026 - 2027',
   primaryColor: '#ff6b35',
   secondaryColor: '#1e3a8a',
-  liberoColor: '#8b5cf6'
+  liberoColor: '#8b5cf6',
+  userRole: 'head_coach' // 'head_coach' | 'assistant_coach' | 'player' | 'parent'
 };
 
 export const storageService = {
@@ -278,7 +279,11 @@ export const storageService = {
         this.saveTeamSettings(INITIAL_TEAM_SETTINGS);
         return INITIAL_TEAM_SETTINGS;
       }
-      return JSON.parse(data);
+      const parsed = JSON.parse(data);
+      if (!parsed.userRole) {
+        parsed.userRole = 'head_coach';
+      }
+      return parsed;
     } catch (e) {
       console.error('Error reading team settings:', e);
       return INITIAL_TEAM_SETTINGS;
@@ -291,6 +296,18 @@ export const storageService = {
     } catch (e) {
       console.error('Error saving team settings:', e);
     }
+  },
+
+  getUserRole() {
+    const settings = this.getTeamSettings();
+    return settings?.userRole || 'head_coach';
+  },
+
+  setUserRole(role) {
+    const settings = this.getTeamSettings();
+    const updated = { ...settings, userRole: role };
+    this.saveTeamSettings(updated);
+    return updated;
   },
 
   getMatchState() {

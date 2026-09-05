@@ -17,7 +17,9 @@ import {
   Check,
   PenTool,
   Dumbbell,
-  BellRing
+  BellRing,
+  ShieldCheck,
+  Crown
 } from 'lucide-react';
 import VolleyballIcon from './icons/VolleyballIcon';
 
@@ -27,6 +29,8 @@ export default function UserMenu({
   lastSyncTime,
   activeTeam,
   lastScoreEvent,
+  userRole = 'head_coach',
+  onUpdateUserRole,
   onOpenAuthModal,
   onOpenTeamManagerModal,
   onOpenShareModal,
@@ -356,6 +360,77 @@ export default function UserMenu({
               <div style={{ width: '10px', height: '10px', borderRadius: '50%', background: activeTeam.primaryColor || '#ff6b35' }} />
             </div>
           )}
+
+          {/* 👑 USER ROLE & STAFF ACCESS SETTING */}
+          <div
+            style={{
+              padding: '0.65rem 0.75rem',
+              background: 'linear-gradient(135deg, rgba(168, 85, 247, 0.14) 0%, rgba(30, 41, 59, 0.6) 100%)',
+              border: '1px solid rgba(168, 85, 247, 0.35)',
+              borderRadius: 'var(--radius-sm)',
+              marginBottom: '0.55rem'
+            }}
+          >
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.45rem' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
+                <ShieldCheck size={14} color="#c084fc" />
+                <span style={{ fontSize: '0.72rem', fontWeight: 900, color: '#e9d5ff', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+                  Role & Staff Mode
+                </span>
+              </div>
+              <span
+                style={{
+                  fontSize: '0.65rem',
+                  fontWeight: 800,
+                  padding: '1px 6px',
+                  borderRadius: '999px',
+                  background: (userRole === 'head_coach' || userRole === 'assistant_coach') ? 'rgba(16, 185, 129, 0.2)' : 'rgba(148, 163, 184, 0.2)',
+                  color: (userRole === 'head_coach' || userRole === 'assistant_coach') ? '#34d399' : '#94a3b8',
+                  border: `1px solid ${(userRole === 'head_coach' || userRole === 'assistant_coach') ? 'rgba(16, 185, 129, 0.4)' : 'rgba(148, 163, 184, 0.3)'}`
+                }}
+              >
+                {(userRole === 'head_coach' || userRole === 'assistant_coach') ? '👑 Coach Privileges' : 'Spectator / Player'}
+              </span>
+            </div>
+
+            {/* 4 Role Selector Buttons */}
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '0.35rem' }}>
+              {[
+                { id: 'head_coach', label: 'Head Coach', icon: '👑', desc: 'Full tactical control' },
+                { id: 'assistant_coach', label: 'Asst Coach', icon: '📋', desc: 'Huddle & whiteboard' },
+                { id: 'player', label: 'Player', icon: '🏐', desc: 'Court & lineup view' },
+                { id: 'parent', label: 'Parent / Fan', icon: '👥', desc: 'Live scoreboard' }
+              ].map(role => {
+                const isSelected = userRole === role.id;
+                return (
+                  <button
+                    key={role.id}
+                    type="button"
+                    onClick={() => onUpdateUserRole && onUpdateUserRole(role.id)}
+                    style={{
+                      padding: '0.4rem 0.5rem',
+                      borderRadius: '6px',
+                      background: isSelected ? 'rgba(168, 85, 247, 0.35)' : 'rgba(255, 255, 255, 0.04)',
+                      border: `1.5px solid ${isSelected ? '#c084fc' : 'rgba(255, 255, 255, 0.1)'}`,
+                      color: isSelected ? '#ffffff' : '#cbd5e1',
+                      cursor: 'pointer',
+                      textAlign: 'left',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '0.4rem',
+                      transition: 'all 0.15s'
+                    }}
+                  >
+                    <span style={{ fontSize: '1rem' }}>{role.icon}</span>
+                    <div style={{ minWidth: 0 }}>
+                      <div style={{ fontSize: '0.74rem', fontWeight: 800, whiteSpace: 'nowrap' }}>{role.label}</div>
+                      <div style={{ fontSize: '0.62rem', color: isSelected ? '#e9d5ff' : '#64748b' }}>{role.desc}</div>
+                    </div>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
 
           {/* =========================================================
               👥 LIVE CO-COACHES & SCOREKEEPERS SECTION

@@ -1840,6 +1840,15 @@ export default function App() {
   const setters = roster.filter(p => p.position === 'Setter').length;
   const activeTeamObj = teams.find(t => t.id === activeTeamId) || { teamName: teamSettings.teamName, season: teamSettings.season, primaryColor: teamSettings.primaryColor, shareCode: '' };
 
+  const userRole = teamSettings?.userRole || 'head_coach';
+  const isCoachOrAssistant = userRole === 'head_coach' || userRole === 'assistant_coach';
+
+  const handleUpdateUserRole = (newRole) => {
+    const updated = { ...teamSettings, userRole: newRole };
+    setTeamSettings(updated);
+    storageService.saveTeamSettings(updated);
+  };
+
   return (
     <div className="app-container">
       <Navbar
@@ -1855,6 +1864,8 @@ export default function App() {
         lastSyncTime={lastSyncTime}
         activeTeam={activeTeamObj}
         lastScoreEvent={remoteScoreEvent || activeTeamObj?.lastScoreEvent}
+        userRole={userRole}
+        onUpdateUserRole={handleUpdateUserRole}
         onOpenAuthModal={(tab) => {
           setAuthModalTab(tab || 'login');
           setIsAuthModalOpen(true);
@@ -2002,6 +2013,9 @@ export default function App() {
           roster={roster}
           rotation={rotation}
           phase={phase}
+          userRole={userRole}
+          isCoachOrAssistant={isCoachOrAssistant}
+          onOpenWhiteboard={() => setActiveTab('whiteboard')}
           onUpdatePoint={handleUpdatePoint}
           onDeletePoint={handleDeletePointById}
           onNavigateTab={(tab) => setActiveTab(tab)}

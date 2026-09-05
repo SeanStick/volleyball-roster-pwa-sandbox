@@ -16,7 +16,8 @@ import {
   ExternalLink,
   Check,
   PenTool,
-  Dumbbell
+  Dumbbell,
+  BellRing
 } from 'lucide-react';
 import VolleyballIcon from './icons/VolleyballIcon';
 
@@ -34,6 +35,7 @@ export default function UserMenu({
   onOpenLineupStudio,
   onOpenWhiteboard,
   onOpenDrills,
+  onOpenNotificationSettings,
   onManualSync,
   onLogout
 }) {
@@ -742,6 +744,38 @@ export default function UserMenu({
               >
                 <Dumbbell size={15} color="#c084fc" />
                 <span>Volleyball Drill Lab</span>
+              </button>
+            )}
+
+            {onOpenNotificationSettings && (
+              <button
+                type="button"
+                onClick={() => {
+                  setIsOpen(false);
+                  onOpenNotificationSettings();
+                }}
+                style={{
+                  width: '100%',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '0.6rem',
+                  padding: '0.55rem 0.75rem',
+                  background: 'rgba(168, 85, 247, 0.12)',
+                  border: '1px solid rgba(168, 85, 247, 0.25)',
+                  borderRadius: 'var(--radius-sm)',
+                  color: '#ffffff',
+                  fontSize: '0.82rem',
+                  fontWeight: 700,
+                  cursor: 'pointer',
+                  textAlign: 'left',
+                  marginBottom: '2px',
+                  transition: 'background 0.15s'
+                }}
+                onMouseEnter={(e) => (e.currentTarget.style.background = 'rgba(168, 85, 247, 0.22)')}
+                onMouseLeave={(e) => (e.currentTarget.style.background = 'rgba(168, 85, 247, 0.12)')}
+              >
+                <BellRing size={15} color="#c084fc" />
+                <span>Lock Screen Alerts & Scores</span>
               </button>
             )}
 

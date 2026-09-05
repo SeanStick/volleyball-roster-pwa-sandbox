@@ -1,5 +1,5 @@
 import React from 'react';
-import { Plus, Database, Layers, Share2, Dumbbell, PenTool } from 'lucide-react';
+import { Plus, Database, Layers, Share2, Dumbbell, PenTool, Bell } from 'lucide-react';
 import VolleyballIcon from './icons/VolleyballIcon';
 import UserMenu from './UserMenu';
 
@@ -10,6 +10,7 @@ export default function Navbar({
   onOpenLineupStudio,
   onOpenDrillsModal,
   onOpenWhiteboard,
+  onOpenNotificationSettings,
   user,
   syncStatus,
   lastSyncTime,
@@ -158,6 +159,19 @@ export default function Navbar({
           <Database size={18} />
         </button>
 
+        {/* Lock Screen & Background Alerts Bell Trigger */}
+        {onOpenNotificationSettings && (
+          <button
+            className="btn-icon"
+            onClick={onOpenNotificationSettings}
+            title="Lock Screen & Background Match Alerts"
+            aria-label="Notification Settings"
+            style={{ color: '#c084fc' }}
+          >
+            <Bell size={18} />
+          </button>
+        )}
+
         {/* User Menu, Coaching Tools & Cloud Sync Pill */}
         <UserMenu
           user={user}
@@ -173,6 +187,7 @@ export default function Navbar({
           onOpenLineupStudio={onOpenLineupStudio}
           onOpenWhiteboard={onOpenWhiteboard}
           onOpenDrills={onOpenDrillsModal}
+          onOpenNotificationSettings={onOpenNotificationSettings}
           onManualSync={onManualSync}
           onLogout={onLogout}
         />

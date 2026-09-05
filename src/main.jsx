@@ -3,12 +3,12 @@ import ReactDOM from 'react-dom/client';
 import App from './App.jsx';
 import './styles/index.css';
 
-// Unregister any legacy Service Workers & Clear all caches
+// Register Notification & Background Sync Service Worker
 if ('serviceWorker' in navigator) {
-  navigator.serviceWorker.getRegistrations().then((registrations) => {
-    for (const reg of registrations) {
-      reg.unregister();
-    }
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('/sw.js').catch((err) => {
+      console.warn('ServiceWorker registration error:', err);
+    });
   });
 }
 if ('caches' in window) {

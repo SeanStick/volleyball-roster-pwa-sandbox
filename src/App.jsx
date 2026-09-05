@@ -44,7 +44,9 @@ import GameCenterModal from './components/GameCenterModal';
 import SetBreakModal from './components/SetBreakModal';
 import MatchRecapModal from './components/MatchRecapModal';
 import LineupStudioModal from './components/LineupStudioModal';
+import NotificationSettingsModal from './components/NotificationSettingsModal';
 import { storageService, DEFAULT_TEAM_ID } from './services/storageService';
+import { notificationService } from './services/notificationService';
 import { firebaseService } from './services/firebaseService';
 import { rotateLineupClockwise, checkLineupFrontRowLiberoViolation } from './services/volleyballRules';
 import './styles/court.css';
@@ -94,6 +96,7 @@ export default function App() {
   const [playerToEdit, setPlayerToEdit] = useState(null);
   const [isImportExportModalOpen, setIsImportExportModalOpen] = useState(false);
   const [isDrillsModalOpen, setIsDrillsModalOpen] = useState(false);
+  const [isNotificationModalOpen, setIsNotificationModalOpen] = useState(false);
 
   // -------------------------------------------------------------
   // Core Application Data State
@@ -410,17 +413,48 @@ export default function App() {
 
               lastSeenScoreEventIdRef.current = eventToShow.id;
               setRemoteScoreEvent(eventToShow);
+
+              // 🔔 Dispatch Lock Screen Notification for Remote Co-Coach Score Update
+              const targetPoints = cloudTeam.matchStats?.targetPoints || 25;
+              const isSetPoint = incomingOurScore >= targetPoints - 1 || incomingOppScore >= targetPoints - 1;
+              const isMatchPoint = isSetPoint && ((cloudTeam.matchStats?.ourSetsWon || 0) >= 1 || (cloudTeam.matchStats?.opponentSetsWon || 0) >= 1);
+
+              if (isSetPoint) {
+                notificationService.sendSetPointNotification({
+                  teamLeading: incomingOurScore >= incomingOppScore ? 'us' : 'opponent',
+                  ourScore: incomingOurScore,
+                  opponentScore: incomingOppScore,
+                  setNumber: cloudTeam.matchStats.setNumber || 1,
+                  isMatchPoint
+                });
+              } else {
+                notificationService.sendScoreUpdateNotification({
+                  ourScore: incomingOurScore,
+                  opponentScore: incomingOppScore,
+                  opponentName: cloudTeam.matchStats.opponentName || 'Opponent',
+                  setNumber: cloudTeam.matchStats.setNumber || 1,
+                  scorerName: resolvedName,
+                  detailText: incomingOurScore > localOurScore ? 'Point for Our Squad' : 'Opponent Point'
+                });
+              }
             }
           }
 
           lastScoreStateRef.current = { ourScore: incomingOurScore, opponentScore: incomingOppScore };
 
-          // Detect set changes or tournament context changes to display friendly toast
+          // Detect set changes or tournament context changes to display friendly toast & alert
           if (cloudTeam.matchStats.setNumber && cloudTeam.matchStats.setNumber !== matchStats?.setNumber) {
             setSyncToast({
               title: `🏐 Set ${cloudTeam.matchStats.setNumber} Started`,
               message: `Co-coach advanced match to Set ${cloudTeam.matchStats.setNumber}`,
               type: 'new_set'
+            });
+
+            notificationService.sendLockScreenNotification({
+              title: `🏐 Set ${cloudTeam.matchStats.setNumber} Started`,
+              body: `Match against ${cloudTeam.matchStats.opponentName || 'Opponent'} advanced to Set ${cloudTeam.matchStats.setNumber}`,
+              tag: 'volleyball-set-start',
+              alertType: 'new_game'
             });
           }
 
@@ -667,6 +701,13 @@ export default function App() {
       type: 'new_match'
     });
 
+    notificationService.sendNewMatchNotification({
+      opponentName: freshStats.opponentName,
+      tournamentName: freshStats.tournamentName,
+      courtNumber: freshStats.courtNumber,
+      matchFormat: freshStats.matchFormat
+    });
+
     syncCloudImmediately({
       matchStats: freshStats,
       matchHistory: storageService.getMatchHistory(),
@@ -711,6 +752,12 @@ export default function App() {
       title: isUs ? '⏱️ Timeout Called (US)' : `⏱️ Timeout (${matchStats?.opponentName || 'Opponent'})`,
       message: `Score: US ${nextStats.ourScore} - ${nextStats.opponentScore} OPP (${isUs ? nextStats.ourTimeoutsRemaining : nextStats.opponentTimeoutsRemaining} left this set)`,
       type: 'new_point'
+    });
+
+    notificationService.sendTimeoutNotification({
+      teamCalling: isUs ? 'us' : 'opponent',
+      ourScore: nextStats.ourScore,
+      opponentScore: nextStats.opponentScore
     });
 
     syncCloudImmediately({
@@ -1721,6 +1768,7 @@ export default function App() {
         onOpenLineupStudio={() => setIsLineupStudioOpen(true)}
         onOpenDrillsModal={() => setActiveTab('drills')}
         onOpenWhiteboard={() => setActiveTab('whiteboard')}
+        onOpenNotificationSettings={() => setIsNotificationModalOpen(true)}
         user={user}
         syncStatus={syncStatus}
         lastSyncTime={lastSyncTime}
@@ -2389,6 +2437,14 @@ export default function App() {
           onDeletePreset={handleDeleteLineupPreset}
           onApplyLineup={handleApplyLineupFromStudio}
           onUpdateRosterPlayer={handleUpdateRosterPlayerStatus}
+        />
+      )}
+
+      {/* 🔔 Lock Screen & Background Match Alerts Modal */}
+      {isNotificationModalOpen && (
+        <NotificationSettingsModal
+          isOpen={isNotificationModalOpen}
+          onClose={() => setIsNotificationModalOpen(false)}
         />
       )}
     </div>

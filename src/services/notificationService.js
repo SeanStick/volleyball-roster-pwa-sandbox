@@ -44,14 +44,36 @@ export const notificationService = {
     }
 
     try {
-      const status = await Notification.requestPermission();
+      let status;
+      // Handle both Promise and callback implementations (iOS Safari & older WebKit compatibility)
+      await new Promise((resolve) => {
+        let isDone = false;
+        const done = (result) => {
+          if (!isDone) {
+            isDone = true;
+            status = result;
+            resolve(result);
+          }
+        };
+
+        try {
+          const res = Notification.requestPermission(done);
+          if (res && typeof res.then === 'function') {
+            res.then(done).catch(() => done(Notification.permission));
+          }
+        } catch {
+          done(Notification.permission);
+        }
+      });
+
+      const finalStatus = status || Notification.permission || 'default';
       return {
-        success: status === 'granted',
-        status
+        success: finalStatus === 'granted',
+        status: finalStatus
       };
     } catch (err) {
       console.error('Error requesting notification permission:', err);
-      return { success: false, status: 'denied', error: err };
+      return { success: false, status: this.getPermissionStatus(), error: err };
     }
   },
 

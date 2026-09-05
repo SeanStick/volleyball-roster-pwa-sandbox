@@ -16,6 +16,7 @@ import {
   Sparkles
 } from 'lucide-react';
 import { notificationService } from '../services/notificationService';
+import VolleyballIcon from './icons/VolleyballIcon';
 import confetti from 'canvas-confetti';
 
 export default function NotificationSettingsModal({ isOpen, onClose }) {

@@ -11,6 +11,7 @@ const DAY_SCHEDULE_KEY = 'gostandoverthere_day_schedule_v1';
 const SAVED_LINEUPS_KEY = 'gostandoverthere_saved_lineups_v1';
 const LEGACY_ROSTER_KEY = 'spikesync_volleyball_roster_v1';
 const LEGACY_TEAM_KEY = 'spikesync_team_settings_v1';
+const DEFAULT_MATCH_SETTINGS_KEY = 'gostandoverthere_default_match_settings_v1';
 export const DEFAULT_TEAM_ID = 'team-default';
 
 export const DEFAULT_SAVED_LINEUPS = [
@@ -231,7 +232,10 @@ export const INITIAL_TEAM_SETTINGS = {
   primaryColor: '#ff6b35',
   secondaryColor: '#1e3a8a',
   liberoColor: '#8b5cf6',
-  userRole: 'head_coach' // 'head_coach' | 'assistant_coach' | 'player' | 'parent'
+  userRole: 'head_coach', // 'head_coach' | 'assistant_coach' | 'player' | 'parent'
+  defaultMatchFormat: 'Best of 3 (25, 25, 15)',
+  defaultTargetPoints: 25,
+  defaultMaxSubs: 12
 };
 
 export const storageService = {
@@ -310,6 +314,94 @@ export const storageService = {
     return updated;
   },
 
+  getDefaultMatchSettings() {
+    try {
+      const data = localStorage.getItem(DEFAULT_MATCH_SETTINGS_KEY);
+      if (data) {
+        const parsed = JSON.parse(data);
+        const format = parsed.matchFormat || parsed.defaultMatchFormat || 'Best of 3 (25, 25, 15)';
+        const targetPts = parsed.targetPoints !== undefined ? parsed.targetPoints : (parsed.defaultTargetPoints !== undefined ? parsed.defaultTargetPoints : (format.includes('21') ? 21 : 25));
+        const subs = parsed.maxSubs !== undefined ? Number(parsed.maxSubs) : (parsed.defaultMaxSubs !== undefined ? Number(parsed.defaultMaxSubs) : 12);
+        return {
+          matchFormat: format,
+          targetPoints: targetPts,
+          maxSubs: subs,
+          defaultMatchFormat: format,
+          defaultTargetPoints: targetPts,
+          defaultMaxSubs: subs
+        };
+      }
+      const teamSettings = this.getTeamSettings();
+      if (teamSettings?.defaultMatchFormat) {
+        const format = teamSettings.defaultMatchFormat || 'Best of 3 (25, 25, 15)';
+        const targetPts = teamSettings.defaultTargetPoints || (format.includes('21') ? 21 : 25);
+        const subs = teamSettings.defaultMaxSubs !== undefined ? Number(teamSettings.defaultMaxSubs) : 12;
+        return {
+          matchFormat: format,
+          targetPoints: targetPts,
+          maxSubs: subs,
+          defaultMatchFormat: format,
+          defaultTargetPoints: targetPts,
+          defaultMaxSubs: subs
+        };
+      }
+    } catch (e) {
+      console.error('Error reading default match settings:', e);
+    }
+    return {
+      matchFormat: 'Best of 3 (25, 25, 15)',
+      targetPoints: 25,
+      maxSubs: 12,
+      defaultMatchFormat: 'Best of 3 (25, 25, 15)',
+      defaultTargetPoints: 25,
+      defaultMaxSubs: 12
+    };
+  },
+
+  saveDefaultMatchSettings(settings) {
+    try {
+      const current = this.getDefaultMatchSettings();
+      const format = settings.matchFormat || settings.defaultMatchFormat || current.matchFormat;
+      const targetPts = settings.targetPoints !== undefined
+        ? settings.targetPoints
+        : (settings.defaultTargetPoints !== undefined ? settings.defaultTargetPoints : (format.includes('21') ? 21 : 25));
+      const subs = settings.maxSubs !== undefined
+        ? Number(settings.maxSubs)
+        : (settings.defaultMaxSubs !== undefined ? Number(settings.defaultMaxSubs) : current.maxSubs);
+
+      const normalized = {
+        matchFormat: format,
+        targetPoints: targetPts,
+        maxSubs: subs,
+        defaultMatchFormat: format,
+        defaultTargetPoints: targetPts,
+        defaultMaxSubs: subs,
+        updatedAt: new Date().toISOString()
+      };
+      localStorage.setItem(DEFAULT_MATCH_SETTINGS_KEY, JSON.stringify(normalized));
+
+      // Also sync to team settings if available
+      try {
+        const teamSettings = this.getTeamSettings();
+        if (teamSettings) {
+          this.saveTeamSettings({
+            ...teamSettings,
+            defaultMatchFormat: format,
+            defaultTargetPoints: targetPts,
+            defaultMaxSubs: subs
+          });
+        }
+      } catch (err) {
+        console.warn('Could not sync to teamSettings:', err);
+      }
+
+      return normalized;
+    } catch (e) {
+      console.error('Error saving default match settings:', e);
+      return settings;
+    }
+  },
+
   getMatchState() {
     try {
       const data = localStorage.getItem(MATCH_STATE_KEY);
@@ -356,9 +448,23 @@ export const storageService = {
 
   getMatchStats() {
     try {
+      const defaults = this.getDefaultMatchSettings();
       const data = localStorage.getItem(MATCH_STATS_KEY);
-      if (!data) return { ...INITIAL_MATCH_STATS };
-      return { ...INITIAL_MATCH_STATS, ...JSON.parse(data) };
+      if (!data) {
+        return {
+          ...INITIAL_MATCH_STATS,
+          matchFormat: defaults.defaultMatchFormat,
+          targetPoints: defaults.defaultTargetPoints,
+          maxSubs: defaults.defaultMaxSubs
+        };
+      }
+      return {
+        ...INITIAL_MATCH_STATS,
+        matchFormat: defaults.defaultMatchFormat,
+        targetPoints: defaults.defaultTargetPoints,
+        maxSubs: defaults.defaultMaxSubs,
+        ...JSON.parse(data)
+      };
     } catch (e) {
       console.error('Error reading match stats from localStorage:', e);
       return { ...INITIAL_MATCH_STATS };
@@ -391,8 +497,15 @@ export const storageService = {
 
   resetFullMatch() {
     try {
-      this.saveMatchStats(INITIAL_MATCH_STATS);
-      return { ...INITIAL_MATCH_STATS };
+      const defaults = this.getDefaultMatchSettings();
+      const fresh = {
+        ...INITIAL_MATCH_STATS,
+        matchFormat: defaults.defaultMatchFormat,
+        targetPoints: defaults.defaultTargetPoints,
+        maxSubs: defaults.defaultMaxSubs
+      };
+      this.saveMatchStats(fresh);
+      return fresh;
     } catch (e) {
       console.error('Error resetting full match stats:', e);
       return { ...INITIAL_MATCH_STATS };

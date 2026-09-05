@@ -625,20 +625,40 @@ export default function App() {
   // Tournament & Match Setup Handlers
   // -------------------------------------------------------------
   const handleUpdateMatchDetails = (details) => {
+    if (details.maxSubs !== undefined) {
+      setMaxSubs(Number(details.maxSubs));
+    }
+
+    if (details.matchFormat !== undefined || details.maxSubs !== undefined || details.targetPoints !== undefined) {
+      storageService.saveDefaultMatchSettings({
+        ...(details.matchFormat !== undefined ? { matchFormat: details.matchFormat } : {}),
+        ...(details.targetPoints !== undefined ? { targetPoints: details.targetPoints } : {}),
+        ...(details.maxSubs !== undefined ? { maxSubs: Number(details.maxSubs) } : {})
+      });
+      setTeamSettings(prev => ({
+        ...prev,
+        ...(details.matchFormat !== undefined ? { defaultMatchFormat: details.matchFormat } : {}),
+        ...(details.targetPoints !== undefined ? { defaultTargetPoints: details.targetPoints } : {}),
+        ...(details.maxSubs !== undefined ? { defaultMaxSubs: Number(details.maxSubs) } : {})
+      }));
+    }
+
     const nextStats = {
       ...matchStats,
       ...details
     };
     setMatchStats(nextStats);
+    storageService.saveMatchStats(nextStats);
 
     setSyncToast({
       title: '📍 Match Details Updated',
-      message: `${details.tournamentName || 'Tournament'} • ${details.courtNumber || 'Court 1'} (vs ${details.opponentName || 'Opponent'})`,
+      message: `${details.tournamentName || matchStats?.tournamentName || 'Tournament'} • ${details.courtNumber || matchStats?.courtNumber || 'Court 1'} (vs ${details.opponentName || matchStats?.opponentName || 'Opponent'})`,
       type: 'court_change'
     });
 
     syncCloudImmediately({
-      matchStats: nextStats
+      matchStats: nextStats,
+      ...(details.maxSubs !== undefined ? { maxSubs: Number(details.maxSubs) } : {})
     });
   };
 
@@ -650,15 +670,21 @@ export default function App() {
       setMatchHistory(nextHistory);
     }
 
-    const chosenMaxSubs = newMatchPayload.maxSubs || maxSubs || 12;
+    const defaultSettings = storageService.getDefaultMatchSettings();
+    const chosenMatchFormat = newMatchPayload.matchFormat || defaultSettings.matchFormat || 'Best of 3 (25, 25, 15)';
+    const chosenTargetPoints = newMatchPayload.targetPoints || (chosenMatchFormat.includes('21') ? 21 : 25);
+    const chosenMaxSubs = newMatchPayload.maxSubs !== undefined
+      ? Number(newMatchPayload.maxSubs)
+      : (maxSubs || defaultSettings.maxSubs || 12);
+
     const freshStats = {
       ...storageService.resetFullMatch(),
       tournamentName: newMatchPayload.tournamentName || matchStats?.tournamentName || 'Tournament Day',
       courtNumber: newMatchPayload.courtNumber || matchStats?.courtNumber || 'Court 1',
       opponentName: newMatchPayload.opponentName || 'Opponent',
       matchStage: newMatchPayload.matchStage || 'Match 1',
-      matchFormat: newMatchPayload.matchFormat || 'Best of 3 (25, 25, 15)',
-      targetPoints: newMatchPayload.targetPoints || 25,
+      matchFormat: chosenMatchFormat,
+      targetPoints: chosenTargetPoints,
       setNumber: 1,
       ourScore: 0,
       opponentScore: 0,
@@ -2281,6 +2307,7 @@ export default function App() {
           onResetScore={handleResetScore}
           onResetFullMatch={handleResetFullMatch}
           onNavigateTab={(tab) => setActiveTab(tab)}
+          onUpdateMatchDetails={handleUpdateMatchDetails}
         />
       )}
 
@@ -2404,6 +2431,7 @@ export default function App() {
         isOpen={isMatchSetupModalOpen}
         onClose={() => setIsMatchSetupModalOpen(false)}
         matchStats={matchStats}
+        maxSubs={maxSubs}
         onUpdateMatchDetails={handleUpdateMatchDetails}
         onStartFreshMatch={handleStartFreshMatch}
       />

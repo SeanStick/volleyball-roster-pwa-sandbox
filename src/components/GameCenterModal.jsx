@@ -23,6 +23,7 @@ import {
 } from 'lucide-react';
 import VolleyballIcon from './icons/VolleyballIcon';
 import confetti from 'canvas-confetti';
+import { storageService } from '../services/storageService';
 
 const QUICK_COURTS = ['Ct 1', 'Ct 2', 'Ct 3', 'Ct 4', 'Ct 5', 'Ct 6', 'Ct 7', 'Ct 8', 'Main Gym'];
 
@@ -65,12 +66,16 @@ export default function GameCenterModal({
   const [activeTab, setActiveTab] = useState(initialTab);
 
   // Match Configuration Form State
+  const defaultSettings = storageService.getDefaultMatchSettings();
+  const currentFormatStr = matchStats?.matchFormat || defaultSettings.matchFormat;
+  const initialFmtObj = MATCH_FORMATS.find(f => f.label === currentFormatStr || f.id === currentFormatStr) || MATCH_FORMATS[0];
+
   const [opponent, setOpponent] = useState(matchStats?.opponentName === 'Opponent' ? '' : (matchStats?.opponentName || ''));
   const [tournamentName, setTournamentName] = useState(matchStats?.tournamentName || 'Tournament Day');
   const [court, setCourt] = useState(matchStats?.courtNumber || 'Court 1');
   const [matchStage, setMatchStage] = useState(matchStats?.matchStage || 'Match 1');
-  const [formatId, setFormatId] = useState('best_of_3_25');
-  const [maxSubs, setMaxSubs] = useState(matchStats?.maxSubs || 12);
+  const [formatId, setFormatId] = useState(initialFmtObj.id);
+  const [maxSubs, setMaxSubs] = useState(matchStats?.maxSubs !== undefined ? matchStats.maxSubs : (defaultSettings.maxSubs || 12));
   const [servingFirst, setServingFirst] = useState(true);
   const [startingRotation, setStartingRotation] = useState(1);
 
@@ -110,6 +115,14 @@ export default function GameCenterModal({
 
   const handleLaunchStructuredMatch = () => {
     const chosenFormat = MATCH_FORMATS.find(f => f.id === formatId) || MATCH_FORMATS[0];
+    const finalSubs = Number(maxSubs) || 12;
+
+    storageService.saveDefaultMatchSettings({
+      matchFormat: chosenFormat.label,
+      targetPoints: chosenFormat.targetPoints,
+      maxSubs: finalSubs
+    });
+
     onStartFreshMatch({
       opponentName: opponent.trim() || 'Opponent',
       tournamentName: tournamentName.trim() || 'Tournament Day',
@@ -117,7 +130,7 @@ export default function GameCenterModal({
       matchStage: matchStage.trim() || 'Match 1',
       matchFormat: chosenFormat.label,
       targetPoints: chosenFormat.targetPoints,
-      maxSubs: Number(maxSubs) || 12,
+      maxSubs: finalSubs,
       phase: servingFirst ? 'serve' : 'receive',
       rotation: startingRotation,
       ourTimeoutsRemaining: 2,
@@ -500,7 +513,7 @@ export default function GameCenterModal({
                   </div>
                 </div>
 
-                {/* Format & Sub Rules */}
+                {/* Format & Sub Rules (Auto-saved) */}
                 <div style={{ display: 'grid', gridTemplateColumns: '1.3fr 1fr', gap: '0.6rem' }}>
                   <div>
                     <label style={{ fontSize: '0.74rem', color: '#94a3b8', fontWeight: 700, display: 'block', marginBottom: '0.3rem' }}>
@@ -508,7 +521,23 @@ export default function GameCenterModal({
                     </label>
                     <select
                       value={formatId}
-                      onChange={(e) => setFormatId(e.target.value)}
+                      onChange={(e) => {
+                        const nextId = e.target.value;
+                        setFormatId(nextId);
+                        const found = MATCH_FORMATS.find(f => f.id === nextId);
+                        if (found) {
+                          storageService.saveDefaultMatchSettings({
+                            matchFormat: found.label,
+                            targetPoints: found.targetPoints
+                          });
+                          if (onUpdateMatchDetails) {
+                            onUpdateMatchDetails({
+                              matchFormat: found.label,
+                              targetPoints: found.targetPoints
+                            });
+                          }
+                        }
+                      }}
                       style={{
                         width: '100%',
                         background: '#0f172a',
@@ -532,7 +561,14 @@ export default function GameCenterModal({
                     </label>
                     <select
                       value={maxSubs}
-                      onChange={(e) => setMaxSubs(Number(e.target.value))}
+                      onChange={(e) => {
+                        const nextSubs = Number(e.target.value);
+                        setMaxSubs(nextSubs);
+                        storageService.saveDefaultMatchSettings({ maxSubs: nextSubs });
+                        if (onUpdateMatchDetails) {
+                          onUpdateMatchDetails({ maxSubs: nextSubs });
+                        }
+                      }}
                       style={{
                         width: '100%',
                         background: '#0f172a',
@@ -549,6 +585,9 @@ export default function GameCenterModal({
                       ))}
                     </select>
                   </div>
+                </div>
+                <div style={{ fontSize: '0.7rem', color: '#64748b', marginTop: '-0.3rem' }}>
+                  ⚡ Selections immediately auto-save to current game and become defaults for all games
                 </div>
 
                 {/* Coin Toss Decision */}

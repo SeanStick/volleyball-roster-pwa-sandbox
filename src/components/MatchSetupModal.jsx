@@ -19,6 +19,7 @@ export default function MatchSetupModal({
   isOpen,
   onClose,
   matchStats,
+  maxSubs = 12,
   onUpdateMatchDetails,
   onStartFreshMatch
 }) {
@@ -26,8 +27,10 @@ export default function MatchSetupModal({
   const [matchNumber, setMatchNumber] = useState('Match 1');
   const [opponent, setOpponent] = useState('');
   const [matchFormat, setMatchFormat] = useState('Best of 3 (21, 21, 15)');
+  const [subs, setSubs] = useState(12);
   const [activeSet, setActiveSet] = useState(1);
   const [showResetConfirm, setShowResetConfirm] = useState(false);
+  const [autoSaveMsg, setAutoSaveMsg] = useState('');
 
   useEffect(() => {
     if (isOpen && matchStats) {
@@ -35,12 +38,44 @@ export default function MatchSetupModal({
       setMatchNumber(matchStats.matchStage || 'Match 1');
       setOpponent(matchStats.opponentName === 'Opponent' ? '' : (matchStats.opponentName || ''));
       setMatchFormat(matchStats.matchFormat || 'Best of 3 (21, 21, 15)');
+      setSubs(matchStats.maxSubs !== undefined ? matchStats.maxSubs : (maxSubs || 12));
       setActiveSet(matchStats.setNumber || 1);
       setShowResetConfirm(false);
+      setAutoSaveMsg('');
     }
-  }, [isOpen, matchStats]);
+  }, [isOpen, matchStats, maxSubs]);
 
   if (!isOpen) return null;
+
+  const triggerAutoSaveFeedback = (msg) => {
+    setAutoSaveMsg(msg);
+    setTimeout(() => {
+      setAutoSaveMsg((prev) => (prev === msg ? '' : prev));
+    }, 2800);
+  };
+
+  const handleFormatChange = (newFormat) => {
+    setMatchFormat(newFormat);
+    const targetPoints = newFormat.includes('21') ? 21 : 25;
+    if (onUpdateMatchDetails) {
+      onUpdateMatchDetails({
+        matchFormat: newFormat,
+        targetPoints: targetPoints
+      });
+    }
+    triggerAutoSaveFeedback('Format updated & set as default for all games ✓');
+  };
+
+  const handleSubsChange = (newSubs) => {
+    const parsedSubs = Number(newSubs);
+    setSubs(parsedSubs);
+    if (onUpdateMatchDetails) {
+      onUpdateMatchDetails({
+        maxSubs: parsedSubs
+      });
+    }
+    triggerAutoSaveFeedback('Sub limit updated & set as default for all games ✓');
+  };
 
   const handleSave = () => {
     const targetPoints = matchFormat.includes('21') ? 21 : 25;
@@ -50,6 +85,7 @@ export default function MatchSetupModal({
       opponentName: opponent.trim() || 'Opponent',
       matchFormat: matchFormat,
       targetPoints: targetPoints,
+      maxSubs: Number(subs) || 12,
       setNumber: Number(activeSet) || 1
     });
     confetti({ particleCount: 20, spread: 40, origin: { y: 0.5 } });
@@ -69,6 +105,7 @@ export default function MatchSetupModal({
       opponentName: opponent.trim() || 'Opponent',
       matchFormat: matchFormat,
       targetPoints: targetPoints,
+      maxSubs: Number(subs) || 12,
       setNumber: 1
     });
     confetti({ particleCount: 40, spread: 50, origin: { y: 0.4 } });
@@ -258,26 +295,71 @@ export default function MatchSetupModal({
             />
           </div>
 
-          {/* 5. Match Format */}
-          <div>
-            <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 700, color: '#fbbf24', marginBottom: '0.35rem' }}>
-              Match Format
-            </label>
-            <select
-              className="form-control"
-              value={matchFormat}
-              onChange={(e) => setMatchFormat(e.target.value)}
-              style={{ fontSize: '0.85rem' }}
-            >
-              <option value="Best of 3 (21, 21, 15)">Best of 3 (21, 21, 15)</option>
-              <option value="Best of 3 (25, 25, 15)">Best of 3 (25, 25, 15)</option>
-              <option value="Best of 5 (25, 25, 25, 25, 15)">Best of 5 (25, 25, 25, 25, 15)</option>
-              <option value="2 Sets (21, 21 - Pool Play)">2 Sets (21, 21 - Pool Play)</option>
-              <option value="2 Sets (25, 25 - Pool Play)">2 Sets (25, 25 - Pool Play)</option>
-              <option value="1 Set Game (to 21)">1 Set Game (to 21)</option>
-              <option value="1 Set Game (to 25)">1 Set Game (to 25)</option>
-            </select>
+          {/* 5. Match Format & Sub Limit (Auto-saves as default) */}
+          <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 1fr', gap: '0.65rem' }}>
+            <div>
+              <label style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', fontSize: '0.8rem', fontWeight: 700, color: '#fbbf24', marginBottom: '0.35rem' }}>
+                <span>Match Format</span>
+              </label>
+              <select
+                className="form-control"
+                value={matchFormat}
+                onChange={(e) => handleFormatChange(e.target.value)}
+                style={{ fontSize: '0.82rem', padding: '0.55rem 0.65rem' }}
+              >
+                <option value="Best of 3 (21, 21, 15)">Best of 3 (21, 21, 15)</option>
+                <option value="Best of 3 (25, 25, 15)">Best of 3 (25, 25, 15)</option>
+                <option value="Best of 5 (25, 25, 25, 25, 15)">Best of 5 (25, 25, 25, 25, 15)</option>
+                <option value="2 Sets (21, 21 - Pool Play)">2 Sets (21, 21 - Pool Play)</option>
+                <option value="2 Sets (25, 25 - Pool Play)">2 Sets (25, 25 - Pool Play)</option>
+                <option value="1 Set Game (to 21)">1 Set Game (to 21)</option>
+                <option value="1 Set Game (to 25)">1 Set Game (to 25)</option>
+              </select>
+            </div>
+
+            <div>
+              <label style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', fontSize: '0.8rem', fontWeight: 700, color: '#38bdf8', marginBottom: '0.35rem' }}>
+                <span>Max Subs / Set</span>
+              </label>
+              <select
+                className="form-control"
+                value={subs}
+                onChange={(e) => handleSubsChange(e.target.value)}
+                style={{ fontSize: '0.82rem', padding: '0.55rem 0.65rem' }}
+              >
+                <option value={12}>12 Subs (Standard)</option>
+                <option value={15}>15 Subs</option>
+                <option value={18}>18 Subs (NCAA)</option>
+                <option value={999}>Unlimited Subs</option>
+              </select>
+            </div>
           </div>
+
+          {/* Auto-save & default feedback badge */}
+          {autoSaveMsg ? (
+            <div
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '0.45rem',
+                background: 'rgba(16, 185, 129, 0.15)',
+                border: '1px solid rgba(16, 185, 129, 0.4)',
+                borderRadius: '8px',
+                padding: '0.45rem 0.75rem',
+                fontSize: '0.76rem',
+                color: '#6ee7b7',
+                fontWeight: 700,
+                animation: 'fadeIn 0.2s ease-in-out'
+              }}
+            >
+              <span>⚡</span>
+              <span>{autoSaveMsg}</span>
+            </div>
+          ) : (
+            <div style={{ fontSize: '0.72rem', color: '#64748b', marginTop: '-0.4rem', display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
+              <span>⚡ Changes to format & subs auto-save and apply as default for all games</span>
+            </div>
+          )}
 
           {/* Warning when tapping New Match */}
           {showResetConfirm && (

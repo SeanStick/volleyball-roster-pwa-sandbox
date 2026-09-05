@@ -24,6 +24,7 @@ import {
 import VolleyballIcon from './icons/VolleyballIcon';
 import confetti from 'canvas-confetti';
 import { FRONT_ROW_ZONES, BACK_ROW_ZONES, ZONE_LABELS } from '../services/volleyballRules';
+import { storageService } from '../services/storageService';
 
 const QUICK_COURTS = ['Ct 1', 'Ct 2', 'Ct 3', 'Ct 4', 'Ct 5', 'Ct 6', 'Ct 7', 'Ct 8', 'Main Gym'];
 const QUICK_MATCHES = ['Match 1', 'Match 2', 'Match 3', 'Match 4', 'Pool Play', 'Playoffs', 'Bracket', 'Finals'];
@@ -130,8 +131,21 @@ export default function MatchWizardModal({
       setCourt(matchStats?.courtNumber || 'Court 1');
       setOpponent('');
       setMatchStage(matchStats?.matchStage ? `Match ${Number(matchStats.matchStage.replace(/\D/g, '') || 1) + 1}` : 'Match 1');
-      setMatchFormat('best_of_3');
-      setMaxSubs(matchStats?.maxSubs || 12);
+      
+      const defaultSettings = storageService.getDefaultMatchSettings();
+      let matchedFmt = 'best_of_3_25';
+      const targetFmtStr = defaultSettings.matchFormat || matchStats?.matchFormat;
+      if (targetFmtStr) {
+        const found = MATCH_FORMATS.find(f => f.label === targetFmtStr || f.id === targetFmtStr);
+        if (found) matchedFmt = found.id;
+      }
+      setMatchFormat(matchedFmt);
+
+      const chosenSubs = defaultSettings.maxSubs !== undefined 
+        ? defaultSettings.maxSubs 
+        : (matchStats?.maxSubs !== undefined ? matchStats.maxSubs : 12);
+      setMaxSubs(chosenSubs);
+
       setServingFirst(true);
       setStartingRotation(1);
       setActiveZoneToPick(null);
@@ -191,6 +205,13 @@ export default function MatchWizardModal({
 
   const handleLaunchMatch = () => {
     const chosenFormat = MATCH_FORMATS.find(f => f.id === matchFormat) || MATCH_FORMATS[0];
+    const finalSubs = Number(maxSubs) || 12;
+
+    storageService.saveDefaultMatchSettings({
+      matchFormat: chosenFormat.label,
+      targetPoints: chosenFormat.targetPoints,
+      maxSubs: finalSubs
+    });
 
     onStartFreshMatch({
       tournamentName: tournamentName.trim() || 'Tournament Day',
@@ -199,7 +220,7 @@ export default function MatchWizardModal({
       matchStage: matchStage.trim() || 'Match 1',
       matchFormat: chosenFormat.label,
       targetPoints: chosenFormat.targetPoints,
-      maxSubs: Number(maxSubs) || 12,
+      maxSubs: finalSubs,
       lineup: wizardLineup,
       liberoId: selectedLiberoId,
       phase: servingFirst ? 'serve' : 'receive',
@@ -518,7 +539,17 @@ export default function MatchWizardModal({
                   <select
                     className="form-control"
                     value={matchFormat}
-                    onChange={(e) => setMatchFormat(e.target.value)}
+                    onChange={(e) => {
+                      const nextFmt = e.target.value;
+                      setMatchFormat(nextFmt);
+                      const found = MATCH_FORMATS.find(f => f.id === nextFmt);
+                      if (found) {
+                        storageService.saveDefaultMatchSettings({
+                          matchFormat: found.label,
+                          targetPoints: found.targetPoints
+                        });
+                      }
+                    }}
                     style={{ fontSize: '0.8rem', padding: '0.5rem' }}
                   >
                     {MATCH_FORMATS.map(f => (
@@ -534,7 +565,11 @@ export default function MatchWizardModal({
                   <select
                     className="form-control"
                     value={maxSubs}
-                    onChange={(e) => setMaxSubs(Number(e.target.value))}
+                    onChange={(e) => {
+                      const nextSubs = Number(e.target.value);
+                      setMaxSubs(nextSubs);
+                      storageService.saveDefaultMatchSettings({ maxSubs: nextSubs });
+                    }}
                     style={{ fontSize: '0.8rem', padding: '0.5rem' }}
                   >
                     {SUB_LIMITS.map(s => (
@@ -542,6 +577,9 @@ export default function MatchWizardModal({
                     ))}
                   </select>
                 </div>
+              </div>
+              <div style={{ fontSize: '0.7rem', color: '#64748b', marginTop: '0.2rem' }}>
+                ⚡ Selected format & subs auto-save as defaults for all future games
               </div>
             </div>
           )}

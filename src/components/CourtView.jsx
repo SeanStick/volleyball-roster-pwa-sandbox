@@ -84,7 +84,8 @@ export default function CourtView({
   onArchiveMatch,
   onResetScore,
   onResetFullMatch,
-  onNavigateTab
+  onNavigateTab,
+  onUpdateMatchDetails
 }) {
   // 6-2 System Validation
   const validation62 = validate62Formation(lineup, roster);
@@ -1540,6 +1541,10 @@ export default function CourtView({
         subHistory={subHistory}
         onResetHistory={handleResetHistory}
         maxSubs={maxSubs}
+        onUpdateMaxSubs={(newSubs) => {
+          if (setMaxSubs) setMaxSubs(newSubs);
+          if (onUpdateMatchDetails) onUpdateMatchDetails({ maxSubs: newSubs });
+        }}
       />
 
       {/* 6. 6-2 Formation Positional Alignment Modal */}

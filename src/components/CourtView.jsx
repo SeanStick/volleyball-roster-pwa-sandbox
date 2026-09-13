@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   RotateCw,
   RotateCcw,
@@ -20,7 +20,8 @@ import {
   Check,
   Archive,
   Flag,
-  FolderOpen
+  FolderOpen,
+  ChevronDown
 } from 'lucide-react';
 import VolleyballIcon from './icons/VolleyballIcon';
 import confetti from 'canvas-confetti';
@@ -110,6 +111,26 @@ export default function CourtView({
 
   // Rally Outcome & Side-Out Modal
   const [isRallyModalOpen, setIsRallyModalOpen] = useState(false);
+
+  // Consolidated Live Action Menu State
+  const [isActionsOpen, setIsActionsOpen] = useState(false);
+  const actionsMenuRef = useRef(null);
+
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (actionsMenuRef.current && !actionsMenuRef.current.contains(event.target)) {
+        setIsActionsOpen(false);
+      }
+    };
+    if (isActionsOpen) {
+      document.addEventListener('mousedown', handleClickOutside);
+      document.addEventListener('touchstart', handleClickOutside);
+    }
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+      document.removeEventListener('touchstart', handleClickOutside);
+    };
+  }, [isActionsOpen]);
 
   useEffect(() => {
     setDismissedSubIds([]);
@@ -910,114 +931,40 @@ export default function CourtView({
         )}
       </div>
 
-      {/* Court Top Controls Header */}
-      <div className="court-header">
-        {/* Rotation Selectors & Steppers */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', flexWrap: 'wrap' }}>
-          <div className="rotation-controls">
-            <button className="btn btn-secondary btn-sm" onClick={handlePrevRotation} title="Previous Rotation">
-              <RotateCcw size={16} />
-            </button>
-            <div className="rotation-indicator">
-              ROTATION #{rotation}
-            </div>
-            <button className="btn btn-secondary btn-sm" onClick={() => handleNextRotation(false)} title="Next Rotation (Clockwise)">
-              <RotateCw size={16} />
-            </button>
-          </div>
-
-          {onOpenLineupStudio && (
+      {/* 🏐 Streamlined Live-Game Command Strip */}
+      <div className="live-command-strip">
+        {/* Left: Rotation Navigation */}
+        <div className="live-command-group">
+          <div className="rotation-controls" style={{ gap: '0.35rem' }}>
             <button
-              type="button"
-              className="btn btn-sm"
-              onClick={onOpenLineupStudio}
-              style={{
-                background: 'linear-gradient(135deg, #a855f7 0%, #7c3aed 100%)',
-                border: '1px solid #a855f7',
-                color: '#ffffff',
-                fontWeight: 800,
-                fontSize: '0.78rem',
-                display: 'inline-flex',
-                alignItems: 'center',
-                gap: '0.35rem',
-                padding: '0.3rem 0.65rem',
-                borderRadius: '8px',
-                boxShadow: '0 2px 8px rgba(168, 85, 247, 0.35)',
-                cursor: 'pointer'
-              }}
-              title="Open 6-2 Make a Lineup Studio, AI Position Fit & Preset Manager"
+              className="btn btn-secondary btn-sm"
+              onClick={handlePrevRotation}
+              title="Previous Rotation"
+              style={{ padding: '0.35rem 0.55rem', borderRadius: '8px' }}
             >
-              <Sparkles size={13} />
-              <span>Lineup Studio</span>
+              <RotateCcw size={14} />
             </button>
-          )}
-
-          {/* 📂 Load Saved Lineup Preset Quick Action */}
-          <button
-            type="button"
-            className="btn btn-sm"
-            onClick={() => setIsLoadLineupModalOpen(true)}
-            style={{
-              background: 'linear-gradient(135deg, rgba(59, 130, 246, 0.25), rgba(30, 58, 138, 0.35))',
-              border: '1.5px solid rgba(59, 130, 246, 0.6)',
-              color: '#93c5fd',
-              fontWeight: 800,
-              fontSize: '0.78rem',
-              display: 'inline-flex',
-              alignItems: 'center',
-              gap: '0.35rem',
-              padding: '0.3rem 0.65rem',
-              borderRadius: '8px',
-              cursor: 'pointer'
-            }}
-            title="Load a saved lineup preset directly into the 6-position court"
-          >
-            <FolderOpen size={13} color="#60a5fa" />
-            <span>Load Lineup {savedPresets?.length > 0 ? `(${savedPresets.length})` : ''}</span>
-          </button>
-
-          {/* Small Serving / Receiving Phase Indicator */}
-          <div
-            className={`phase-status-indicator ${phase === 'serve' ? 'is-serving' : 'is-receiving'}`}
-            onClick={() => setPhase(phase === 'serve' ? 'receive' : 'serve')}
-            title={`Currently ${phase === 'serve' ? 'Serving' : 'Receiving'}. Tap to toggle.`}
-            style={{
-              display: 'inline-flex',
-              alignItems: 'center',
-              gap: '0.35rem',
-              padding: '0.25rem 0.65rem',
-              borderRadius: '999px',
-              fontSize: '0.74rem',
-              fontWeight: 900,
-              letterSpacing: '0.04em',
-              cursor: 'pointer',
-              background: phase === 'serve' ? 'rgba(16, 185, 129, 0.18)' : 'rgba(59, 130, 246, 0.18)',
-              border: `1.5px solid ${phase === 'serve' ? '#10b981' : '#3b82f6'}`,
-              color: phase === 'serve' ? '#34d399' : '#93c5fd',
-              boxShadow: phase === 'serve' ? '0 2px 8px rgba(16, 185, 129, 0.35)' : '0 2px 8px rgba(59, 130, 246, 0.35)',
-              userSelect: 'none'
-            }}
-          >
-            {phase === 'serve' ? (
-              <>
-                <VolleyballIcon size={12} />
-                <span>SERVING</span>
-              </>
-            ) : (
-              <>
-                <Shield size={12} />
-                <span>RECEIVING</span>
-              </>
-            )}
+            <div className="rotation-indicator" style={{ fontSize: '1.05rem', padding: '0.25rem 0.65rem' }}>
+              R{rotation}
+            </div>
+            <button
+              className="btn btn-secondary btn-sm"
+              onClick={() => handleNextRotation(false)}
+              title="Next Rotation (Clockwise)"
+              style={{ padding: '0.35rem 0.55rem', borderRadius: '8px' }}
+            >
+              <RotateCw size={14} />
+            </button>
           </div>
 
-          {/* Selectable Rotation Pills (R1 - R6) */}
-          <div className="rotation-pill-group">
+          {/* Quick Jump Pills (R1 - R6) */}
+          <div className="rotation-pill-group" style={{ padding: '2px', gap: '2px' }}>
             {[1, 2, 3, 4, 5, 6].map(rNum => (
               <button
                 key={rNum}
                 className={`rot-select-pill ${rotation === rNum ? 'active' : ''}`}
                 onClick={() => handleSelectRotation(rNum)}
+                style={{ padding: '0.25rem 0.55rem', fontSize: '0.85rem' }}
                 title={`Jump to Rotation #${rNum}`}
               >
                 R{rNum}
@@ -1026,220 +973,224 @@ export default function CourtView({
           </div>
         </div>
 
-        {/* Rally Flow & Phase Toggle (Serving vs Receiving) */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: '0.65rem', flexWrap: 'wrap' }}>
-          {/* Phase Toggle */}
-          <div className="phase-toggle-group">
+        {/* Center: Phase Toggle & Side-Out Action */}
+        <div className="live-command-group">
+          <div className="phase-toggle-group" style={{ padding: '2px', gap: '2px' }}>
             <button
               className={`phase-btn ${phase === 'serve' ? 'active-serve' : ''}`}
               onClick={() => setPhase('serve')}
+              style={{ padding: '0.25rem 0.65rem', fontSize: '0.78rem' }}
             >
-              <VolleyballIcon size={15} />
-              <span>Serving</span>
+              <VolleyballIcon size={13} />
+              <span>Serve</span>
             </button>
-
             <button
               className={`phase-btn ${phase === 'receive' ? 'active-receive' : ''}`}
               onClick={() => setPhase('receive')}
+              style={{ padding: '0.25rem 0.65rem', fontSize: '0.78rem' }}
             >
-              <Shield size={15} />
-              <span>Receiving</span>
+              <Shield size={13} />
+              <span>Receive</span>
             </button>
           </div>
 
-          {/* Side-Out / Next Rally Action Button */}
           <button
             className="btn btn-primary btn-sm rally-advance-btn"
             onClick={handleAdvanceRally}
             style={{
+              padding: '0.35rem 0.75rem',
+              fontSize: '0.8rem',
               background: phase === 'receive'
                 ? 'linear-gradient(135deg, #10b981, #059669)'
                 : 'linear-gradient(135deg, #3b82f6, #1d4ed8)',
               borderColor: phase === 'receive' ? '#10b981' : '#3b82f6',
               boxShadow: phase === 'receive'
-                ? '0 4px 14px rgba(16, 185, 129, 0.4)'
-                : '0 4px 14px rgba(59, 130, 246, 0.4)'
+                ? '0 3px 10px rgba(16, 185, 129, 0.35)'
+                : '0 3px 10px rgba(59, 130, 246, 0.35)'
             }}
-            title={phase === 'receive' ? 'Side-Out: Rotate clockwise to next rotation and take serve' : 'Lost Serve: Switch to receive in current rotation'}
+            title={phase === 'receive' ? 'Side-Out: Rotate clockwise to next rotation and take serve' : 'Side-Out: Switch to receive in current rotation'}
           >
             {phase === 'receive' ? (
               <>
-                <span>Side-Out (Rotate & Serve)</span>
-                <RotateCw size={15} />
+                <span>Side-Out (Rotate)</span>
+                <RotateCw size={13} />
               </>
             ) : (
               <>
-                <span>Side-Out (Switch to Receive)</span>
-                <ArrowRight size={15} />
+                <span>Side-Out (Recv)</span>
+                <ArrowRight size={13} />
               </>
             )}
           </button>
         </div>
 
-        {/* Status Pills: Substitution Counter & Libero Serve Status */}
-        <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap', alignItems: 'center' }}>
-          {/* 6-2 System Positional Status Banner */}
-          <div
-            className="subs-status-pill"
-            onClick={() => setIs62ModalOpen(true)}
-            style={{
-              background: validation62.isValid62
-                ? 'rgba(16, 185, 129, 0.12)'
-                : 'rgba(245, 158, 11, 0.18)',
-              borderColor: validation62.isValid62
-                ? 'rgba(16, 185, 129, 0.4)'
-                : '#f59e0b',
-              color: validation62.isValid62 ? '#a7f3d0' : '#fde68a',
-              cursor: 'pointer'
-            }}
-            title="Click to view 6-2 volleyball positional alignment and player roles"
-          >
-            {validation62.isValid62 ? (
-              <>
-                <CheckCircle size={15} color="#10b981" />
-                <span><strong>6-2 Verified</strong></span>
-              </>
-            ) : (
-              <>
-                <AlertTriangle size={15} color="#f59e0b" />
-                <span><strong>6-2 Mismatch (Tap to Fix)</strong></span>
-              </>
-            )}
-          </div>
-
+        {/* Right: Live Status & ⚡ Actions Drawer */}
+        <div className="live-command-group">
+          {/* Substitutions Pill */}
           <div
             className="subs-status-pill"
             onClick={() => setIsLogModalOpen(true)}
-            title="Click to view full substitutions log"
+            style={{ padding: '0.3rem 0.65rem', fontSize: '0.76rem' }}
+            title="Click to view substitutions log & limits"
           >
-            <History size={15} color="var(--accent-orange)" />
-            <span>
-              <strong>{regularSubsUsed}</strong> / {maxSubs} Subs
-            </span>
-            <span style={{ fontSize: '0.7rem', color: '#60a5fa', textDecoration: 'underline', marginLeft: '0.2rem' }}>
-              Log
-            </span>
+            <History size={13} color="var(--accent-orange)" />
+            <span><strong>{regularSubsUsed}</strong>/{maxSubs >= 999 ? '∞' : maxSubs} Subs</span>
           </div>
 
-          {/* Libero Serving Status Indicator */}
+          {/* 6-2 System Status Icon */}
+          <button
+            type="button"
+            className="btn-icon btn-sm"
+            onClick={() => setIs62ModalOpen(true)}
+            style={{
+              background: validation62.isValid62 ? 'rgba(16, 185, 129, 0.15)' : 'rgba(245, 158, 11, 0.2)',
+              border: `1px solid ${validation62.isValid62 ? '#10b981' : '#f59e0b'}`,
+              color: validation62.isValid62 ? '#34d399' : '#f59e0b',
+              padding: '0.35rem',
+              borderRadius: '8px'
+            }}
+            title={validation62.isValid62 ? '6-2 Lineup Verified (Click for details)' : '6-2 Mismatch Detected (Click to auto-fix)'}
+          >
+            {validation62.isValid62 ? <CheckCircle size={15} /> : <AlertTriangle size={15} />}
+          </button>
+
+          {/* Libero Serving Indicator (if active) */}
           {liberoServingRotation !== null && (
             <div
               className="subs-status-pill"
-              style={{ borderColor: '#8b5cf6', background: 'rgba(124, 58, 237, 0.15)' }}
-              title={`Libero is locked to serve in Rotation #${liberoServingRotation} (USAV Rule 19.3.1.3)`}
+              style={{
+                borderColor: '#8b5cf6',
+                background: 'rgba(124, 58, 237, 0.18)',
+                padding: '0.3rem 0.55rem',
+                fontSize: '0.74rem'
+              }}
+              title={`Libero serves in Rotation #${liberoServingRotation}`}
             >
-              <Award size={14} color="#c084fc" />
-              <span style={{ color: '#e9d5ff', fontSize: '0.78rem' }}>
-                Libero Serves in Rot #{liberoServingRotation}
-              </span>
+              <Award size={13} color="#c084fc" />
+              <span style={{ color: '#e9d5ff' }}>L=R{liberoServingRotation}</span>
             </div>
           )}
 
-          {/* Drag & Drop Rotation Customization Toggle Button */}
-          <button
-            className={`btn btn-sm ${isDragDropMode ? 'btn-primary' : 'btn-secondary'}`}
-            onClick={handleToggleDragDropMode}
-            style={isDragDropMode ? {
-              background: 'linear-gradient(135deg, #f59e0b, #d97706)',
-              borderColor: '#f59e0b',
-              boxShadow: '0 0 12px rgba(245, 158, 11, 0.5)',
-              color: '#ffffff',
-              fontWeight: 800
-            } : {}}
-            title="Enable drag and drop to rearrange players in Rotation 1 and propagate across all rotations"
-          >
-            <Move size={14} />
-            <span>{isDragDropMode ? '✋ Drag & Drop: ON' : '✋ Drag & Drop Rotations'}</span>
-          </button>
-
-          {/* Finish Set & Save Match Actions */}
-          <button
-            className="btn btn-sm"
-            onClick={handleFinishSetClick}
-            style={{
-              background: 'linear-gradient(135deg, rgba(16, 185, 129, 0.2), rgba(5, 150, 105, 0.35))',
-              borderColor: 'rgba(16, 185, 129, 0.5)',
-              color: '#a7f3d0',
-              fontWeight: 700
-            }}
-            title="Finish the active set, record score to set history, and advance to next set"
-          >
-            <Check size={14} color="#34d399" />
-            <span>Finish Set & Next</span>
-          </button>
-
-          <button
-            className="btn btn-sm"
-            onClick={handleArchiveMatchClick}
-            style={{
-              background: 'rgba(59, 130, 246, 0.2)',
-              borderColor: 'rgba(59, 130, 246, 0.45)',
-              color: '#bfdbfe',
-              fontWeight: 700
-            }}
-            title="Save current match stats and scores into history archive"
-          >
-            <Archive size={14} color="#60a5fa" />
-            <span>Save to History</span>
-          </button>
-
-          {/* Match Wizard Action */}
-          {onOpenMatchWizard && (
+          {/* Consolidated Actions Dropdown */}
+          <div className="live-action-menu-wrapper" ref={actionsMenuRef}>
             <button
               type="button"
-              className="btn btn-sm"
-              onClick={onOpenMatchWizard}
-              style={{
-                background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
-                borderColor: '#10b981',
-                color: '#ffffff',
-                fontWeight: 800,
-                fontSize: '0.8rem'
-              }}
-              title="Open the step-by-step match & lineup wizard"
+              className="live-action-menu-btn"
+              onClick={() => setIsActionsOpen(prev => !prev)}
+              title="Lineup & Match Tools"
             >
-              <VolleyballIcon size={14} /> <span>Match Wizard</span>
+              <Sparkles size={13} />
+              <span>Actions</span>
+              <ChevronDown size={13} style={{ transform: isActionsOpen ? 'rotate(180deg)' : 'none', transition: 'transform 0.2s' }} />
             </button>
-          )}
 
-          {/* Auto-fill & Clear Actions */}
-          {onOpenLineupStudio && (
-            <button
-              type="button"
-              className="btn btn-sm"
-              onClick={onOpenLineupStudio}
-              style={{
-                background: 'linear-gradient(135deg, #a855f7 0%, #7c3aed 100%)',
-                borderColor: '#a855f7',
-                color: '#ffffff',
-                fontWeight: 800,
-                fontSize: '0.8rem',
-                display: 'flex',
-                alignItems: 'center',
-                gap: '0.35rem',
-                boxShadow: '0 3px 12px rgba(168, 85, 247, 0.35)'
-              }}
-              title="Open 6-2 Lineup Studio & Preset Manager"
-            >
-              <Sparkles size={14} /> <span>Lineup Studio</span>
-            </button>
-          )}
-          <button
-            type="button"
-            className="btn btn-secondary btn-sm"
-            onClick={() => setIsLoadLineupModalOpen(true)}
-            style={{ borderColor: 'rgba(59, 130, 246, 0.5)', color: '#93c5fd' }}
-            title="Load a saved lineup preset into the 6 position court"
-          >
-            <FolderOpen size={14} color="#60a5fa" />
-            <span>Load Lineup {savedPresets?.length > 0 ? `(${savedPresets.length})` : ''}</span>
-          </button>
-          <button className="btn btn-secondary btn-sm" onClick={handleAutoFillStarters} title="Auto-fill starting lineup with smart volleyball roles">
-            <Sparkles size={14} color="#f59e0b" /> Auto-Fill Starting 6
-          </button>
-          <button className="btn btn-secondary btn-sm" onClick={handleClearCourt} title="Clear all positions on court">
-            <RefreshCw size={14} /> Clear
-          </button>
+            {isActionsOpen && (
+              <div className="live-action-dropdown">
+                <div className="live-action-group-title">Lineup & Presets</div>
+                <button
+                  type="button"
+                  className="live-action-item"
+                  onClick={() => {
+                    setIsActionsOpen(false);
+                    setIsLoadLineupModalOpen(true);
+                  }}
+                >
+                  <FolderOpen size={14} color="#60a5fa" />
+                  <span>Load Lineup {savedPresets?.length > 0 ? `(${savedPresets.length})` : ''}</span>
+                </button>
+
+                {onOpenLineupStudio && (
+                  <button
+                    type="button"
+                    className="live-action-item"
+                    onClick={() => {
+                      setIsActionsOpen(false);
+                      onOpenLineupStudio();
+                    }}
+                  >
+                    <Sparkles size={14} color="#c084fc" />
+                    <span>Lineup Studio & Fit</span>
+                  </button>
+                )}
+
+                <button
+                  type="button"
+                  className="live-action-item"
+                  onClick={() => {
+                    setIsActionsOpen(false);
+                    handleToggleDragDropMode();
+                  }}
+                >
+                  <Move size={14} color="#f59e0b" />
+                  <span>{isDragDropMode ? 'Exit Drag & Drop' : 'Drag & Drop Rotations'}</span>
+                </button>
+
+                <button
+                  type="button"
+                  className="live-action-item"
+                  onClick={() => {
+                    setIsActionsOpen(false);
+                    handleAutoFillStarters();
+                  }}
+                >
+                  <Sparkles size={14} color="#34d399" />
+                  <span>Auto-Fill Starting 6</span>
+                </button>
+
+                <button
+                  type="button"
+                  className="live-action-item"
+                  onClick={() => {
+                    setIsActionsOpen(false);
+                    handleClearCourt();
+                  }}
+                >
+                  <RefreshCw size={14} color="#f87171" />
+                  <span>Clear Court</span>
+                </button>
+
+                <div className="live-action-group-title" style={{ marginTop: '0.25rem' }}>Match Flow</div>
+
+                {onOpenMatchWizard && (
+                  <button
+                    type="button"
+                    className="live-action-item"
+                    onClick={() => {
+                      setIsActionsOpen(false);
+                      onOpenMatchWizard();
+                    }}
+                  >
+                    <VolleyballIcon size={14} />
+                    <span>Match Wizard</span>
+                  </button>
+                )}
+
+                <button
+                  type="button"
+                  className="live-action-item"
+                  onClick={() => {
+                    setIsActionsOpen(false);
+                    handleFinishSetClick();
+                  }}
+                >
+                  <Check size={14} color="#34d399" />
+                  <span>Finish Set & Next</span>
+                </button>
+
+                <button
+                  type="button"
+                  className="live-action-item"
+                  onClick={() => {
+                    setIsActionsOpen(false);
+                    handleArchiveMatchClick();
+                  }}
+                >
+                  <Archive size={14} color="#60a5fa" />
+                  <span>Save to History Archive</span>
+                </button>
+              </div>
+            )}
+          </div>
         </div>
       </div>
 

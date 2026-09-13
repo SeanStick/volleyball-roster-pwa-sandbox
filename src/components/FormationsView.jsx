@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   RotateCw,
   RotateCcw,
@@ -15,7 +15,10 @@ import {
   ArrowLeftRight,
   Play,
   Film,
-  Archive
+  Archive,
+  ChevronDown,
+  BookOpen,
+  Layout
 } from 'lucide-react';
 import VolleyballIcon from './icons/VolleyballIcon';
 import confetti from 'canvas-confetti';
@@ -104,6 +107,26 @@ export default function FormationsView({
 
   // 🎬 Tactical Rally Simulator Animation State (Defaulted to OFF)
   const [isAnimationActive, setIsAnimationActive] = useState(false);
+  const [formationsViewMode, setFormationsViewMode] = useState('board'); // 'board' | 'simulator' | 'guide'
+  const [isToolsOpen, setIsToolsOpen] = useState(false);
+  const toolsMenuRef = useRef(null);
+
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (toolsMenuRef.current && !toolsMenuRef.current.contains(event.target)) {
+        setIsToolsOpen(false);
+      }
+    };
+    if (isToolsOpen) {
+      document.addEventListener('mousedown', handleClickOutside);
+      document.addEventListener('touchstart', handleClickOutside);
+    }
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+      document.removeEventListener('touchstart', handleClickOutside);
+    };
+  }, [isToolsOpen]);
+
   const [currentStageIndex, setCurrentStageIndex] = useState(0);
   const [isPlaying, setIsPlaying] = useState(false);
   const [playbackSpeed, setPlaybackSpeed] = useState(1);
@@ -586,225 +609,253 @@ export default function FormationsView({
 
   return (
     <div className="formations-view-container">
-      {/* Top Controls Header */}
-      <div className="formations-header">
-        {/* Rotation Selector (1 to 6) */}
-        <div className="formations-rotation-bar">
-          <span style={{ fontSize: '0.8rem', fontWeight: 800, textTransform: 'uppercase', color: 'var(--text-secondary)' }}>
-            Rotation:
-          </span>
-          <div className="rotation-pill-group">
+      {/* 🏐 Streamlined 6-2 Formations Live Command Strip */}
+      <div className="live-command-strip">
+        {/* Left: Rotation Navigation */}
+        <div className="live-command-group">
+          <div className="rotation-controls" style={{ gap: '0.35rem' }}>
+            <button
+              className="btn btn-secondary btn-sm"
+              onClick={handlePrevRotation}
+              title="Previous Rotation"
+              style={{ padding: '0.35rem 0.55rem', borderRadius: '8px' }}
+            >
+              <RotateCcw size={14} />
+            </button>
+            <div className="rotation-indicator" style={{ fontSize: '1.05rem', padding: '0.25rem 0.65rem' }}>
+              R{rotation}
+            </div>
+            <button
+              className="btn btn-secondary btn-sm"
+              onClick={() => handleNextRotation(false)}
+              title="Next Rotation (Clockwise)"
+              style={{ padding: '0.35rem 0.55rem', borderRadius: '8px' }}
+            >
+              <RotateCw size={14} />
+            </button>
+          </div>
+
+          <div className="rotation-pill-group" style={{ padding: '2px', gap: '2px' }}>
             {[1, 2, 3, 4, 5, 6].map((rotNum) => (
               <button
                 key={rotNum}
                 className={`rot-select-pill ${rotation === rotNum ? 'active' : ''}`}
                 onClick={() => handleRotChange(rotNum)}
+                style={{ padding: '0.25rem 0.55rem', fontSize: '0.85rem' }}
                 title={`Jump to Rotation #${rotNum}`}
               >
                 R{rotNum}
               </button>
             ))}
           </div>
-
-          {/* Small Serving / Receiving Phase Indicator */}
-          <div
-            className={`phase-status-indicator ${!isReceivePhase ? 'is-serving' : 'is-receiving'}`}
-            onClick={() => setPhase && setPhase(isReceivePhase ? 'serve' : 'receive')}
-            title={`Currently ${!isReceivePhase ? 'Serving' : 'Receiving'}. Tap to toggle.`}
-            style={{
-              display: 'inline-flex',
-              alignItems: 'center',
-              gap: '0.35rem',
-              padding: '0.25rem 0.65rem',
-              borderRadius: '999px',
-              fontSize: '0.74rem',
-              fontWeight: 900,
-              letterSpacing: '0.04em',
-              cursor: 'pointer',
-              background: !isReceivePhase ? 'rgba(16, 185, 129, 0.18)' : 'rgba(59, 130, 246, 0.18)',
-              border: `1.5px solid ${!isReceivePhase ? '#10b981' : '#3b82f6'}`,
-              color: !isReceivePhase ? '#34d399' : '#93c5fd',
-              boxShadow: !isReceivePhase ? '0 2px 8px rgba(16, 185, 129, 0.35)' : '0 2px 8px rgba(59, 130, 246, 0.35)',
-              userSelect: 'none'
-            }}
-          >
-            {!isReceivePhase ? (
-              <>
-                <VolleyballIcon size={12} />
-                <span>SERVING</span>
-              </>
-            ) : (
-              <>
-                <Shield size={12} />
-                <span>RECEIVING</span>
-              </>
-            )}
-          </div>
         </div>
 
-        {/* Phase Controls: Serving first, then Receiving, plus Side-Out Advance Button */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: '0.65rem', flexWrap: 'wrap' }}>
-          {/* Phase Toggle: Serving first, then Receiving */}
-          <div className="phase-toggle-group">
+        {/* Center: Phase Toggle & Side-Out */}
+        <div className="live-command-group">
+          <div className="phase-toggle-group" style={{ padding: '2px', gap: '2px' }}>
             <button
               className={`phase-btn ${!isReceivePhase ? 'active-serve' : ''}`}
               onClick={() => setPhase && setPhase('serve')}
+              style={{ padding: '0.25rem 0.65rem', fontSize: '0.78rem' }}
             >
-              <VolleyballIcon size={16} />
-              <span>Serving (Base Defense)</span>
+              <VolleyballIcon size={13} />
+              <span>Serve</span>
             </button>
-
             <button
               className={`phase-btn ${isReceivePhase ? 'active-receive' : ''}`}
               onClick={() => setPhase && setPhase('receive')}
+              style={{ padding: '0.25rem 0.65rem', fontSize: '0.78rem' }}
             >
-              <Shield size={16} />
-              <span>Serve Receive (Stack)</span>
+              <Shield size={13} />
+              <span>Receive</span>
             </button>
           </div>
 
-          {/* Side-Out / Next Rally Advance Button */}
           <button
             className="btn btn-primary btn-sm rally-advance-btn"
             onClick={handleAdvanceRally}
             style={{
+              padding: '0.35rem 0.75rem',
+              fontSize: '0.8rem',
               background: isReceivePhase
                 ? 'linear-gradient(135deg, #10b981, #059669)'
                 : 'linear-gradient(135deg, #3b82f6, #1d4ed8)',
               borderColor: isReceivePhase ? '#10b981' : '#3b82f6',
               boxShadow: isReceivePhase
-                ? '0 4px 14px rgba(16, 185, 129, 0.4)'
-                : '0 4px 14px rgba(59, 130, 246, 0.4)'
+                ? '0 3px 10px rgba(16, 185, 129, 0.35)'
+                : '0 3px 10px rgba(59, 130, 246, 0.35)'
             }}
-            title={isReceivePhase ? 'Side-Out: Rotate clockwise to next rotation and take serve' : 'Lost Serve: Switch to receive in current rotation'}
+            title={isReceivePhase ? 'Side-Out: Rotate to next rotation and take serve' : 'Side-Out: Switch to receive in current rotation'}
           >
             {isReceivePhase ? (
               <>
-                <span>Side-Out (Rotate & Serve)</span>
-                <RotateCw size={15} />
+                <span>Side-Out (Rotate)</span>
+                <RotateCw size={13} />
               </>
             ) : (
               <>
-                <span>Side-Out (Switch to Receive)</span>
-                <ArrowRight size={15} />
+                <span>Side-Out (Recv)</span>
+                <ArrowRight size={13} />
               </>
             )}
           </button>
         </div>
 
-        {/* Action Tools */}
-        <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center', flexWrap: 'wrap' }}>
-          {/* 6-2 System Positional Status Banner */}
+        {/* Right: Mode Switcher & ⚙️ Tools Drawer */}
+        <div className="live-command-group">
+          {/* Segmented View Switcher */}
+          <div className="segmented-view-control">
+            <button
+              type="button"
+              className={`segmented-view-btn ${formationsViewMode === 'board' ? 'active' : ''}`}
+              onClick={() => {
+                setFormationsViewMode('board');
+                setIsAnimationActive(false);
+                setIsPlaying(false);
+              }}
+              title="Interactive Court Board"
+            >
+              <Layout size={13} />
+              <span>Board</span>
+            </button>
+
+            <button
+              type="button"
+              className={`segmented-view-btn ${formationsViewMode === 'simulator' ? 'active' : ''}`}
+              onClick={() => {
+                setFormationsViewMode('simulator');
+                setIsAnimationActive(true);
+              }}
+              title="Animated Rally Simulator"
+            >
+              <VolleyballIcon size={13} className={isPlaying ? 'anim-spin' : ''} />
+              <span>Simulator</span>
+            </button>
+
+            <button
+              type="button"
+              className={`segmented-view-btn ${formationsViewMode === 'guide' ? 'active' : ''}`}
+              onClick={() => {
+                setFormationsViewMode('guide');
+                setIsAnimationActive(false);
+                setIsPlaying(false);
+              }}
+              title="Coaching Tactics & Overlap Rules Guide"
+            >
+              <BookOpen size={13} />
+              <span>Tactics</span>
+            </button>
+          </div>
+
+          {/* 6-2 Status Badge */}
           <button
-            className="btn btn-secondary btn-sm"
+            type="button"
+            className="btn-icon btn-sm"
             onClick={() => setIs62ModalOpen(true)}
             style={{
-              background: validation62.isValid62
-                ? 'rgba(16, 185, 129, 0.12)'
-                : 'rgba(245, 158, 11, 0.18)',
-              borderColor: validation62.isValid62
-                ? 'rgba(16, 185, 129, 0.4)'
-                : '#f59e0b',
-              color: validation62.isValid62 ? '#a7f3d0' : '#fde68a',
-              fontWeight: 700,
-              display: 'flex',
-              alignItems: 'center',
-              gap: '0.4rem'
+              background: validation62.isValid62 ? 'rgba(16, 185, 129, 0.15)' : 'rgba(245, 158, 11, 0.2)',
+              border: `1px solid ${validation62.isValid62 ? '#10b981' : '#f59e0b'}`,
+              color: validation62.isValid62 ? '#34d399' : '#f59e0b',
+              padding: '0.35rem',
+              borderRadius: '8px'
             }}
-            title="Click to view 6-2 volleyball positional alignment and player roles"
+            title={validation62.isValid62 ? '6-2 Formation Verified (Click for details)' : '6-2 Mismatch Detected (Click to fix)'}
           >
-            {validation62.isValid62 ? (
-              <>
-                <CheckCircle size={15} color="#10b981" />
-                <span>6-2 Verified</span>
-              </>
-            ) : (
-              <>
-                <AlertTriangle size={15} color="#f59e0b" />
-                <span>6-2 Mismatch (Tap to Fix)</span>
-              </>
+            {validation62.isValid62 ? <CheckCircle size={15} /> : <AlertTriangle size={15} />}
+          </button>
+
+          {/* Tools Menu */}
+          <div className="live-action-menu-wrapper" ref={toolsMenuRef}>
+            <button
+              type="button"
+              className="live-action-menu-btn"
+              onClick={() => setIsToolsOpen(prev => !prev)}
+              title="Tactical Options & Tools"
+            >
+              <Sparkles size={13} />
+              <span>Tools</span>
+              <ChevronDown size={13} style={{ transform: isToolsOpen ? 'rotate(180deg)' : 'none', transition: 'transform 0.2s' }} />
+            </button>
+
+            {isToolsOpen && (
+              <div className="live-action-dropdown">
+                <div className="live-action-group-title">Board Display</div>
+                <button
+                  type="button"
+                  className="live-action-item"
+                  onClick={() => {
+                    setIsToolsOpen(false);
+                    setShowArrows(prev => !prev);
+                  }}
+                >
+                  {showArrows ? <EyeOff size={14} color="#94a3b8" /> : <Eye size={14} color="#38bdf8" />}
+                  <span>{showArrows ? 'Hide Movement Arrows' : 'Show Movement Arrows'}</span>
+                </button>
+
+                <button
+                  type="button"
+                  className="live-action-item"
+                  onClick={() => {
+                    setIsToolsOpen(false);
+                    handleResetToStandard();
+                  }}
+                >
+                  <RefreshCw size={14} color="#60a5fa" />
+                  <span>Reset to Textbook 6-2</span>
+                </button>
+
+                <div className="live-action-group-title" style={{ marginTop: '0.25rem' }}>Lineup & Roles</div>
+                <button
+                  type="button"
+                  className="live-action-item"
+                  onClick={() => {
+                    setIsToolsOpen(false);
+                    setIsAutoFillModalOpen(true);
+                  }}
+                >
+                  <Sparkles size={14} color="#f59e0b" />
+                  <span>Auto-Fill 6-2 System</span>
+                </button>
+
+                <button
+                  type="button"
+                  className="live-action-item"
+                  onClick={() => {
+                    setIsToolsOpen(false);
+                    if (onNavigateTab) onNavigateTab('court');
+                  }}
+                >
+                  <Move size={14} color="#c084fc" />
+                  <span>Drag & Drop Rotations</span>
+                </button>
+
+                <div className="live-action-group-title" style={{ marginTop: '0.25rem' }}>Match Actions</div>
+                <button
+                  type="button"
+                  className="live-action-item"
+                  onClick={() => {
+                    setIsToolsOpen(false);
+                    handleFinishSetClick();
+                  }}
+                >
+                  <Check size={14} color="#34d399" />
+                  <span>Finish Set & Next</span>
+                </button>
+
+                <button
+                  type="button"
+                  className="live-action-item"
+                  onClick={() => {
+                    setIsToolsOpen(false);
+                    handleArchiveMatchClick();
+                  }}
+                >
+                  <Archive size={14} color="#60a5fa" />
+                  <span>Save to History Archive</span>
+                </button>
+              </div>
             )}
-          </button>
-
-          {/* Rally Simulator Toggle */}
-          <button
-            className={`btn btn-sm ${isAnimationActive ? 'btn-primary' : 'btn-secondary'}`}
-            onClick={() => {
-              setIsAnimationActive(prev => !prev);
-              if (isPlaying) setIsPlaying(false);
-            }}
-            style={isAnimationActive ? { background: 'linear-gradient(135deg, #f59e0b, #d97706)', borderColor: '#f59e0b' } : {}}
-            title={isAnimationActive ? 'Rally Simulator is Active' : 'Switch to Interactive Board'}
-          >
-            <VolleyballIcon size={14} className={isPlaying ? 'anim-spin' : ''} />
-            <span>{isAnimationActive ? '🎬 Rally Simulator: ON' : '🎬 Rally Simulator: OFF'}</span>
-          </button>
-
-          {/* Finish Set & Save Match Actions */}
-          <button
-            className="btn btn-sm"
-            onClick={handleFinishSetClick}
-            style={{
-              background: 'linear-gradient(135deg, rgba(16, 185, 129, 0.2), rgba(5, 150, 105, 0.35))',
-              borderColor: 'rgba(16, 185, 129, 0.5)',
-              color: '#a7f3d0',
-              fontWeight: 700
-            }}
-            title="Finish the active set, record score to set history, and advance to next set"
-          >
-            <Check size={14} color="#34d399" />
-            <span>Finish Set & Next</span>
-          </button>
-
-          <button
-            className="btn btn-sm"
-            onClick={handleArchiveMatchClick}
-            style={{
-              background: 'rgba(59, 130, 246, 0.2)',
-              borderColor: 'rgba(59, 130, 246, 0.45)',
-              color: '#bfdbfe',
-              fontWeight: 700
-            }}
-            title="Save current match stats and scores into history archive"
-          >
-            <Archive size={14} color="#60a5fa" />
-            <span>Save to History</span>
-          </button>
-
-          <button
-            className="btn btn-secondary btn-sm"
-            onClick={() => onNavigateTab && onNavigateTab('court')}
-            title="Jump to Court Lineup tab to customize starting rotation via Drag & Drop"
-          >
-            <span>✋ Drag & Drop Rotations</span>
-          </button>
-
-          <button
-            className="btn btn-secondary btn-sm"
-            onClick={() => setIsAutoFillModalOpen(true)}
-            title="Auto-fill official 6-2 starting lineup with Serve 1st / Receive 1st options"
-          >
-            <Sparkles size={14} color="var(--accent-orange)" />
-            <span>Auto-Fill 6-2</span>
-          </button>
-
-          <button
-            className="btn btn-secondary btn-sm"
-            onClick={() => setShowArrows(prev => !prev)}
-            title={showArrows ? 'Hide movement arrows' : 'Show movement arrows'}
-          >
-            {showArrows ? <EyeOff size={14} /> : <Eye size={14} />}
-            <span>{showArrows ? 'Hide Arrows' : 'Show Arrows'}</span>
-          </button>
-
-          <button
-            className="btn btn-secondary btn-sm"
-            onClick={handleResetToStandard}
-            title="Reset player circles to textbook 6-2 positions"
-          >
-            <RefreshCw size={14} />
-            <span>Reset to Standard</span>
-          </button>
+          </div>
         </div>
       </div>
 
@@ -926,103 +977,9 @@ export default function FormationsView({
       )}
 
       {/* Main 2-Column Tactical Layout */}
-      <div className="formations-grid-layout">
-        {/* Left Column: Interactive Hardwood Floor Canvas & Animation Player */}
-        <div className="canvas-column">
-          {/* Active Phase & Rotation Banner */}
-          <div
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'space-between',
-              padding: '0.45rem 0.85rem',
-              background: 'rgba(15, 23, 42, 0.7)',
-              borderRadius: '12px',
-              border: `1px solid ${!isReceivePhase ? 'rgba(16, 185, 129, 0.35)' : 'rgba(59, 130, 246, 0.35)'}`,
-              marginBottom: '0.65rem',
-              boxShadow: '0 2px 8px rgba(0, 0, 0, 0.3)'
-            }}
-          >
-            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-              <span
-                style={{
-                  display: 'inline-flex',
-                  alignItems: 'center',
-                  gap: '0.35rem',
-                  padding: '0.2rem 0.6rem',
-                  borderRadius: '999px',
-                  fontSize: '0.72rem',
-                  fontWeight: 900,
-                  background: !isReceivePhase ? 'rgba(16, 185, 129, 0.2)' : 'rgba(59, 130, 246, 0.2)',
-                  color: !isReceivePhase ? '#34d399' : '#93c5fd',
-                  border: `1px solid ${!isReceivePhase ? '#10b981' : '#3b82f6'}`
-                }}
-              >
-                {!isReceivePhase ? <VolleyballIcon size={12} /> : <Shield size={12} />}
-                <span>{!isReceivePhase ? 'WE ARE SERVING' : 'WE ARE RECEIVING'}</span>
-              </span>
-              <span style={{ fontSize: '0.78rem', color: '#cbd5e1', fontWeight: 800 }}>
-                Rotation #{rotation} {isReceivePhase ? '• Serve Receive Stack' : '• Base Defense'}
-              </span>
-            </div>
-
-            <button
-              type="button"
-              onClick={() => setPhase && setPhase(isReceivePhase ? 'serve' : 'receive')}
-              style={{
-                background: 'none',
-                border: 'none',
-                color: 'var(--text-secondary)',
-                fontSize: '0.72rem',
-                fontWeight: 700,
-                cursor: 'pointer',
-                textDecoration: 'underline'
-              }}
-            >
-              Switch to {isReceivePhase ? 'Serving' : 'Receiving'}
-            </button>
-          </div>
-
-          {/* Rally Simulator Multi-Stage Transport Bar */}
-          {isAnimationActive && (
-            <FormationAnimationPlayer
-              rotation={rotation}
-              phase={currentPhaseKey}
-              currentStageIndex={currentStageIndex}
-              isPlaying={isPlaying}
-              playbackSpeed={playbackSpeed}
-              isLooping={isLooping}
-              onStageChange={(idx) => setCurrentStageIndex(idx)}
-              onPlayPauseToggle={() => setIsPlaying(prev => !prev)}
-              onReset={() => {
-                setIsPlaying(false);
-                setCurrentStageIndex(0);
-              }}
-              onSpeedChange={(spd) => setPlaybackSpeed(spd)}
-              onLoopToggle={() => setIsLooping(prev => !prev)}
-            />
-          )}
-
-          <FormationCanvas
-            positions={activePositions}
-            arrows={isReceivePhase ? rotationData?.receiving?.arrows : rotationData?.serving?.arrows}
-            roster={roster}
-            lineup={lineup}
-            liberoExchanges={liberoExchanges}
-            phase={currentPhaseKey}
-            rotation={rotation}
-            onPositionsChange={handlePositionsChange}
-            onTokenClick={(zoneKey) => handleOpenSubModal(zoneKey)}
-            showTacticalArrows={showArrows}
-            isAnimationActive={isAnimationActive}
-            animationStage={currentStage}
-            playbackSpeed={playbackSpeed}
-            ball={currentStage ? currentStage.ball : null}
-          />
-        </div>
-
-        {/* Right Column: Tactics & Overlap Rules Guide */}
-        <div className="tactics-column">
+      {/* Main Tactical Display Area */}
+      {formationsViewMode === 'guide' ? (
+        <div className="tactics-column" style={{ width: '100%', maxWidth: '900px', margin: '0 auto' }}>
           <FormationTacticsGuide
             rotationData={rotationData}
             phase={currentPhaseKey}
@@ -1031,7 +988,50 @@ export default function FormationsView({
             roster={roster}
           />
         </div>
-      </div>
+      ) : (
+        <div className="formations-grid-layout" style={{ gridTemplateColumns: '1fr' }}>
+          <div className="canvas-column" style={{ maxWidth: '820px', margin: '0 auto', width: '100%' }}>
+            {/* Rally Simulator Multi-Stage Transport Bar */}
+            {formationsViewMode === 'simulator' && (
+              <div style={{ marginBottom: '0.65rem' }}>
+                <FormationAnimationPlayer
+                  rotation={rotation}
+                  phase={currentPhaseKey}
+                  currentStageIndex={currentStageIndex}
+                  isPlaying={isPlaying}
+                  playbackSpeed={playbackSpeed}
+                  isLooping={isLooping}
+                  onStageChange={(idx) => setCurrentStageIndex(idx)}
+                  onPlayPauseToggle={() => setIsPlaying(prev => !prev)}
+                  onReset={() => {
+                    setIsPlaying(false);
+                    setCurrentStageIndex(0);
+                  }}
+                  onSpeedChange={(spd) => setPlaybackSpeed(spd)}
+                  onLoopToggle={() => setIsLooping(prev => !prev)}
+                />
+              </div>
+            )}
+
+            <FormationCanvas
+              positions={activePositions}
+              arrows={isReceivePhase ? rotationData?.receiving?.arrows : rotationData?.serving?.arrows}
+              roster={roster}
+              lineup={lineup}
+              liberoExchanges={liberoExchanges}
+              phase={currentPhaseKey}
+              rotation={rotation}
+              onPositionsChange={handlePositionsChange}
+              onTokenClick={(zoneKey) => handleOpenSubModal(zoneKey)}
+              showTacticalArrows={showArrows}
+              isAnimationActive={formationsViewMode === 'simulator'}
+              animationStage={currentStage}
+              playbackSpeed={playbackSpeed}
+              ball={currentStage ? currentStage.ball : null}
+            />
+          </div>
+        </div>
+      )}
 
       {/* Rule Modals */}
       {/* 1. Libero Front-Row Exit Prompt Modal */}

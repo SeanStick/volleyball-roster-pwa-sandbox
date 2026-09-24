@@ -23,7 +23,9 @@ import {
   Mic,
   MicOff,
   Zap,
-  ArrowRightLeft
+  ArrowRightLeft,
+  Settings,
+  X
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
 import VolleyballIcon from './icons/VolleyballIcon';
@@ -67,6 +69,7 @@ export default function ScoreboardBar({
 }) {
   const [isPointModalOpen, setIsPointModalOpen] = useState(false);
   const [scoringTeam, setScoringTeam] = useState('us'); // 'us' | 'opponent'
+  const [isMatchToolsOpen, setIsMatchToolsOpen] = useState(false);
 
   // Timeout Countdown Timer State
   const [activeTimeout, setActiveTimeout] = useState(null); // { team: 'us'|'opponent', secondsLeft: 60 }
@@ -527,155 +530,88 @@ export default function ScoreboardBar({
           userSelect: 'none'
         }}
       >
-        {/* Left: 1-Tap Start Game & Day Hub Buttons (Desktop/Tablet) */}
-        <div className="hide-mobile" style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', flexShrink: 0 }}>
-          {onOpenMatchWizard && (
-            <button
-              type="button"
-              onClick={onOpenGameCenter || onOpenMatchWizard}
-              style={{
-                background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
-                border: '1px solid #10b981',
-                borderRadius: '999px',
-                padding: '0.25rem 0.65rem',
-                color: '#ffffff',
-                fontSize: '0.76rem',
-                fontWeight: 900,
-                display: 'flex',
-                alignItems: 'center',
-                gap: '0.35rem',
-                cursor: 'pointer',
-                boxShadow: '0 2px 8px rgba(16, 185, 129, 0.4)'
-              }}
-              title="Start New Match / Lineup Wizard"
-            >
-              <VolleyballIcon size={13} />
-              <span>Start Game</span>
-            </button>
-          )}
-
-          {onArchiveMatch && (
-            <button
-              type="button"
-              onClick={handleFinishGameClick}
-              style={{
-                background: 'linear-gradient(135deg, #ef4444 0%, #dc2626 100%)',
-                border: '1px solid #ef4444',
-                borderRadius: '999px',
-                padding: '0.25rem 0.65rem',
-                color: '#ffffff',
-                fontSize: '0.76rem',
-                fontWeight: 900,
-                display: 'flex',
-                alignItems: 'center',
-                gap: '0.35rem',
-                cursor: 'pointer',
-                boxShadow: '0 2px 8px rgba(239, 68, 68, 0.4)'
-              }}
-              title="Finish and Archive Current Match"
-            >
-              <Archive size={13} />
-              <span>Finish Game</span>
-            </button>
-          )}
-
-          <button
-            type="button"
-            onClick={onOpenGameCenter || onOpenTournamentDayHub}
-            style={{
-              background: 'linear-gradient(135deg, rgba(59, 130, 246, 0.25), rgba(30, 58, 138, 0.35))',
-              border: '1px solid rgba(59, 130, 246, 0.5)',
-              borderRadius: '999px',
-              padding: '0.2rem 0.55rem',
-              color: '#93c5fd',
-              fontSize: '0.74rem',
-              fontWeight: 800,
-              display: 'flex',
-              alignItems: 'center',
-              gap: '0.3rem',
-              cursor: 'pointer'
-            }}
-            title="Open Game Operations Center"
-          >
-            <Trophy size={12} color="#60a5fa" />
-            <span>Game Center</span>
-          </button>
-
-          {onOpenLineupStudio && (
-            <button
-              type="button"
-              onClick={onOpenLineupStudio}
-              style={{
-                background: 'linear-gradient(135deg, rgba(168, 85, 247, 0.25), rgba(126, 34, 206, 0.35))',
-                border: '1px solid rgba(168, 85, 247, 0.6)',
-                borderRadius: '999px',
-                padding: '0.2rem 0.6rem',
-                color: '#e9d5ff',
-                fontSize: '0.74rem',
-                fontWeight: 800,
-                display: 'flex',
-                alignItems: 'center',
-                gap: '0.3rem',
-                cursor: 'pointer'
-              }}
-              title="Open 6-2 Make a Lineup Studio, AI Position Fit & Presets"
-            >
-              <Sparkles size={12} color="#c084fc" />
-              <span>Lineup Studio</span>
-            </button>
-          )}
-        </div>
-
-        {/* Center: Location & Opponent (Click to Quick Edit) */}
+        {/* Left: Location & Opponent (Click to Quick Edit) */}
         <div
           onClick={onOpenGameCenter || onOpenMatchSetup}
           style={{
             display: 'flex',
             alignItems: 'center',
-            gap: '0.4rem',
+            gap: '0.45rem',
             minWidth: 0,
-            cursor: 'pointer',
-            flex: 1,
-            justifyContent: 'center'
+            cursor: 'pointer'
           }}
           title="Tap to change Court, Match, or Opponent"
         >
           <span
             style={{
-              background: 'rgba(255, 255, 255, 0.08)',
+              background: 'rgba(255, 255, 255, 0.1)',
               color: '#cbd5e1',
-              padding: '0.12rem 0.4rem',
+              padding: '0.15rem 0.45rem',
               borderRadius: '4px',
-              fontSize: '0.72rem',
+              fontSize: '0.74rem',
               fontWeight: 700,
               whiteSpace: 'nowrap'
             }}
           >
             {courtNumber}
           </span>
-          <span style={{ fontSize: '0.78rem', fontWeight: 700, color: '#f8fafc', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+          <span style={{ fontSize: '0.8rem', fontWeight: 800, color: '#f8fafc', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
             <span style={{ color: '#60a5fa' }}>{matchStage}</span> vs <span style={{ color: '#fca5a5' }}>{opponentName || 'Opponent'}</span>
           </span>
           <Edit3 size={11} color="#94a3b8" style={{ flexShrink: 0 }} />
         </div>
 
-        {/* Right: Sets Summary */}
+        {/* Right: Sets Summary & Match Tools Trigger */}
         <div
-          onClick={onOpenGameCenter || onOpenTournamentDayHub}
           style={{
             display: 'flex',
             alignItems: 'center',
-            gap: '0.25rem',
-            fontSize: '0.75rem',
-            fontWeight: 800,
-            cursor: 'pointer',
+            gap: '0.65rem',
             flexShrink: 0
           }}
         >
-          <span style={{ color: '#94a3b8' }}>Sets:</span>
-          <span style={{ color: '#10b981' }}>{ourSetsWon}</span>
-          <span style={{ color: '#94a3b8' }}>-</span>
-          <span style={{ color: '#f87171' }}>{opponentSetsWon}</span>
+          <div
+            onClick={onOpenGameCenter || onOpenTournamentDayHub}
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '0.25rem',
+              fontSize: '0.78rem',
+              fontWeight: 800,
+              cursor: 'pointer'
+            }}
+            title="Sets summary (click for game center)"
+          >
+            <span style={{ color: '#94a3b8' }}>Sets:</span>
+            <span style={{ color: '#10b981' }}>{ourSetsWon}</span>
+            <span style={{ color: '#94a3b8' }}>-</span>
+            <span style={{ color: '#f87171' }}>{opponentSetsWon}</span>
+          </div>
+
+          <button
+            type="button"
+            onClick={() => setIsMatchToolsOpen(true)}
+            style={{
+              background: 'linear-gradient(135deg, rgba(59, 130, 246, 0.25), rgba(30, 58, 138, 0.45))',
+              border: '1px solid rgba(59, 130, 246, 0.5)',
+              borderRadius: '999px',
+              padding: '0.22rem 0.65rem',
+              color: '#93c5fd',
+              fontSize: '0.74rem',
+              fontWeight: 800,
+              display: 'flex',
+              alignItems: 'center',
+              gap: '0.35rem',
+              cursor: 'pointer'
+            }}
+            title="Open Coach & Match Tools (Studio, Stats, Preferences, Wizard)"
+          >
+            <Settings size={12} color="#60a5fa" />
+            <span>Match Tools</span>
+            {(isVoiceActive || isDirectScoreMode) && (
+              <span style={{ width: '6px', height: '6px', borderRadius: '50%', background: '#38bdf8' }} />
+            )}
+          </button>
         </div>
       </div>
 
@@ -979,48 +915,6 @@ export default function ScoreboardBar({
 
         {/* Right: Quick Controls + ⏱️ TIMEOUT BUTTONS */}
         <div className="scoreboard-action-group">
-          {/* 🎙️ Hands-Free Voice Scorekeeper Toggle */}
-          <button
-            type="button"
-            className={`btn btn-sm ${isVoiceActive ? 'btn-primary' : 'btn-secondary'}`}
-            onClick={handleToggleVoiceScorekeeper}
-            style={{
-              background: isVoiceActive ? 'linear-gradient(135deg, #a855f7 0%, #7c3aed 100%)' : 'rgba(255, 255, 255, 0.05)',
-              borderColor: isVoiceActive ? '#a855f7' : 'rgba(255, 255, 255, 0.15)',
-              color: isVoiceActive ? '#ffffff' : '#cbd5e1',
-              fontSize: '0.74rem',
-              fontWeight: 800,
-              boxShadow: isVoiceActive ? '0 0 14px rgba(168, 85, 247, 0.6)' : 'none',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '0.3rem',
-              padding: '0.35rem 0.55rem'
-            }}
-            title={isVoiceActive ? 'Voice listening active. Say "Kill 14", "Ace 3", or "Point Us"' : 'Turn on hands-free voice scorekeeper'}
-          >
-            {isVoiceActive ? <Mic size={13} className="animate-pulse" /> : <MicOff size={13} />}
-            <span>{isVoiceActive ? 'Listening...' : 'Voice'}</span>
-          </button>
-
-          {/* ⚡ 1-Tap Quick Score vs Detailed Stats Mode Toggle */}
-          <button
-            type="button"
-            className={`btn btn-sm ${isDirectScoreMode ? 'btn-primary' : 'btn-secondary'}`}
-            onClick={handleToggleDirectScoreMode}
-            style={isDirectScoreMode ? {
-              background: 'linear-gradient(135deg, #f59e0b 0%, #d97706 100%)',
-              borderColor: '#f59e0b',
-              color: '#0f172a',
-              fontWeight: 900,
-              fontSize: '0.74rem',
-              padding: '0.35rem 0.55rem'
-            } : { fontSize: '0.74rem', color: 'var(--text-muted)', padding: '0.35rem 0.55rem' }}
-            title={isDirectScoreMode ? '1-Tap Direct Score is ON. Tap +1 to score in 0ms (Hold button to open detailed stats)' : 'Detailed Stat Mode is ON. Opens modal on every point'}
-          >
-            <Zap size={12} color={isDirectScoreMode ? '#0f172a' : 'currentColor'} />
-            <span>{isDirectScoreMode ? '1-Tap: ON' : '1-Tap: OFF'}</span>
-          </button>
-
           {/* ⏱️ US Timeout Button & Dots */}
           <button
             type="button"
@@ -1028,8 +922,8 @@ export default function ScoreboardBar({
             onClick={() => handleStartTimeoutTimer('us')}
             disabled={ourTimeoutsRemaining <= 0}
             style={{
-              padding: '0.4rem 0.55rem',
-              fontSize: '0.74rem',
+              padding: '0.4rem 0.65rem',
+              fontSize: '0.78rem',
               fontWeight: 800,
               background: ourTimeoutsRemaining > 0 ? 'rgba(16, 185, 129, 0.18)' : 'rgba(255, 255, 255, 0.04)',
               borderColor: ourTimeoutsRemaining > 0 ? 'rgba(16, 185, 129, 0.45)' : 'rgba(255, 255, 255, 0.08)',
@@ -1037,7 +931,7 @@ export default function ScoreboardBar({
             }}
             title={ourTimeoutsRemaining > 0 ? `Call Timeout for Us (${ourTimeoutsRemaining} left)` : 'No timeouts remaining for Us in this set'}
           >
-            <Clock size={12} color={ourTimeoutsRemaining > 0 ? '#34d399' : '#64748b'} />
+            <Clock size={13} color={ourTimeoutsRemaining > 0 ? '#34d399' : '#64748b'} />
             <span>US TO</span>
             {/* Timeout Dots: [ ● ● ] */}
             <div style={{ display: 'flex', gap: '3px', marginLeft: '2px' }}>
@@ -1053,8 +947,8 @@ export default function ScoreboardBar({
             onClick={() => handleStartTimeoutTimer('opponent')}
             disabled={opponentTimeoutsRemaining <= 0}
             style={{
-              padding: '0.4rem 0.55rem',
-              fontSize: '0.74rem',
+              padding: '0.4rem 0.65rem',
+              fontSize: '0.78rem',
               fontWeight: 800,
               background: opponentTimeoutsRemaining > 0 ? 'rgba(239, 68, 68, 0.18)' : 'rgba(255, 255, 255, 0.04)',
               borderColor: opponentTimeoutsRemaining > 0 ? 'rgba(239, 68, 68, 0.45)' : 'rgba(255, 255, 255, 0.08)',
@@ -1062,7 +956,7 @@ export default function ScoreboardBar({
             }}
             title={opponentTimeoutsRemaining > 0 ? `Record Opponent Timeout (${opponentTimeoutsRemaining} left)` : 'No timeouts remaining for Opponent in this set'}
           >
-            <Clock size={12} color={opponentTimeoutsRemaining > 0 ? '#f87171' : '#64748b'} />
+            <Clock size={13} color={opponentTimeoutsRemaining > 0 ? '#f87171' : '#64748b'} />
             <span>OPP TO</span>
             {/* Timeout Dots: [ ● ● ] */}
             <div style={{ display: 'flex', gap: '3px', marginLeft: '2px' }}>
@@ -1077,126 +971,45 @@ export default function ScoreboardBar({
             onClick={onUndoLastPoint}
             disabled={pointHistory.length === 0}
             title={pointHistory.length > 0 ? 'Undo last rally point' : 'No points recorded yet'}
-            style={{ fontSize: '0.78rem' }}
+            style={{ fontSize: '0.78rem', padding: '0.4rem 0.65rem' }}
           >
             <RotateCcw size={13} />
             <span>Undo</span>
           </button>
 
-          {/* Quick Score Reset Button */}
+          {/* ⚙️ Consolidated Match Tools Trigger */}
           <button
+            type="button"
             className="btn btn-secondary btn-sm"
-            onClick={() => {
-              if (ourScore === 0 && opponentScore === 0) return;
-              if (window.confirm('Reset current set score back to 0 - 0?')) {
-                onResetScore();
-              }
-            }}
-            title="Reset current score back to 0 - 0"
-            style={{ fontSize: '0.78rem' }}
-          >
-            <RefreshCw size={13} />
-            <span>0-0</span>
-          </button>
-
-          {/* Stats Mode Toggle (ON / OFF) */}
-          <button
-            className={`btn btn-sm ${isTrackingEnabled ? 'btn-primary' : 'btn-secondary'}`}
-            onClick={handleToggleTracking}
-            style={isTrackingEnabled ? {
-              background: 'rgba(59, 130, 246, 0.2)',
-              borderColor: '#3b82f6',
+            onClick={() => setIsMatchToolsOpen(true)}
+            style={{
+              background: 'linear-gradient(135deg, rgba(59, 130, 246, 0.25), rgba(30, 58, 138, 0.45))',
+              borderColor: 'rgba(59, 130, 246, 0.55)',
               color: '#93c5fd',
-              fontSize: '0.76rem'
-            } : { fontSize: '0.76rem', color: 'var(--text-muted)' }}
-            title={isTrackingEnabled ? 'Error logging is ON' : 'Fast 1-tap score only'}
+              fontSize: '0.78rem',
+              fontWeight: 800,
+              padding: '0.4rem 0.65rem',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '0.35rem'
+            }}
+            title="Open Coach & Match Tools (Lineup Studio, Stats, Whiteboard, Preferences, Wizard)"
           >
-            <Sliders size={13} />
-            <span>{isTrackingEnabled ? 'Errors: ON' : 'Errors: OFF'}</span>
+            <Settings size={13} color="#60a5fa" />
+            <span>Tools</span>
+            {(isVoiceActive || isDirectScoreMode) && (
+              <span style={{
+                fontSize: '0.62rem',
+                background: isVoiceActive ? '#a855f7' : '#f59e0b',
+                color: '#fff',
+                padding: '0.1rem 0.35rem',
+                borderRadius: '999px',
+                fontWeight: 900
+              }}>
+                {isVoiceActive ? '🎙️' : '⚡'}
+              </span>
+            )}
           </button>
-
-          {/* Start Game Action */}
-          {onOpenMatchWizard && (
-            <button
-              type="button"
-              className="btn btn-sm"
-              onClick={onOpenGameCenter || onOpenMatchWizard}
-              style={{
-                background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
-                borderColor: '#10b981',
-                color: '#ffffff',
-                fontSize: '0.78rem',
-                fontWeight: 800,
-                display: 'flex',
-                alignItems: 'center',
-                gap: '0.3rem'
-              }}
-              title="Start New Volleyball Match"
-            >
-              <VolleyballIcon size={13} />
-              <span>Start Game</span>
-            </button>
-          )}
-
-          {/* Finish Game Action (Red) */}
-          {onArchiveMatch && (
-            <button
-              type="button"
-              className="btn btn-sm"
-              onClick={handleFinishGameClick}
-              style={{
-                background: 'linear-gradient(135deg, #ef4444 0%, #dc2626 100%)',
-                borderColor: '#ef4444',
-                color: '#ffffff',
-                fontSize: '0.78rem',
-                fontWeight: 800,
-                display: 'flex',
-                alignItems: 'center',
-                gap: '0.3rem',
-                boxShadow: '0 2px 8px rgba(239, 68, 68, 0.35)'
-              }}
-              title="Finish and Archive Current Match"
-            >
-              <Archive size={13} />
-              <span>Finish Game</span>
-            </button>
-          )}
-
-          {/* Lineup Studio Action (Purple) */}
-          {onOpenLineupStudio && (
-            <button
-              type="button"
-              className="btn btn-sm"
-              onClick={onOpenLineupStudio}
-              style={{
-                background: 'linear-gradient(135deg, rgba(168, 85, 247, 0.3), rgba(126, 34, 206, 0.45))',
-                border: '1px solid rgba(168, 85, 247, 0.6)',
-                color: '#e9d5ff',
-                fontSize: '0.78rem',
-                fontWeight: 800,
-                display: 'flex',
-                alignItems: 'center',
-                gap: '0.3rem'
-              }}
-              title="Open 6-2 Make a Lineup Studio"
-            >
-              <Sparkles size={13} color="#c084fc" />
-              <span>Lineup Studio</span>
-            </button>
-          )}
-
-          {/* View Stats Tab Link */}
-          {onNavigateTab && (
-            <button
-              className="btn btn-secondary btn-sm"
-              onClick={() => onNavigateTab('stats')}
-              style={{ fontSize: '0.78rem', borderColor: 'rgba(168, 85, 247, 0.4)', color: '#c084fc' }}
-              title="Jump to Match Stats"
-            >
-              <BarChart3 size={13} />
-              <span>Stats</span>
-            </button>
-          )}
         </div>
       </div>
 
@@ -1257,6 +1070,432 @@ export default function ScoreboardBar({
           opponentName={opponentName}
           onOpenWhiteboard={onOpenWhiteboard}
         />
+      )}
+
+      {/* ⚙️ Consolidated Match Tools & Coach Modal */}
+      {isMatchToolsOpen && (
+        <div
+          className="modal-overlay"
+          onClick={() => setIsMatchToolsOpen(false)}
+          style={{
+            zIndex: 1200,
+            background: 'rgba(0, 0, 0, 0.75)',
+            backdropFilter: 'blur(6px)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            padding: '1rem'
+          }}
+        >
+          <div
+            className="modal-content"
+            onClick={e => e.stopPropagation()}
+            style={{
+              maxWidth: '540px',
+              width: '100%',
+              background: '#0f172a',
+              border: '1px solid rgba(59, 130, 246, 0.35)',
+              borderRadius: 'var(--radius-xl)',
+              boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.8)',
+              overflow: 'hidden',
+              color: '#f8fafc',
+              animation: 'fadeIn 0.2s ease-out'
+            }}
+          >
+            {/* Modal Header */}
+            <div
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                padding: '1rem 1.25rem',
+                borderBottom: '1px solid rgba(255, 255, 255, 0.1)',
+                background: 'linear-gradient(90deg, #1e293b 0%, #0f172a 100%)'
+              }}
+            >
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.65rem' }}>
+                <div
+                  style={{
+                    width: '34px',
+                    height: '34px',
+                    borderRadius: '10px',
+                    background: 'linear-gradient(135deg, #3b82f6, #1d4ed8)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    color: '#fff',
+                    boxShadow: '0 4px 12px rgba(59, 130, 246, 0.4)'
+                  }}
+                >
+                  <Settings size={18} />
+                </div>
+                <div>
+                  <div style={{ fontSize: '1.02rem', fontWeight: 900, color: '#f8fafc' }}>
+                    Coach & Match Tools
+                  </div>
+                  <div style={{ fontSize: '0.73rem', color: '#94a3b8' }}>
+                    Consolidated match operations, lineup tools & scoring settings
+                  </div>
+                </div>
+              </div>
+
+              <button
+                type="button"
+                onClick={() => setIsMatchToolsOpen(false)}
+                style={{
+                  background: 'rgba(255, 255, 255, 0.08)',
+                  border: 'none',
+                  borderRadius: '8px',
+                  padding: '0.4rem',
+                  color: '#94a3b8',
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center'
+                }}
+              >
+                <X size={18} />
+              </button>
+            </div>
+
+            <div style={{ padding: '1.25rem', display: 'flex', flexDirection: 'column', gap: '1.25rem', maxHeight: '78vh', overflowY: 'auto' }}>
+              {/* Section 1: In-Game Scoring Preferences */}
+              <div>
+                <div style={{ fontSize: '0.74rem', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.06em', color: '#60a5fa', marginBottom: '0.6rem' }}>
+                  Live Scoring Preferences
+                </div>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: '0.5rem' }}>
+                  {/* 1-Tap Direct Score */}
+                  <div
+                    onClick={handleToggleDirectScoreMode}
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'space-between',
+                      padding: '0.75rem 0.9rem',
+                      borderRadius: 'var(--radius-md)',
+                      background: isDirectScoreMode ? 'rgba(245, 158, 11, 0.15)' : 'rgba(255, 255, 255, 0.04)',
+                      border: `1px solid ${isDirectScoreMode ? '#f59e0b' : 'rgba(255, 255, 255, 0.08)'}`,
+                      cursor: 'pointer',
+                      transition: 'all 0.15s ease'
+                    }}
+                  >
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.65rem' }}>
+                      <Zap size={18} color={isDirectScoreMode ? '#f59e0b' : '#94a3b8'} />
+                      <div>
+                        <div style={{ fontSize: '0.86rem', fontWeight: 800, color: isDirectScoreMode ? '#fbbf24' : '#f8fafc' }}>
+                          1-Tap Fast Scoring Mode: {isDirectScoreMode ? 'ON' : 'OFF'}
+                        </div>
+                        <div style={{ fontSize: '0.72rem', color: '#94a3b8' }}>
+                          {isDirectScoreMode ? 'Tap +1 to score in 0ms (press & hold for stat modal)' : 'Opens detailed stat attribution modal on every point'}
+                        </div>
+                      </div>
+                    </div>
+                    <span style={{ fontSize: '0.75rem', fontWeight: 900, color: isDirectScoreMode ? '#fbbf24' : '#64748b' }}>
+                      {isDirectScoreMode ? 'ACTIVE' : 'OFF'}
+                    </span>
+                  </div>
+
+                  {/* Voice Scorekeeper */}
+                  <div
+                    onClick={handleToggleVoiceScorekeeper}
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'space-between',
+                      padding: '0.75rem 0.9rem',
+                      borderRadius: 'var(--radius-md)',
+                      background: isVoiceActive ? 'rgba(168, 85, 247, 0.18)' : 'rgba(255, 255, 255, 0.04)',
+                      border: `1px solid ${isVoiceActive ? '#a855f7' : 'rgba(255, 255, 255, 0.08)'}`,
+                      cursor: 'pointer',
+                      transition: 'all 0.15s ease'
+                    }}
+                  >
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.65rem' }}>
+                      {isVoiceActive ? <Mic size={18} color="#c084fc" className="animate-pulse" /> : <MicOff size={18} color="#94a3b8" />}
+                      <div>
+                        <div style={{ fontSize: '0.86rem', fontWeight: 800, color: isVoiceActive ? '#e9d5ff' : '#f8fafc' }}>
+                          Hands-Free Voice Scorekeeper: {isVoiceActive ? 'LISTENING' : 'OFF'}
+                        </div>
+                        <div style={{ fontSize: '0.72rem', color: '#94a3b8' }}>
+                          {isVoiceActive ? 'Listening: speak "Kill 14", "Ace 3", "Point Us", "Timeout"' : 'Call scores and kills hands-free with your voice while coaching'}
+                        </div>
+                      </div>
+                    </div>
+                    <span style={{ fontSize: '0.75rem', fontWeight: 900, color: isVoiceActive ? '#c084fc' : '#64748b' }}>
+                      {isVoiceActive ? 'ACTIVE' : 'OFF'}
+                    </span>
+                  </div>
+
+                  {/* Error Tracking Toggle */}
+                  <div
+                    onClick={handleToggleTracking}
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'space-between',
+                      padding: '0.75rem 0.9rem',
+                      borderRadius: 'var(--radius-md)',
+                      background: isTrackingEnabled ? 'rgba(59, 130, 246, 0.15)' : 'rgba(255, 255, 255, 0.04)',
+                      border: `1px solid ${isTrackingEnabled ? '#3b82f6' : 'rgba(255, 255, 255, 0.08)'}`,
+                      cursor: 'pointer',
+                      transition: 'all 0.15s ease'
+                    }}
+                  >
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.65rem' }}>
+                      <Sliders size={18} color={isTrackingEnabled ? '#60a5fa' : '#94a3b8'} />
+                      <div>
+                        <div style={{ fontSize: '0.86rem', fontWeight: 800, color: isTrackingEnabled ? '#93c5fd' : '#f8fafc' }}>
+                          Error Attribution Tracking: {isTrackingEnabled ? 'ON' : 'OFF'}
+                        </div>
+                        <div style={{ fontSize: '0.72rem', color: '#94a3b8' }}>
+                          Prompt for error types: hit out, net touch, dropped ball, shank
+                        </div>
+                      </div>
+                    </div>
+                    <span style={{ fontSize: '0.75rem', fontWeight: 900, color: isTrackingEnabled ? '#60a5fa' : '#64748b' }}>
+                      {isTrackingEnabled ? 'ACTIVE' : 'OFF'}
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Section 2: Lineup & Coaching Tools */}
+              <div>
+                <div style={{ fontSize: '0.74rem', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.06em', color: '#c084fc', marginBottom: '0.6rem' }}>
+                  Lineup & Coaching Tools
+                </div>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: '0.5rem' }}>
+                  {onOpenLineupStudio && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setIsMatchToolsOpen(false);
+                        onOpenLineupStudio();
+                      }}
+                      style={{
+                        background: 'linear-gradient(135deg, rgba(168, 85, 247, 0.2), rgba(126, 34, 206, 0.35))',
+                        border: '1.5px solid rgba(168, 85, 247, 0.5)',
+                        borderRadius: 'var(--radius-md)',
+                        padding: '0.75rem',
+                        display: 'flex',
+                        flexDirection: 'column',
+                        alignItems: 'flex-start',
+                        gap: '0.4rem',
+                        cursor: 'pointer',
+                        color: '#fff',
+                        textAlign: 'left'
+                      }}
+                    >
+                      <Sparkles size={18} color="#c084fc" />
+                      <div style={{ fontWeight: 800, fontSize: '0.85rem' }}>Lineup Studio</div>
+                      <div style={{ fontSize: '0.7rem', color: '#e9d5ff' }}>6-2 Optimizer & Fit</div>
+                    </button>
+                  )}
+
+                  {onNavigateTab && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setIsMatchToolsOpen(false);
+                        onNavigateTab('stats');
+                      }}
+                      style={{
+                        background: 'linear-gradient(135deg, rgba(59, 130, 246, 0.2), rgba(30, 58, 138, 0.35))',
+                        border: '1.5px solid rgba(59, 130, 246, 0.5)',
+                        borderRadius: 'var(--radius-md)',
+                        padding: '0.75rem',
+                        display: 'flex',
+                        flexDirection: 'column',
+                        alignItems: 'flex-start',
+                        gap: '0.4rem',
+                        cursor: 'pointer',
+                        color: '#fff',
+                        textAlign: 'left'
+                      }}
+                    >
+                      <BarChart3 size={18} color="#60a5fa" />
+                      <div style={{ fontWeight: 800, fontSize: '0.85rem' }}>Match Stats</div>
+                      <div style={{ fontSize: '0.7rem', color: '#bfdbfe' }}>Box scores & charts</div>
+                    </button>
+                  )}
+
+                  {onOpenWhiteboard && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setIsMatchToolsOpen(false);
+                        onOpenWhiteboard();
+                      }}
+                      style={{
+                        background: 'linear-gradient(135deg, rgba(16, 185, 129, 0.2), rgba(5, 150, 105, 0.35))',
+                        border: '1.5px solid rgba(16, 185, 129, 0.5)',
+                        borderRadius: 'var(--radius-md)',
+                        padding: '0.75rem',
+                        display: 'flex',
+                        flexDirection: 'column',
+                        alignItems: 'flex-start',
+                        gap: '0.4rem',
+                        cursor: 'pointer',
+                        color: '#fff',
+                        textAlign: 'left'
+                      }}
+                    >
+                      <Edit3 size={18} color="#34d399" />
+                      <div style={{ fontWeight: 800, fontSize: '0.85rem' }}>Whiteboard</div>
+                      <div style={{ fontSize: '0.7rem', color: '#a7f3d0' }}>Tactical drawings</div>
+                    </button>
+                  )}
+                </div>
+              </div>
+
+              {/* Section 3: Match & Tournament Operations */}
+              <div>
+                <div style={{ fontSize: '0.74rem', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.06em', color: '#10b981', marginBottom: '0.6rem' }}>
+                  Match & Tournament Operations
+                </div>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: '0.5rem' }}>
+                  {onOpenMatchWizard && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setIsMatchToolsOpen(false);
+                        if (onOpenGameCenter) onOpenGameCenter();
+                        else onOpenMatchWizard();
+                      }}
+                      style={{
+                        background: 'rgba(255, 255, 255, 0.05)',
+                        border: '1px solid rgba(255, 255, 255, 0.12)',
+                        borderRadius: 'var(--radius-md)',
+                        padding: '0.75rem',
+                        display: 'flex',
+                        flexDirection: 'column',
+                        alignItems: 'flex-start',
+                        gap: '0.4rem',
+                        cursor: 'pointer',
+                        color: '#fff',
+                        textAlign: 'left'
+                      }}
+                    >
+                      <VolleyballIcon size={18} />
+                      <div style={{ fontWeight: 800, fontSize: '0.85rem' }}>Match Wizard</div>
+                      <div style={{ fontSize: '0.7rem', color: '#94a3b8' }}>Setup & coin toss</div>
+                    </button>
+                  )}
+
+                  {(onOpenGameCenter || onOpenTournamentDayHub) && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setIsMatchToolsOpen(false);
+                        if (onOpenGameCenter) onOpenGameCenter();
+                        else if (onOpenTournamentDayHub) onOpenTournamentDayHub();
+                      }}
+                      style={{
+                        background: 'rgba(255, 255, 255, 0.05)',
+                        border: '1px solid rgba(255, 255, 255, 0.12)',
+                        borderRadius: 'var(--radius-md)',
+                        padding: '0.75rem',
+                        display: 'flex',
+                        flexDirection: 'column',
+                        alignItems: 'flex-start',
+                        gap: '0.4rem',
+                        cursor: 'pointer',
+                        color: '#fff',
+                        textAlign: 'left'
+                      }}
+                    >
+                      <Trophy size={18} color="#fbbf24" />
+                      <div style={{ fontWeight: 800, fontSize: '0.85rem' }}>Game Center</div>
+                      <div style={{ fontSize: '0.7rem', color: '#94a3b8' }}>Schedule & pool play</div>
+                    </button>
+                  )}
+
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setIsMatchToolsOpen(false);
+                      handleFinishSetClick();
+                    }}
+                    style={{
+                      background: 'rgba(16, 185, 129, 0.15)',
+                      border: '1px solid rgba(16, 185, 129, 0.4)',
+                      borderRadius: 'var(--radius-md)',
+                      padding: '0.75rem',
+                      display: 'flex',
+                      flexDirection: 'column',
+                      alignItems: 'flex-start',
+                      gap: '0.4rem',
+                      cursor: 'pointer',
+                      color: '#6ee7b7',
+                      textAlign: 'left'
+                    }}
+                  >
+                    <Check size={18} color="#34d399" />
+                    <div style={{ fontWeight: 800, fontSize: '0.85rem' }}>Finish Set {setNumber}</div>
+                    <div style={{ fontSize: '0.7rem', color: '#a7f3d0' }}>Advance to Set {setNumber + 1}</div>
+                  </button>
+
+                  {onArchiveMatch && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setIsMatchToolsOpen(false);
+                        handleFinishGameClick();
+                      }}
+                      style={{
+                        background: 'rgba(239, 68, 68, 0.15)',
+                        border: '1px solid rgba(239, 68, 68, 0.4)',
+                        borderRadius: 'var(--radius-md)',
+                        padding: '0.75rem',
+                        display: 'flex',
+                        flexDirection: 'column',
+                        alignItems: 'flex-start',
+                        gap: '0.4rem',
+                        cursor: 'pointer',
+                        color: '#fca5a5',
+                        textAlign: 'left'
+                      }}
+                    >
+                      <Archive size={18} color="#f87171" />
+                      <div style={{ fontWeight: 800, fontSize: '0.85rem' }}>Finish Game</div>
+                      <div style={{ fontSize: '0.7rem', color: '#fca5a5' }}>Save to match archive</div>
+                    </button>
+                  )}
+
+                  {/* Reset 0-0 */}
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (ourScore === 0 && opponentScore === 0) return;
+                      if (window.confirm('Reset current set score back to 0 - 0?')) {
+                        setIsMatchToolsOpen(false);
+                        onResetScore();
+                      }
+                    }}
+                    style={{
+                      background: 'rgba(255, 255, 255, 0.05)',
+                      border: '1px solid rgba(255, 255, 255, 0.12)',
+                      borderRadius: 'var(--radius-md)',
+                      padding: '0.75rem',
+                      display: 'flex',
+                      flexDirection: 'column',
+                      alignItems: 'flex-start',
+                      gap: '0.4rem',
+                      cursor: 'pointer',
+                      color: '#94a3b8',
+                      textAlign: 'left'
+                    }}
+                  >
+                    <RefreshCw size={18} />
+                    <div style={{ fontWeight: 800, fontSize: '0.85rem' }}>Reset Set (0-0)</div>
+                    <div style={{ fontSize: '0.7rem', color: '#64748b' }}>Clear current score</div>
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
       )}
     </>
   );

@@ -6,11 +6,11 @@
  * recent error distributions, and crunch-time pressure to deliver targeted, high-impact
  * coaching adjustments and inspiring motivational rally cries during 60-second timeouts.
  * 
- * Contains 112+ Tactical Coaching Advice Items & 105+ Situational Motivational Affirmations.
+ * Contains 247+ Tactical Coaching Advice Items & 108+ Situational Motivational Affirmations.
  */
 
 // =========================================================================
-// 🎯 PART 1: MASSIVE CATALOG OF TACTICAL COACHING ADVICE (112 ITEMS)
+// 🎯 PART 1: MASSIVE CATALOG OF TACTICAL COACHING ADVICE (247+ ITEMS)
 // =========================================================================
 
 export const TACTICAL_ADVICE_CATALOG = [
@@ -952,6 +952,862 @@ export const TACTICAL_ADVICE_CATALOG = [
     scenario: ['opponent_run', 'general'],
     title: 'Take the Whistle Full 8 Seconds',
     instruction: 'Server, use the referee’s 8-second serve clock. Slow down the pace of the match, let our team breathe, and serve on our terms.'
+  },
+
+  // --- I. COMMUNICATION & DROPPED BALL ELIMINATION (15 ITEMS) ---
+  {
+    id: 'tac-comm-1',
+    category: 'Communication & Pursuit',
+    scenario: ['dropped_ball_errors', 'miscommunication', 'opponent_run', 'trailing', 'general'],
+    title: 'Call "MINE" at the Peak of the Ball',
+    instruction: 'Do not wait for the ball to drop below the net tape before speaking. Call "MINE" at the absolute apex of the ball’s flight so your teammates freeze and clear the lane immediately.'
+  },
+  {
+    id: 'tac-comm-2',
+    category: 'Communication & Pursuit',
+    scenario: ['dropped_ball_errors', 'miscommunication', 'opponent_run', 'trailing'],
+    title: 'Campfire Zone 6 — One Body Must Hit the Floor',
+    instruction: 'Zero balls fall untouched in the campfire hole between the 10-foot line and Zone 6. If the ball is dropping in no-man’s land, the nearest defender must drop into a forward sprawl or pancake to keep it alive.'
+  },
+  {
+    id: 'tac-comm-3',
+    category: 'Communication & Pursuit',
+    scenario: ['dropped_ball_errors', 'receive_errors', 'general'],
+    title: 'Libero Overrules All Back-Row Callers',
+    instruction: 'If the Libero calls "MINE", everyone else yields instantly. Libero, use your commanding voice — scream with authority and claim the entire middle-back corridor.'
+  },
+  {
+    id: 'tac-comm-4',
+    category: 'Communication & Pursuit',
+    scenario: ['dropped_ball_errors', 'miscommunication', 'general'],
+    title: 'Left-Side Priority on Seam Balls',
+    instruction: 'When a serve or free ball drops directly between two passers, the player on the left has priority on cross-court angles. Knowing this default rule eliminates hesitations between adjacent passers.'
+  },
+  {
+    id: 'tac-comm-5',
+    category: 'Communication & Pursuit',
+    scenario: ['dropped_ball_errors', 'miscommunication', 'transition_errors', 'general'],
+    title: 'Setter Calls "HELP" Instantly on First Dig',
+    instruction: 'If our setter digs the first touch, they must scream "HELP!" immediately. Libero and right-side hitter, step in to take second touch and deliver a high bump set to the left pin.'
+  },
+  {
+    id: 'tac-comm-6',
+    category: 'Communication & Pursuit',
+    scenario: ['dropped_ball_errors', 'miscommunication', 'general'],
+    title: 'Pin Attackers Own Short Tipping Drops',
+    instruction: 'When opponent hitters tip over our block into the 5-foot zone, front-row pin hitters are responsible for peeling off and popping that ball up. Back-row defenders cannot sprint 25 feet forward in time.'
+  },
+  {
+    id: 'tac-comm-7',
+    category: 'Communication & Pursuit',
+    scenario: ['dropped_ball_errors', 'miscommunication', 'opponent_run'],
+    title: 'Vocal Handshake Before Every Single Serve',
+    instruction: 'Before the whistle blows, talk to the teammate next to you: "You take line, I have cross, watch the short tip." Auditory connection before the whistle prevents mental lapses.'
+  },
+  {
+    id: 'tac-comm-8',
+    category: 'Communication & Pursuit',
+    scenario: ['dropped_ball_errors', 'miscommunication', 'transition_errors'],
+    title: 'Middle Blocker Call "DOWN" or "FREE" on Transition',
+    instruction: 'Middle blockers facing the opponent side must scream "FREE BALL" or "DOWN BALL" the second the opponent is out of system. That gives our back-row passers two full seconds to set up their platform.'
+  },
+  {
+    id: 'tac-comm-9',
+    category: 'Communication & Pursuit',
+    scenario: ['dropped_ball_errors', 'miscommunication', 'trailing'],
+    title: 'Dive Forward, Never Backward, on Falling Seams',
+    instruction: 'Do not backpedal on deep floating balls. When a ball drops into your seam, drive your hips forward into a diving touch. Moving forward generates lift; moving backward drops the ball onto the floor.'
+  },
+  {
+    id: 'tac-comm-10',
+    category: 'Communication & Pursuit',
+    scenario: ['dropped_ball_errors', 'receive_errors', 'crunch_time'],
+    title: 'Non-Passers Scream Early Line Calls',
+    instruction: 'If you are front row or setter, turn your head and scream "OUT!" or "IN!" while the ball is still in the air. Give your passers confidence to pull their hands back on balls sailing out.'
+  },
+  {
+    id: 'tac-comm-11',
+    category: 'Communication & Pursuit',
+    scenario: ['dropped_ball_errors', 'miscommunication', 'general'],
+    title: 'Two Players Going for the Ball: Louder Call Takes It',
+    instruction: 'If two teammates collide or pull away at the last second, it means neither called it with force. Scream your name or "MINE" twice with maximum volume and follow through completely.'
+  },
+  {
+    id: 'tac-comm-12',
+    category: 'Communication & Pursuit',
+    scenario: ['dropped_ball_errors', 'miscommunication', 'trailing'],
+    title: 'Erase the Freeze: First Step Must Be Forward',
+    instruction: 'Too many players are standing frozen with flat feet waiting for someone else to make the play. Be the one who makes the play! Take your first reaction step aggressively toward the ball.'
+  },
+  {
+    id: 'tac-comm-13',
+    category: 'Communication & Pursuit',
+    scenario: ['dropped_ball_errors', 'miscommunication', 'general'],
+    title: 'Back-Row Setter Pursuit Rule: Libero Sets 2nd Touch',
+    instruction: 'When our setter pursues a loose ball into the bench or sideline, Libero step in as primary setter. Hitters, call your tempo ("Four", "Two", "Back") so the Libero knows exactly where you want it.'
+  },
+  {
+    id: 'tac-comm-14',
+    category: 'Communication & Pursuit',
+    scenario: ['dropped_ball_errors', 'defense_errors', 'general'],
+    title: 'Overhead Hand Digging Priority in Mid-Court',
+    instruction: 'When a ball is shanked or tipped chest-high into mid-court, use open hands overhead. Do not attempt to bend down and squeeze your platform beneath high balls.'
+  },
+  {
+    id: 'tac-comm-15',
+    category: 'Communication & Pursuit',
+    scenario: ['dropped_ball_errors', 'miscommunication', 'trailing'],
+    title: 'Protect the Donut Hole Behind Blockers',
+    instruction: 'Opponents are scoring off soft tips into the "donut" 8 feet behind our middle blocker. Off-blocker, drop 6 feet diagonally into that hole before the opponent hitter makes arm contact.'
+  },
+
+  // --- J. TRANSITION DEFENSE & COUNTER-ATTACK CONVERSION (15 ITEMS) ---
+  {
+    id: 'tac-tran-1',
+    category: 'Floor Defense & Transitions',
+    scenario: ['transition_errors', 'defense_errors', 'opponent_run', 'general'],
+    title: 'Off-Blocker Peel 10 Feet Off Net Instantly',
+    instruction: 'If the ball is set to the opponent’s right side, our left-pin blocker blocks and our right-pin off-blocker peels immediately 10 feet off the net to dig the sharp cross-court cut shot.'
+  },
+  {
+    id: 'tac-tran-2',
+    category: 'Floor Defense & Transitions',
+    scenario: ['transition_errors', 'general'],
+    title: 'Setter Sprint Transition Route from Zone 1',
+    instruction: 'Setter in Zone 1, as soon as the opponent attacks into our court, sprint straight up the sideline toward Zone 2. Do not hesitate or watch the dig — arrive at your setting target early.'
+  },
+  {
+    id: 'tac-tran-3',
+    category: 'Floor Defense & Transitions',
+    scenario: ['transition_errors', 'defense_errors', 'general'],
+    title: 'Read Hitter’s Torso & Shoulder Angle',
+    instruction: 'Watch the attacker’s chest and hips during their approach. If their shoulders stay squared to the sideline, they are hitting line. If their torso turns inward, anticipate cross-court.'
+  },
+  {
+    id: 'tac-tran-4',
+    category: 'Floor Defense & Transitions',
+    scenario: ['transition_errors', 'general'],
+    title: 'Dig High to the Middle of the 10-Foot Line',
+    instruction: 'On hard spikes, do not try to make a tight pass to the net tape. Dig the ball 15 feet high to the middle of the 10-foot line so all three hitters have time to approach and attack.'
+  },
+  {
+    id: 'tac-tran-5',
+    category: 'Floor Defense & Transitions',
+    scenario: ['transition_errors', 'attack_errors', 'trailing'],
+    title: 'Second Touch Out-of-System: Square Hips to Antenna',
+    instruction: 'When bumping an out-of-system second touch to our outside hitter, turn your hips and square your chest directly to the left antenna. That prevents the set from drifting into the net.'
+  },
+  {
+    id: 'tac-tran-6',
+    category: 'Floor Defense & Transitions',
+    scenario: ['transition_errors', 'general'],
+    title: 'Outside Hitter Open Up to Court on Free Balls',
+    instruction: 'On incoming free balls, outside hitter take 3 rapid backward steps off the court into the sideline buffer. That creates a 4-step power approach with full vision of the defense.'
+  },
+  {
+    id: 'tac-tran-7',
+    category: 'Floor Defense & Transitions',
+    scenario: ['transition_errors', 'defense_errors', 'opponent_run'],
+    title: 'Cover the Roll Shot Behind the Block',
+    instruction: 'Opponents are rolling off-speed over our blockers. Middle-back defender, creep forward 3 steps to the 20-foot mark rather than standing glued to the back baseline.'
+  },
+  {
+    id: 'tac-tran-8',
+    category: 'Floor Defense & Transitions',
+    scenario: ['transition_errors', 'attack_errors', 'general'],
+    title: 'Emergency Bump Set: Give the Pin Hitter Height',
+    instruction: 'If the play breaks down, do not rush a low pass. Put a rainbow ball 12 feet high, 2 feet off the net tape to our outside hitter. Height gives the hitter time to assess the opponent block.'
+  },
+  {
+    id: 'tac-tran-9',
+    category: 'Floor Defense & Transitions',
+    scenario: ['transition_errors', 'general'],
+    title: 'Middle Blocker Transition Footwork: Fast Turn and Pump',
+    instruction: 'Middle blockers, don’t backpedal off the net. Turn 90 degrees, take two hard sprint steps to the 10-foot line, turn back to face the setter, and prepare to jump for the quick attack.'
+  },
+  {
+    id: 'tac-tran-10',
+    category: 'Floor Defense & Transitions',
+    scenario: ['defense_errors', 'crunch_time'],
+    title: 'Back-Row Defender Stop Moving Before Contact',
+    instruction: 'If your feet are still sliding when the opponent contacts the ball, you cannot react. Be completely stopped, balanced on the balls of your feet, hands forward, before the hitter strikes.'
+  },
+  {
+    id: 'tac-tran-11',
+    category: 'Floor Defense & Transitions',
+    scenario: ['defense_errors', 'general'],
+    title: 'Dig the Hard Angle: Position Inside Hitter’s Swing Path',
+    instruction: 'Cross-court defenders in Zone 5, step one yard inside the sideline. That positions you right in the power corridor where 70% of high school and club hits land.'
+  },
+  {
+    id: 'tac-tran-12',
+    category: 'Floor Defense & Transitions',
+    scenario: ['defense_errors', 'general'],
+    title: 'Pin Blocker Drop to Dig Short Cross-Court',
+    instruction: 'If opponent set drifts 5 feet off the net, middle blocker stays up and pin blocker drops off the net to dig the short cut shot. Never jump to block an attacker 6 feet behind the tape.'
+  },
+  {
+    id: 'tac-tran-13',
+    category: 'Floor Defense & Transitions',
+    scenario: ['transition_errors', 'leading'],
+    title: 'Transition Offense: Beat Their Blockers in Transition',
+    instruction: 'When we dig their attack, their blockers are tired and scrambled. Setter, push a fast tempo to the pin before their middle blocker can establish a double block.'
+  },
+  {
+    id: 'tac-tran-14',
+    category: 'Floor Defense & Transitions',
+    scenario: ['defense_errors', 'general'],
+    title: 'Don’t Chase Low Digs with One Arm: Two-Hand Platform',
+    instruction: 'One-arm flails result in shanks 80% of the time. Get your feet behind the ball, lock both wrists together, and let your two-arm platform absorb the spike.'
+  },
+  {
+    id: 'tac-tran-15',
+    category: 'Floor Defense & Transitions',
+    scenario: ['transition_errors', 'trailing'],
+    title: 'Celebrate Transition Kills — They Break Opponent Spirit',
+    instruction: 'Digging an opponent’s best hit and putting it away on counter-attack destroys their confidence. Swarm your teammate and carry that energy into the next rally!'
+  },
+
+  // --- K. BEATING THE OPPONENT BLOCK & TOOLING HANDS (15 ITEMS) ---
+  {
+    id: 'tac-tool-1',
+    category: 'Attacking & Beating the Block',
+    scenario: ['attack_errors', 'block_errors', 'trailing', 'crunch_time'],
+    title: 'Wipe Off the Outside Pin Hand Out of Bounds',
+    instruction: 'When faced with a solid double block on the outside pin, do not swing straight into their chests. Aim for the outside hand of their right-side blocker and wipe the ball toward the bleachers.'
+  },
+  {
+    id: 'tac-tool-2',
+    category: 'Attacking & Beating the Block',
+    scenario: ['attack_errors', 'block_errors', 'general'],
+    title: 'High Hands Swing: Aim for Pinkies and Fingertips',
+    instruction: 'Reach to your highest contact point and swing hard at the top 3 inches of the opponent’s block hands. A ball that clips fingertips will sail 20 feet out of bounds behind them.'
+  },
+  {
+    id: 'tac-tool-3',
+    category: 'Attacking & Beating the Block',
+    scenario: ['attack_errors', 'crunch_time'],
+    title: 'High Deep Roll Shot to Opponent Zone 1 Corner',
+    instruction: 'When set is tight or off-balance, don’t blast into the net. Hit a high, arcing roll shot deep into Zone 1 corner. Their defenders are pulled up to cover tips, leaving that deep corner completely exposed.'
+  },
+  {
+    id: 'tac-tool-4',
+    category: 'Attacking & Beating the Block',
+    scenario: ['attack_errors', 'general'],
+    title: 'Tip Softly Over the Double Block into Campfire',
+    instruction: 'If both blockers jump with aggressive penetration, show a big swing approach, drop your wrist, and push a gentle two-finger tip into the center 10-foot donut hole.'
+  },
+  {
+    id: 'tac-tool-5',
+    category: 'Attacking & Beating the Block',
+    scenario: ['attack_errors', 'trailing'],
+    title: 'Tight Trap Set: Use Opponent Block as Rebound',
+    instruction: 'If the set is trapping you inside the net tape, don’t swing down and hit the net. Push the ball firmly against the opponent’s hands with two hands to joust or force a net touch on them.'
+  },
+  {
+    id: 'tac-tool-6',
+    category: 'Attacking & Beating the Block',
+    scenario: ['attack_errors', 'general'],
+    title: 'Swing Across Body to Exploit Open Seam in Block',
+    instruction: 'Their middle blocker is arriving late and leaving an 18-inch gap between blockers. Outside hitter, drive your swing through that seam between the two sets of hands.'
+  },
+  {
+    id: 'tac-tool-7',
+    category: 'Attacking & Beating the Block',
+    scenario: ['attack_errors', 'general'],
+    title: 'Delayed Cut Shot: Wait for Block to Drop',
+    instruction: 'Hold your contact point at the peak of your jump. As their blockers begin falling, cut the ball sharply across court into Zone 4/5 before their floor defenders can react.'
+  },
+  {
+    id: 'tac-tool-8',
+    category: 'Attacking & Beating the Block',
+    scenario: ['attack_errors', 'crunch_time'],
+    title: 'Hit Off the Inside Shoulder of Middle Blocker',
+    instruction: 'When hitting from the right side, swing cross-court off the middle blocker’s left arm. Deflections off an outstretched inside arm rebound into their own net or sideline.'
+  },
+  {
+    id: 'tac-tool-9',
+    category: 'Attacking & Beating the Block',
+    scenario: ['attack_errors', 'general'],
+    title: 'Push High Tool Off Floating Net Hands',
+    instruction: 'Their pin blocker has lazy, floating hands. Swipe the ball firmly off their outside forearm and let it bounce harmlessly out of bounds.'
+  },
+  {
+    id: 'tac-tool-10',
+    category: 'Attacking & Beating the Block',
+    scenario: ['attack_errors', 'general'],
+    title: 'When Trapped, Recycle the Ball Off the Block to Yourself',
+    instruction: 'If you have no angle to score, tap the ball softly into their block hands with high trajectory. Call "COVER!" and let our team reset for a better second attack.'
+  },
+  {
+    id: 'tac-tool-11',
+    category: 'Attacking & Beating the Block',
+    scenario: ['attack_errors', 'trailing'],
+    title: 'Back-Row Attacker Target Deep Endline Corners',
+    instruction: 'On pipe or D-ball back-row sets, the block cannot reach as high. Hit the ball flat and deep to the back 2 feet of the court over the outstretched block.'
+  },
+  {
+    id: 'tac-tool-12',
+    category: 'Attacking & Beating the Block',
+    scenario: ['attack_errors', 'crunch_time'],
+    title: 'Avoid Swinging Down Into Big Blockers',
+    instruction: 'Swinging down at a 45-degree angle is a guaranteed roof against tall blockers. Keep your hitting elbow high and drive the ball flat and deep.'
+  },
+  {
+    id: 'tac-tool-13',
+    category: 'Attacking & Beating the Block',
+    scenario: ['attack_errors', 'leading'],
+    title: 'Off-Speed Roll Shot to Zone 4 from Left Pin',
+    instruction: 'Drive a high wrist-snap roll shot to the opponent’s short left sideline. Their left-back defender is tucked 20 feet deep and cannot sprint forward in time.'
+  },
+  {
+    id: 'tac-tool-14',
+    category: 'Attacking & Beating the Block',
+    scenario: ['attack_errors', 'general'],
+    title: 'Swipe and Poke Ball Through Net Scramble',
+    instruction: 'In 50/50 net scrambles, use open palm or knuckles to poke the ball into empty floor before their blockers can get both hands set.'
+  },
+  {
+    id: 'tac-tool-15',
+    category: 'Attacking & Beating the Block',
+    scenario: ['attack_errors', 'crunch_time', 'trailing'],
+    title: 'Win the Joust: Strong Core, Two Hands Pushing Down',
+    instruction: 'When both players touch the ball above the net tape simultaneously, do not tap it. Lock your wrists, tighten your core, and push down and forward through their hands.'
+  },
+
+  // --- L. BLOCKER DISCIPLINE & STOPPING TIPS/TOOLING (15 ITEMS) ---
+  {
+    id: 'tac-blk-seam-1',
+    category: 'Blocker Discipline & Sealing',
+    scenario: ['block_errors', 'opponent_run', 'general'],
+    title: 'Press Low Across Net Tape — Don’t Reach Straight Up',
+    instruction: 'Reaching straight up gives the hitter room to tool your hands. Push your hands forward over the white tape into the opponent’s space and press your fingers downward.'
+  },
+  {
+    id: 'tac-blk-seam-2',
+    category: 'Blocker Discipline & Sealing',
+    scenario: ['block_errors', 'opponent_run'],
+    title: 'Pin Blocker Lock Antenna: No Tool Outside',
+    instruction: 'Pin blockers, plant your outside arm directly in line with the antenna with your palm turned inward. Do not let any ball pass between your arm and the antenna.'
+  },
+  {
+    id: 'tac-blk-seam-3',
+    category: 'Blocker Discipline & Sealing',
+    scenario: ['block_errors', 'general'],
+    title: 'Middle Blocker Read Setter’s Release, Not Hitter',
+    instruction: 'Middle blockers, keep your eyes on the setter’s hands. Do not bite on the hitter’s fake approach — jump only after you see the direction of the setter’s ball release.'
+  },
+  {
+    id: 'tac-blk-seam-4',
+    category: 'Blocker Discipline & Sealing',
+    scenario: ['block_errors', 'general'],
+    title: 'Close the Seam: Lock Hips with Pin Blocker',
+    instruction: 'Middle blocker, take your final cross-over step and close hip-to-hip with your outside blocker. Leaving an open gap between your bodies gives hitters an easy kill.'
+  },
+  {
+    id: 'tac-blk-seam-5',
+    category: 'Blocker Discipline & Sealing',
+    scenario: ['block_errors', 'trailing'],
+    title: 'Commit Block on Opponent Middle Quick 1-Ball',
+    instruction: 'Their middle is hurting us with fast 1-balls. Middle blocker, jump with their middle attacker right now on this rotation. Front-row pin blockers take the wings 1-on-1.'
+  },
+  {
+    id: 'tac-blk-seam-6',
+    category: 'Blocker Discipline & Sealing',
+    scenario: ['block_errors', 'defense_errors', 'general'],
+    title: 'Watch the Hitter’s Elbow Drop: Tip / Roll Alert',
+    instruction: 'If the attacker’s elbow drops below their shoulder during their approach, they cannot swing hard. Blocker stay grounded, off-blocker scream "TIP!" and scoop the roll shot.'
+  },
+  {
+    id: 'tac-blk-seam-7',
+    category: 'Blocker Discipline & Sealing',
+    scenario: ['block_errors', 'general'],
+    title: 'Spread Hands Wide with Thumbs Pointed Upward',
+    instruction: 'Spread your fingers wide like eagle claws with thumbs pointed toward each other. A rigid, spread platform creates maximum surface area to deflect spikes back into their court.'
+  },
+  {
+    id: 'tac-blk-seam-8',
+    category: 'Blocker Discipline & Sealing',
+    scenario: ['block_errors', 'general'],
+    title: 'Jump Straight Up and Down — Zero Drifting',
+    instruction: 'Drifting horizontally along the net causes net violations and leaves massive block seams open. Plant your feet, bend knees to 90 degrees, and jump vertically like an elevator.'
+  },
+  {
+    id: 'tac-blk-seam-9',
+    category: 'Blocker Discipline & Sealing',
+    scenario: ['block_errors', 'general'],
+    title: 'Soft Block (Roof Touch): Tilt Hands Backward',
+    instruction: 'If the opponent attacker is 6 inches taller and swinging high, tilt your hands slightly backward to create a roof touch that pops the ball up for our back-row defense.'
+  },
+  {
+    id: 'tac-blk-seam-10',
+    category: 'Blocker Discipline & Sealing',
+    scenario: ['block_errors', 'general'],
+    title: 'Pin Blocker Drop One Step Off Net on Bad Passes',
+    instruction: 'When opponent pass is 10 feet off the net, do not jump to block. Step back to the 5-foot mark, square your shoulders, and be ready to dig their desperate roll shot.'
+  },
+  {
+    id: 'tac-blk-seam-11',
+    category: 'Blocker Discipline & Sealing',
+    scenario: ['block_errors', 'crunch_time'],
+    title: 'Setter Dump Alert: Middle Blocker Keep Right Hand High',
+    instruction: 'Their front-row setter loves dumping with their left hand on second touch. Middle blocker, keep your right hand extended over the net tape whenever their setter is in the front row.'
+  },
+  {
+    id: 'tac-blk-seam-12',
+    category: 'Blocker Discipline & Sealing',
+    scenario: ['block_errors', 'general'],
+    title: 'Penetrate Six Inches Over White Net Tape',
+    instruction: 'If your hands stay on our side of the net, balls bounce off your arms and land in our court. Push your hands six inches across the net into their airspace.'
+  },
+  {
+    id: 'tac-blk-seam-13',
+    category: 'Blocker Discipline & Sealing',
+    scenario: ['block_errors', 'general'],
+    title: 'Yell "TOUCH!" Instantly on Block Deflections',
+    instruction: 'The millisecond a spike grazes your fingertips, scream "TOUCH!" at top volume so our back-row defenders know the ball is slowed down and reset their approach.'
+  },
+  {
+    id: 'tac-blk-seam-14',
+    category: 'Blocker Discipline & Sealing',
+    scenario: ['block_errors', 'crunch_time'],
+    title: 'Zero Net Fouls on Follow-Through',
+    instruction: 'Giving away points late in the set with net touches is unacceptable. Land on both feet, pull your hands straight back to your chest, and turn away from the net cleanly.'
+  },
+  {
+    id: 'tac-blk-seam-15',
+    category: 'Blocker Discipline & Sealing',
+    scenario: ['block_errors', 'general'],
+    title: 'Late Block Discipline: Stay Grounded on Slide Attacks',
+    instruction: 'When their middle runs a slide behind the setter, pin blocker do not jump early. Follow them horizontally, plant outside the antenna, and jump as they contact.'
+  },
+
+  // --- M. SETTER PLAYMAKING & MATCHUP EXPLOITATION (15 ITEMS) ---
+  {
+    id: 'tac-set-1',
+    category: 'Setter Tactics & Distribution',
+    scenario: ['setter_tactics', 'crunch_time', 'trailing', 'general'],
+    title: 'Feed the Hot Hitter on Crucial Sideouts',
+    instruction: 'Identify which attacker has confidence right now and feed them the ball on sideout. In high-pressure moments, trust your proven finisher over tricky deception.'
+  },
+  {
+    id: 'tac-set-2',
+    category: 'Setter Tactics & Distribution',
+    scenario: ['setter_tactics', 'general'],
+    title: 'Exploit Opponent’s Shorter Setter in Front Row',
+    instruction: 'Their setter is front row in Zone 2 and stands 5 inches shorter than our outside hitter. Set high balls to our left pin and let our attacker hit over their block all set long.'
+  },
+  {
+    id: 'tac-set-3',
+    category: 'Setter Tactics & Distribution',
+    scenario: ['setter_tactics', 'general'],
+    title: 'Run Quick 1-Ball to Pull Opponent Middle Out of Position',
+    instruction: 'Even if the pass is slightly off the net, keep our middle running a fast approach. Committing their middle blocker opens up clean 1-on-1 lanes for our wing hitters.'
+  },
+  {
+    id: 'tac-set-4',
+    category: 'Setter Tactics & Distribution',
+    scenario: ['setter_tactics', 'crunch_time', 'leading'],
+    title: 'Setter Dump into Zone 2 When Middle Jumps',
+    instruction: 'When their middle blocker commits early on our middle hitter, drop a subtle tip or push dump into the vacated Zone 2 corner behind you.'
+  },
+  {
+    id: 'tac-set-5',
+    category: 'Setter Tactics & Distribution',
+    scenario: ['setter_tactics', 'attack_errors', 'general'],
+    title: 'High Set to Outside Antenna with 3 Feet of Margin',
+    instruction: 'Stop pushing sets too tight to the antenna tape where hitters get trapped. Give your outside hitter a set that lands 3 feet inside the pin and 2 feet off the net.'
+  },
+  {
+    id: 'tac-set-6',
+    category: 'Setter Tactics & Distribution',
+    scenario: ['setter_tactics', 'leading'],
+    title: 'Slide Attack Against Opponent’s Slow Middle Blocker',
+    instruction: 'Their middle blocker is slow laterally. Run our middle on a fast slide behind the setter to Zone 2 — their middle cannot close the block in time.'
+  },
+  {
+    id: 'tac-set-7',
+    category: 'Setter Tactics & Distribution',
+    scenario: ['setter_tactics', 'trailing'],
+    title: 'Reverse Flow Set: Push Back to Right Pin When Scrambled',
+    instruction: 'When our passers pull you toward the left sideline, back-set across the court to our right-side hitter. Opponent blockers all lean left, leaving the right pin wide open.'
+  },
+  {
+    id: 'tac-set-8',
+    category: 'Setter Tactics & Distribution',
+    scenario: ['setter_tactics', 'general'],
+    title: 'Jump Set to Cut Down Ball Flight Time',
+    instruction: 'Jump-setting takes 0.3 seconds off the ball flight. That tiny fraction of a second beats opponent middle blockers from closing out to our pin hitters.'
+  },
+  {
+    id: 'tac-set-9',
+    category: 'Setter Tactics & Distribution',
+    scenario: ['setter_tactics', 'general'],
+    title: 'Check Blockers’ Positioning Before Calling Play',
+    instruction: 'Look across the net before the serve. If their middle is shading left, call a right-side set. If they are bunched in the center, shoot the ball wide to the pins.'
+  },
+  {
+    id: 'tac-set-10',
+    category: 'Setter Tactics & Distribution',
+    scenario: ['setter_tactics', 'attack_errors'],
+    title: 'Deliver In-System Sets at Consistent 3-Foot Height',
+    instruction: 'Consistency is everything for hitters. Don’t set one ball 15 feet high and the next ball 6 feet high. Lock in a clean, predictable rhythm at the antenna.'
+  },
+  {
+    id: 'tac-set-11',
+    category: 'Setter Tactics & Distribution',
+    scenario: ['setter_tactics', 'leading'],
+    title: 'Push Fast Shoot to Outside Pin to Beat Close-Out',
+    instruction: 'When we get a perfect 3-point pass, push a flat, fast "shoot" set to Zone 4. Our outside hitter will contact before their middle blocker can take two steps.'
+  },
+  {
+    id: 'tac-set-12',
+    category: 'Setter Tactics & Distribution',
+    scenario: ['setter_tactics', 'trailing', 'crunch_time'],
+    title: 'Utilize Back-Row Pipe Attack When Middle Is Covered',
+    instruction: 'When their block bunches up on our middle, set our back-row attacker on the pipe down the middle 10-foot line. It freezes their defenders and scores consistently.'
+  },
+  {
+    id: 'tac-set-13',
+    category: 'Setter Tactics & Distribution',
+    scenario: ['setter_tactics', 'general'],
+    title: 'Hold Neutral Hand Position Until Last Instant',
+    instruction: 'If you tilt your head back early, their blockers know you are setting behind. Keep your hands directly above your forehead and disguise your release until contact.'
+  },
+  {
+    id: 'tac-set-14',
+    category: 'Setter Tactics & Distribution',
+    scenario: ['setter_tactics', 'receive_errors'],
+    title: 'Off-Target Passes: Bump Set with Gentle Arc to Pin',
+    instruction: 'When forced to sprint off the court to save a pass, do not try a desperate overhead set. Turn, square your platform, and bump set a high, workable ball to our pin.'
+  },
+  {
+    id: 'tac-set-15',
+    category: 'Setter Tactics & Distribution',
+    scenario: ['setter_tactics', 'general'],
+    title: 'Keep Hitters Confident: Talk Between Every Point',
+    instruction: 'After a missed hit, walk over to your hitter immediately: "Good swing, next one is coming right back to you." A confident setter builds confident attackers.'
+  },
+
+  // --- N. ROTATIONAL MASTERY R1 THROUGH R6 ADVANCED (18 ITEMS) ---
+  {
+    id: 'tac-rot-r1-c',
+    category: 'Rotational Tactics (R1)',
+    scenario: ['rotation_1', 'opponent_run', 'trailing'],
+    title: 'R1: Setter Clear Route Along Zone 1 Sideline',
+    instruction: 'In Rotation 1, setter must track along the Zone 1 sideline to avoid bumping into passing receivers. Passers, push the ball 5 feet out from the net so setter has an easy angle.'
+  },
+  {
+    id: 'tac-rot-r1-d',
+    category: 'Rotational Tactics (R1)',
+    scenario: ['rotation_1', 'general'],
+    title: 'R1: Outside Hitter Cross-Court Approach Route',
+    instruction: 'Outside hitter, start two steps off the court on the left sideline in R1. Taking a 45-degree angle approach allows you to see both blockers and hit hard cross-court.'
+  },
+  {
+    id: 'tac-rot-r1-e',
+    category: 'Rotational Tactics (R1)',
+    scenario: ['rotation_1', 'crunch_time'],
+    title: 'R1: Right-Side Back-Row Defense Alignment',
+    instruction: 'In R1 defense, our right-side player must drop into Zone 1 to dig the hard cross-court spike while our libero covers Zone 6 and middle.'
+  },
+  {
+    id: 'tac-rot-r2-c',
+    category: 'Rotational Tactics (R2)',
+    scenario: ['rotation_2', 'opponent_run', 'general'],
+    title: 'R2: Right-Side High-Hands Tool Down the Line',
+    instruction: 'In Rotation 2, our right side is front row in Zone 3/4. Run them off the right antenna and attack the line to beat their middle blocker who is late closing.'
+  },
+  {
+    id: 'tac-rot-r2-d',
+    category: 'Rotational Tactics (R2)',
+    scenario: ['rotation_2', 'trailing'],
+    title: 'R2: Middle Blocker Fast Transition Behind Setter',
+    instruction: 'In R2, setter is back in Zone 6. Middle blocker transition directly behind the setter to run a back-one quick set and split the opponent block.'
+  },
+  {
+    id: 'tac-rot-r2-e',
+    category: 'Rotational Tactics (R2)',
+    scenario: ['rotation_2', 'crunch_time'],
+    title: 'R2: Libero Claim Seam Between Left Wing and Middle',
+    instruction: 'In R2 serve receive, stack our middle forward. Libero take full charge of the seam between left wing and middle to eliminate dropped balls.'
+  },
+  {
+    id: 'tac-rot-r3-c',
+    category: 'Rotational Tactics (R3)',
+    scenario: ['rotation_3', 'opponent_run', 'general'],
+    title: 'R3: Setter Release Along Zone 5 Sideline',
+    instruction: 'In Rotation 3, setter penetrates from Zone 5. Setter, wait for the serve contact before sprinting forward so referee does not call an out-of-rotation overlap.'
+  },
+  {
+    id: 'tac-rot-r3-d',
+    category: 'Rotational Tactics (R3)',
+    scenario: ['rotation_3', 'trailing'],
+    title: 'R3: Quick Middle 1-Ball to Freeze Opponent Right Side',
+    instruction: 'Setter penetrating from the left has a clean direct line to our middle in Zone 3. Run a quick 1-ball to freeze their block and open up the right pin.'
+  },
+  {
+    id: 'tac-rot-r3-e',
+    category: 'Rotational Tactics (R3)',
+    scenario: ['rotation_3', 'crunch_time'],
+    title: 'R3: Outside Hitter Open Cross-Court Attack',
+    instruction: 'In R3, outside hitter is isolated 1-on-1 on the left pin. Attack with maximum tempo and wipe off the block into the antenna.'
+  },
+  {
+    id: 'tac-rot-r4-c',
+    category: 'Rotational Tactics (R4)',
+    scenario: ['rotation_4', 'leading', 'general'],
+    title: 'R4: Front-Row Setter Dump Threat Forces Grounded Block',
+    instruction: 'Setter is front row in Zone 4 in R4. Show setter dump early in the rally — forcing their middle to stay grounded creates single blocks for our hitters.'
+  },
+  {
+    id: 'tac-rot-r4-d',
+    category: 'Rotational Tactics (R4)',
+    scenario: ['rotation_4', 'trailing'],
+    title: 'R4: Fast Slide Behind Setter to Pin Opponent Middle',
+    instruction: 'With three attackers loaded front row, run middle on a slide behind setter to Zone 2. That leaves outside hitter 1-on-1 on the left antenna.'
+  },
+  {
+    id: 'tac-rot-r4-e',
+    category: 'Rotational Tactics (R4)',
+    scenario: ['rotation_4', 'crunch_time'],
+    title: 'R4: Outside Pin 1-on-1 Attack Angle',
+    instruction: 'In R4, our outside has room to swing sharp angle into Zone 4 or roll deep to Zone 1. Use the full court width.'
+  },
+  {
+    id: 'tac-rot-r5-c',
+    category: 'Rotational Tactics (R5)',
+    scenario: ['rotation_5', 'opponent_run', 'general'],
+    title: 'R5: Middle Blocker Tucked Behind 10-Foot Line',
+    instruction: 'In Rotation 5, keep our middle blocker tucked behind the 10-foot line in receive. Let outside hitter and libero handle the serve pass cleanly.'
+  },
+  {
+    id: 'tac-rot-r5-d',
+    category: 'Rotational Tactics (R5)',
+    scenario: ['rotation_5', 'trailing'],
+    title: 'R5: Fast 4-Ball to Outside Pin Before Seam Closes',
+    instruction: 'Setter release from Zone 3 is short and quick. Push a fast 4-ball to the left antenna before the opponent right-side blocker can close the seam.'
+  },
+  {
+    id: 'tac-rot-r5-e',
+    category: 'Rotational Tactics (R5)',
+    scenario: ['rotation_5', 'crunch_time'],
+    title: 'R5: Right-Side Transition from Zone 2 to Zone 1',
+    instruction: 'Right-side attacker, transition smoothly off the block into Zone 1 for defense, or stay loaded at Zone 2 for an immediate cross-court spike.'
+  },
+  {
+    id: 'tac-rot-r6-c',
+    category: 'Rotational Tactics (R6)',
+    scenario: ['rotation_6', 'leading', 'general'],
+    title: 'R6: Setter in Zone 2 Quick Flow to Middle and Pin',
+    instruction: 'Setter is front row in Zone 2. Quick dump or back-set to right pin exploits opponent blockers who cheat toward our outside hitter.'
+  },
+  {
+    id: 'tac-rot-r6-d',
+    category: 'Rotational Tactics (R6)',
+    scenario: ['rotation_6', 'trailing'],
+    title: 'R6: Middle 31-Ball Between Zones 3 and 4',
+    instruction: 'Run our middle on a 31-ball (fast set 4 feet to the left of the setter). It pulls the opponent middle blocker away from our outside attacker.'
+  },
+  {
+    id: 'tac-rot-r6-e',
+    category: 'Rotational Tactics (R6)',
+    scenario: ['rotation_6', 'crunch_time'],
+    title: 'R6: Deep Cross-Court Defensive Rotation Shift',
+    instruction: 'In R6 defense, shift our libero into Zone 5 and right-back defender into Zone 1. That covers both deep corners against hard-hitting opponents.'
+  },
+
+  // --- O. TARGETED SERVING & OPPONENT PASSER STRESS (15 ITEMS) ---
+  {
+    id: 'tac-srv-tar-1',
+    category: 'Serving Strategy & Targeting',
+    scenario: ['serving_strategy', 'opponent_run', 'trailing', 'general'],
+    title: 'Drive Low Float Between Passers’ Seams',
+    instruction: 'Aim right down the dividing line between their libero and outside hitter. Making two passers hesitate over who has the ball causes instant aces or free-ball overpasses.'
+  },
+  {
+    id: 'tac-srv-tar-2',
+    category: 'Serving Strategy & Targeting',
+    scenario: ['serving_strategy', 'opponent_run', 'leading'],
+    title: 'Target the Receiver Who Just Committed an Error',
+    instruction: 'Their passer in Zone 5 just shanked a ball. Put the very next serve right back onto their left hip before they can regain their composure.'
+  },
+  {
+    id: 'tac-srv-tar-3',
+    category: 'Serving Strategy & Targeting',
+    scenario: ['serving_strategy', 'general'],
+    title: 'Short Float to Zone 2 Drops in Front of Outside Hitter',
+    instruction: 'Drop a short float into Zone 2 inside the 10-foot line. That forces their outside hitter to sprint forward, pass off-balance, and eliminates their hitting approach.'
+  },
+  {
+    id: 'tac-srv-tar-4',
+    category: 'Serving Strategy & Targeting',
+    scenario: ['serving_strategy', 'leading'],
+    title: 'Deep Corner Paint to Zone 5 Baseline Corner',
+    instruction: 'Drive a flat float deep into the Zone 5 corner 12 inches inside the baseline. Deep corner serves push their passers into the bleachers and ruin their offensive tempo.'
+  },
+  {
+    id: 'tac-srv-tar-5',
+    category: 'Serving Strategy & Targeting',
+    scenario: ['serving_strategy', 'general'],
+    title: 'Float Serve Directly at the Passer’s Dominant Shoulder',
+    instruction: 'Aim directly at the passer’s right shoulder. A floating ball directly at the shoulder forces them to awkward sideways arm angles and shanks.'
+  },
+  {
+    id: 'tac-srv-tar-6',
+    category: 'Serving Strategy & Targeting',
+    scenario: ['serving_strategy', 'trailing'],
+    title: 'Short Float to Zone 4 Pulls Primary Attacker Away',
+    instruction: 'Serve short to Zone 4. If their top hitter has to take the first contact, their setter cannot set them for an attack on the next touch.'
+  },
+  {
+    id: 'tac-srv-tar-7',
+    category: 'Serving Strategy & Targeting',
+    scenario: ['serving_strategy', 'general'],
+    title: 'Fast Flat Float That Skims 6 Inches Over Tape',
+    instruction: 'Punch the middle of the ball with a firm, solid hand. Keep the trajectory 6 inches above the white tape so the ball drops violently before passers can react.'
+  },
+  {
+    id: 'tac-srv-tar-8',
+    category: 'Serving Strategy & Targeting',
+    scenario: ['serving_strategy', 'general'],
+    title: 'Serve the Substitute Who Just Checked In',
+    instruction: 'Their coach just inserted a substitution into the back row. Test them on the very first rally with a deep driving serve.'
+  },
+  {
+    id: 'tac-srv-tar-9',
+    category: 'Serving Strategy & Targeting',
+    scenario: ['serving_strategy', 'leading'],
+    title: 'Change of Pace: Float Ball with Sharp Late Drop',
+    instruction: 'Take a slight step off full power and hit a high-arching knuckleball. When the ball clears the net, the lack of spin causes it to dive straight into the floor.'
+  },
+  {
+    id: 'tac-srv-tar-10',
+    category: 'Serving Strategy & Targeting',
+    scenario: ['serving_strategy', 'general'],
+    title: 'Deep Corner to Zone 1 Pushes Setter Off Net',
+    instruction: 'Drive the ball deep to Zone 1. That forces their back-row passer to pass across court 40 feet, giving our blockers ample time to read the set.'
+  },
+  {
+    id: 'tac-srv-tar-11',
+    category: 'Serving Strategy & Targeting',
+    scenario: ['serving_strategy', 'crunch_time'],
+    title: 'Pre-Serve Breath and Consistent Routine Under Pressure',
+    instruction: 'Under late-set pressure, do not rush. Take two bounces, look at your target zone, take a deep breath, and execute your repeatable toss.'
+  },
+  {
+    id: 'tac-srv-tar-12',
+    category: 'Serving Strategy & Targeting',
+    scenario: ['serving_strategy', 'crunch_time'],
+    title: 'Aim 3 Feet Inside Endline — Zero Net Tape Errors',
+    instruction: 'At 22-22 or 23-23, missed serves lose sets. Aim 3 feet inside the baseline with 90% velocity — put the ball in play and let our defense win the point.'
+  },
+  {
+    id: 'tac-srv-tar-13',
+    category: 'Serving Strategy & Targeting',
+    scenario: ['serving_strategy', 'general'],
+    title: 'Serve Sharp Diagonal from Zone 1 to Zone 5',
+    instruction: 'Standing deep behind Zone 1 and serving across court creates an optical illusion against passers. Drive the ball diagonally across the court width.'
+  },
+  {
+    id: 'tac-srv-tar-14',
+    category: 'Serving Strategy & Targeting',
+    scenario: ['serving_strategy', 'opponent_run'],
+    title: 'Break Opponent Serving Run with High-Velocity Float',
+    instruction: 'When we win the sideout, our server must establish immediate dominance. Step up, strike firmly, and put them out of system on ball one.'
+  },
+  {
+    id: 'tac-srv-tar-15',
+    category: 'Serving Strategy & Targeting',
+    scenario: ['serving_strategy', 'opponent_timeout'],
+    title: 'Ice Opponent Right Out of Their Timeout with Corner Strike',
+    instruction: 'They called timeout hoping we would miss our serve. Show them ice in our veins: place a laser float directly into Zone 1 corner.'
+  },
+
+  // --- P. CRUNCH-TIME & DEUCE PLAY (12 ITEMS) ---
+  {
+    id: 'tac-crn-adv-1',
+    category: 'Crunch Time & Momentum',
+    scenario: ['crunch_time', 'tied_late', 'general'],
+    title: 'First-Ball Sideout Discipline at 20+ Points',
+    instruction: 'Sets that reach 20-20 are decided by first-ball sideouts. A crisp 3-point pass, a clean high set, and a confident swing high off the hands.'
+  },
+  {
+    id: 'tac-crn-adv-2',
+    category: 'Crunch Time & Momentum',
+    scenario: ['crunch_time', 'tied_late'],
+    title: 'Swing High Off Block Tape on Scramble Sets',
+    instruction: 'In crunch time on a scrambled set, do not swing for the 10-foot line. Swing high toward the top tape and pinkies of their blockers.'
+  },
+  {
+    id: 'tac-crn-adv-3',
+    category: 'Crunch Time & Momentum',
+    scenario: ['crunch_time', 'tied_late'],
+    title: 'Serve In Bounds with Authority at 23-23 or 24-24',
+    instruction: 'Never give away a free match point with a missed serve in deuce. Hit an aggressive 85% float into the deep court and trust our block to win it.'
+  },
+  {
+    id: 'tac-crn-adv-4',
+    category: 'Crunch Time & Momentum',
+    scenario: ['crunch_time', 'attack_errors'],
+    title: 'All Three Back-Row Players Cover Hitter Under 6 Feet',
+    instruction: 'On match point, their block will jump with everything. All non-hitting players drop low on your knees within 6 feet of our attacker ready to dig the block rebound.'
+  },
+  {
+    id: 'tac-crn-adv-5',
+    category: 'Crunch Time & Momentum',
+    scenario: ['crunch_time', 'general'],
+    title: 'Loud Auditory Calls on Borderline Deep Balls',
+    instruction: 'Do not let a ball land inbounds on match point because someone hesitated. Scream "OUT" or "MINE" at the top of your lungs.'
+  },
+  {
+    id: 'tac-crn-adv-6',
+    category: 'Crunch Time & Momentum',
+    scenario: ['crunch_time', 'trailing'],
+    title: 'One Point at a Time: Focus on the Two-Point Swing',
+    instruction: 'Forget about erasing a 3-point deficit all at once. Just win this single sideout point and put our serve behind the line. That’s our two-point swing.'
+  },
+  {
+    id: 'tac-crn-adv-7',
+    category: 'Crunch Time & Momentum',
+    scenario: ['crunch_time', 'trailing'],
+    title: 'High Out-of-System Balls to Safe Pin Zones',
+    instruction: 'When out of system in crunch time, bump high to the left pin 3 feet off the net. That gives our hitter vision to roll or wipe off the hands.'
+  },
+  {
+    id: 'tac-crn-adv-8',
+    category: 'Crunch Time & Momentum',
+    scenario: ['crunch_time', 'leading'],
+    title: 'Trust Your Defensive Setup on Match Point',
+    instruction: 'We have match point. Do not gamble or guess on defense. Hold your base position, trust your blocker to seal line, and dig the cross-court ball.'
+  },
+  {
+    id: 'tac-crn-adv-9',
+    category: 'Crunch Time & Momentum',
+    scenario: ['crunch_time', 'general'],
+    title: 'Stay Aggressive on Free Balls — Don’t Just Free Ball Back',
+    instruction: 'When opponent sends a high free ball over late in the set, run a full 3-hitter offense. Do not just bump it back — run a play and terminate.'
+  },
+  {
+    id: 'tac-crn-adv-10',
+    category: 'Crunch Time & Momentum',
+    scenario: ['crunch_time', 'trailing', 'opponent_run'],
+    title: 'Composure in the Huddle: Look Each Other in the Eye',
+    instruction: 'Look your teammates in the eyes right now. We have been in tough battles before and we know how to finish. Take a deep collective breath together.'
+  },
+  {
+    id: 'tac-crn-adv-11',
+    category: 'Crunch Time & Momentum',
+    scenario: ['crunch_time', 'general'],
+    title: 'Take the Full 8-Second Referee Serve Whistle',
+    instruction: 'When you are serving late in the set, do not rush. Take 5 full seconds after the referee whistle to breathe, focus your eyes on your target, and strike.'
+  },
+  {
+    id: 'tac-crn-adv-12',
+    category: 'Crunch Time & Momentum',
+    scenario: ['crunch_time', 'tied_late', 'leading'],
+    title: 'Play Fearless: Put the Pressure on Their Court',
+    instruction: 'Timid teams lose tight sets. Play bold, swing high and hard, celebrate with fire after every touch, and take what is ours!'
   }
 ];
 
@@ -1563,18 +2419,22 @@ export function generateTimeoutBrief({
 
   // 2. Analyze primary error category in last 6 points
   const recentErrors = currentSetPoints
-    .filter(p => p.pointWonBy === 'opponent' && p.errorTypeId)
+    .filter(p => p.pointWonBy === 'opponent' && (p.errorTypeId || p.earnedTypeId))
     .slice(-6);
 
   let receiveErrors = 0;
   let attackErrors = 0;
   let serveErrors = 0;
   let netErrors = 0;
+  let droppedBallErrors = 0;
+  let blockErrors = 0;
 
   recentErrors.forEach(err => {
-    const id = (err.errorTypeId || '').toLowerCase();
+    const id = (err.errorTypeId || err.earnedTypeId || '').toLowerCase();
     const cat = (err.errorCategory || '').toLowerCase();
-    if (id.includes('receive') || id.includes('pass') || cat.includes('receive') || cat.includes('pass')) {
+    if (id.includes('dropped') || id.includes('miscommunication') || cat.includes('dropped') || id === 'opp_dropped_ball') {
+      droppedBallErrors++;
+    } else if (id.includes('receive') || id.includes('pass') || cat.includes('receive') || cat.includes('pass')) {
       receiveErrors++;
     } else if (id.includes('attack') || id.includes('hit') || cat.includes('attack')) {
       attackErrors++;
@@ -1582,15 +2442,19 @@ export function generateTimeoutBrief({
       serveErrors++;
     } else if (id.includes('net') || cat.includes('net')) {
       netErrors++;
+    } else if (id.includes('block') || id.includes('tool') || cat.includes('block')) {
+      blockErrors++;
     }
   });
 
   // 3. Filter Tactical Advice based on real-time triggers
   const tacticalPool = TACTICAL_ADVICE_CATALOG.filter(item => {
     // Rotation-specific check
-    if (item.id.includes(`rot-r${rotation}`)) return true;
+    if (item.id.includes(`rot-r${rotation}`) || item.scenario.includes(`rotation_${rotation}`)) return true;
 
     // Error-triggered checks
+    if (droppedBallErrors >= 1 && item.scenario.includes('dropped_ball_errors')) return true;
+    if (blockErrors >= 1 && item.scenario.includes('block_errors')) return true;
     if (receiveErrors >= 2 && item.scenario.includes('receive_errors')) return true;
     if (attackErrors >= 2 && item.scenario.includes('attack_errors')) return true;
     if (serveErrors >= 1 && item.scenario.includes('serving_errors')) return true;
@@ -1621,6 +2485,8 @@ export function generateTimeoutBrief({
   // Ensure rotation-specific advice is highlighted if available
   const rotationSpecific = tacticalPool.find(item => item.id.includes(`rot-r${rotation}`));
   const errorSpecific = tacticalPool.find(item => 
+    (droppedBallErrors >= 1 && item.scenario.includes('dropped_ball_errors')) ||
+    (blockErrors >= 1 && item.scenario.includes('block_errors')) ||
     (receiveErrors >= 2 && item.scenario.includes('receive_errors')) ||
     (attackErrors >= 2 && item.scenario.includes('attack_errors')) ||
     (opponentRun >= 2 && item.scenario.includes('opponent_run'))
@@ -1636,7 +2502,11 @@ export function generateTimeoutBrief({
 
   // Game situation badge label
   let situationBadge = 'Standard Timeout (0-0)';
-  if (opponentRun >= 3) {
+  if (droppedBallErrors >= 1) {
+    situationBadge = `🚨 Communication Breakdown / Dropped Ball • Call the Seams`;
+  } else if (blockErrors >= 2) {
+    situationBadge = `🛡️ Opponent Block Pressure • Tool Hands & Cover Spikes`;
+  } else if (opponentRun >= 3) {
     situationBadge = `⚠️ Opponent on ${opponentRun}-0 Run • Sideout Needed`;
   } else if (ourRun >= 3 && timeoutTeam === 'opponent') {
     situationBadge = `🔥 We are on a ${ourRun}-0 Run • Opponent Called Timeout`;

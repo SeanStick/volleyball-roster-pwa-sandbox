@@ -599,6 +599,19 @@ export default function FormationsView({
     confetti({ particleCount: 25, spread: 45, origin: { y: 0.7 } });
   };
 
+  /**
+   * Handle Counter-Clockwise Rotation
+   */
+  const handlePrevRotation = () => {
+    let prev = rotateLineupCounterClockwise(lineup);
+    const violation = checkLineupFrontRowLiberoViolation(prev, roster, liberoExchanges);
+    if (violation.hasViolation && violation.replacedPlayer) {
+      prev[violation.zoneKey] = violation.replacedPlayer.id;
+    }
+    if (setLineup) setLineup(prev);
+    if (setRotation) setRotation(r => (r === 1 ? 6 : r - 1));
+  };
+
   const handleRotChange = (rNum) => {
     if (onSelectRotation) {
       onSelectRotation(rNum);

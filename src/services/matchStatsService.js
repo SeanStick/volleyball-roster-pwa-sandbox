@@ -109,6 +109,15 @@ export const VOLLEYBALL_ERRORS = [
     description: 'Defensive dig or free ball pass could not be retrieved by teammates.',
     validPhases: ['serve', 'receive']
   },
+  {
+    id: 'dropped_ball',
+    label: 'Dropped Ball (Untouched Inbounds / Miscommunication)',
+    category: ERROR_CATEGORIES.PASS_RECEIVE,
+    icon: '📍',
+    shortLabel: 'Dropped Ball',
+    description: 'Ball dropped inbounds untouched because no player moved or called for it (miscommunication / hesitation).',
+    validPhases: ['serve', 'receive']
+  },
 
   // Ball Handling & Setting Violations
   {
@@ -259,6 +268,14 @@ export const POINT_EARNED_TYPES = [
     shortLabel: 'Opp Error',
     validPhases: ['serve', 'receive'],
     description: 'Opponent committed an attack error, net touch, double contact, or violation.'
+  },
+  {
+    id: 'opp_dropped_ball',
+    label: 'Opponent Dropped Ball (Inbounds)',
+    icon: '📍',
+    shortLabel: 'Opp Dropped Ball',
+    validPhases: ['serve', 'receive'],
+    description: 'Opponent let ball drop inbounds untouched due to miscommunication.'
   }
 ];
 
@@ -718,6 +735,22 @@ export function generateTacticalSuggestions({
       ruleReference: `USAV Rule 9.2 (Ball Handling) & Rule 15.6 (Position-locked Substitutions).`,
       targetPlayerId: worstPasser?.id || null,
       actionLabel: 'View 6-2 Tactics'
+    });
+  }
+
+  // Dropped Ball & Communication Alert
+  const droppedBallErrors = errorPoints.filter(p => p.errorTypeId === 'dropped_ball');
+  if (droppedBallErrors.length >= 2) {
+    suggestions.push({
+      id: 'sug-dropped-balls',
+      category: 'Communication',
+      priority: droppedBallErrors.length >= 3 ? 'critical' : 'tactical',
+      type: 'court',
+      title: 'Eliminate Inbounds Dropped Balls (Miscommunication)',
+      evidence: `Team has surrendered ${droppedBallErrors.length} points where the ball fell untouched inbounds due to hesitation.`,
+      recommendation: `Call an immediate timeout or huddle: demand loud, early verbal ownership ('Mine!') on every ball. Assign explicit seam boundaries between passers and front/back row defenders to eliminate hesitation.`,
+      ruleReference: 'USAV Rule 9.1 (Team Hits & Pursuit Responsibility).',
+      actionLabel: 'Call Timeout'
     });
   }
 

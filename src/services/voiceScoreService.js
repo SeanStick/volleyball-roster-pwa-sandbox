@@ -96,10 +96,11 @@ class VoiceScoreService {
 
     // 5. Opponent Point / Error: "point opponent", "opp point", "missed serve", "serve out", "net"
     if (
-      /\b(point opponent|opponent point|opp point|their point|they scored|them|opponent|missed serve|serve in net|serve out|net violation|foot fault|double|lift)\b/i.test(text)
+      /\b(point opponent|opponent point|opp point|their point|they scored|them|opponent|dropped ball|ball dropped|drop ball|missed serve|serve in net|serve out|net violation|foot fault|double|lift)\b/i.test(text)
     ) {
       let errorType = 'unspecified_error';
-      if (/missed serve|serve in net|serve out/i.test(text)) errorType = 'missed_serve_net';
+      if (/dropped ball|ball dropped|drop ball/i.test(text)) errorType = 'dropped_ball';
+      else if (/missed serve|serve in net|serve out/i.test(text)) errorType = 'missed_serve_net';
       else if (/net violation/i.test(text)) errorType = 'net_touch';
       else if (/foot fault/i.test(text)) errorType = 'service_foot_fault';
 

@@ -296,6 +296,7 @@ export default function RallyEditModal({
                   { id: 'missed_serve_net', label: 'Missed Serve', icon: '🏐' },
                   { id: 'spike_out', label: 'Attack Out / Net', icon: '💥' },
                   { id: 'pass_over_out', label: 'Pass / Receive Error', icon: '🎯' },
+                  { id: 'dropped_ball', label: 'Dropped Ball', icon: '📍' },
                   { id: 'net_touch', label: 'Net Violation', icon: '⚠️' }
                 ].map((item) => (
                   <button

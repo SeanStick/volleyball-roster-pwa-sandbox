@@ -23,6 +23,7 @@ export default function QuickPointModal({
   const [selectedPlayerId, setSelectedPlayerId] = useState(null);
   const [selectedEarnedType, setSelectedEarnedType] = useState(null);
   const [selectedErrorCategory, setSelectedErrorCategory] = useState('ALL');
+  const [showMoreViolations, setShowMoreViolations] = useState(false);
 
   if (!isOpen) return null;
 
@@ -81,6 +82,8 @@ export default function QuickPointModal({
   const handleErrorPoint = (errorDef, customPlayerId = null) => {
     let errorPlayer = null;
     const targetPlayerId = customPlayerId || selectedPlayerId;
+    const isDropped = errorDef.id === 'dropped_ball';
+    const isTeam = targetPlayerId === 'team' || (!targetPlayerId && isDropped);
 
     if (errorDef.validPhases?.length === 1 && errorDef.validPhases[0] === 'serve' && currentServer) {
       // Auto-assign service errors (missed serve net/out/foot fault) to the current server
@@ -94,8 +97,8 @@ export default function QuickPointModal({
       errorTypeId: errorDef.id,
       errorTypeName: errorDef.label,
       errorCategory: errorDef.category,
-      errorPlayerId: errorPlayer ? errorPlayer.id : null,
-      errorPlayerName: errorPlayer ? errorPlayer.name : (targetPlayerId === 'team' ? 'Team Unforced' : null),
+      errorPlayerId: errorPlayer ? errorPlayer.id : (isTeam ? 'team' : null),
+      errorPlayerName: errorPlayer ? errorPlayer.name : (isTeam ? (isDropped ? 'Team Miscommunication' : 'Team Unforced') : null),
       errorPlayerNumber: errorPlayer ? errorPlayer.number : null,
       rotation,
       phase,
@@ -356,8 +359,28 @@ export default function QuickPointModal({
                   onClick={() => handleEarnedPoint('opp_error')}
                 >
                   <span style={{ fontSize: '1.6rem' }}>❌</span>
-                  <span style={{ fontWeight: 800, fontSize: '0.92rem' }}>Opponent Error</span>
+                  <span style={{ fontWeight: 800, fontSize: '0.92rem' }}>Opp Attack/Net Error</span>
                   <span style={{ fontSize: '0.72rem', color: '#fde68a' }}>Spike Out / Net Touch</span>
+                </button>
+
+                {/* 5. Opponent Dropped Ball */}
+                <button
+                  className="btn-player-pick"
+                  style={{
+                    background: 'rgba(245, 158, 11, 0.18)',
+                    borderColor: 'rgba(245, 158, 11, 0.6)',
+                    color: '#fef08a',
+                    padding: '0.85rem 0.65rem',
+                    flexDirection: 'column',
+                    textAlign: 'center',
+                    gap: '0.25rem'
+                  }}
+                  onClick={() => handleEarnedPoint('opp_dropped_ball')}
+                  title="Opponent miscommunication / let ball drop inbounds untouched"
+                >
+                  <span style={{ fontSize: '1.6rem' }}>📍</span>
+                  <span style={{ fontWeight: 800, fontSize: '0.92rem' }}>Opp Dropped Ball</span>
+                  <span style={{ fontSize: '0.72rem', color: '#fde68a' }}>Untouched Inbounds</span>
                 </button>
               </div>
 
@@ -374,6 +397,14 @@ export default function QuickPointModal({
                   </div>
 
                   <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.45rem' }}>
+                    <button
+                      className="btn-player-pick"
+                      style={{ padding: '0.55rem 0.65rem', gridColumn: '1 / -1', justifyContent: 'center' }}
+                      onClick={() => handleEarnedPoint(selectedEarnedType, null)}
+                    >
+                      <span style={{ fontWeight: 800 }}>⚡ General {selectedEarnedType === 'kill' ? 'Kill' : 'Block'} (Skip Player Tag)</span>
+                    </button>
+
                     {(selectedEarnedType === 'block' ? frontRowBlockers : activeCourtPlayers).map(({ player, zoneNum, isFrontRow }) => (
                       <button
                         key={player.id}
@@ -398,148 +429,253 @@ export default function QuickPointModal({
             </div>
           ) : (
             /* =========================================================================
-               ⚠️ POINT FOR OPPONENT FLOW (CONTEXTUAL ERROR RULES)
+               ⚠️ POINT FOR OPPONENT FLOW (STREAMLINED FAST ERRORS)
                ========================================================================= */
             <div>
-              {/* Quick 1-Tap Most Probable Error Shortcuts */}
-              <div style={{ marginBottom: '0.85rem' }}>
-                <div style={{ fontSize: '0.82rem', fontWeight: 800, color: '#fca5a5', marginBottom: '0.45rem' }}>
-                  {isServingPhase ? '1-Tap Service Errors (Auto-Assigned to Server):' : '1. Player Responsible (Optional):'}
+              {/* Optional Player Assignment Bar */}
+              <div style={{ marginBottom: '0.85rem', background: 'rgba(0,0,0,0.25)', padding: '0.6rem 0.75rem', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.08)' }}>
+                <div style={{ fontSize: '0.74rem', fontWeight: 800, color: '#fca5a5', marginBottom: '0.35rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <span>Attribute to Player (Optional):</span>
+                  {selectedPlayerId && (
+                    <button
+                      type="button"
+                      onClick={() => setSelectedPlayerId(null)}
+                      style={{ background: 'none', border: 'none', color: '#cbd5e1', fontSize: '0.7rem', cursor: 'pointer', textDecoration: 'underline' }}
+                    >
+                      Clear Selection
+                    </button>
+                  )}
                 </div>
 
-                {isServingPhase ? (
-                  /* 1-Tap Service Errors for Current Server */
-                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '0.4rem', marginBottom: '0.75rem' }}>
+                <div style={{ display: 'flex', gap: '0.35rem', overflowX: 'auto', paddingBottom: '3px' }}>
+                  <button
+                    type="button"
+                    className={`btn-player-pick ${selectedPlayerId === 'team' || !selectedPlayerId ? 'selected' : ''}`}
+                    onClick={() => setSelectedPlayerId(selectedPlayerId === 'team' ? null : 'team')}
+                    style={{
+                      padding: '0.3rem 0.55rem',
+                      fontSize: '0.74rem',
+                      whiteSpace: 'nowrap',
+                      background: selectedPlayerId === 'team' || !selectedPlayerId ? 'rgba(239, 68, 68, 0.25)' : 'rgba(255, 255, 255, 0.05)',
+                      borderColor: selectedPlayerId === 'team' || !selectedPlayerId ? '#ef4444' : 'rgba(255, 255, 255, 0.1)'
+                    }}
+                  >
+                    <span>👥 Team / Unforced</span>
+                  </button>
+
+                  {activeCourtPlayers.map(({ player, zoneNum }) => {
+                    const isSelected = selectedPlayerId === player.id;
+                    return (
+                      <button
+                        key={player.id}
+                        type="button"
+                        className={`btn-player-pick ${isSelected ? 'selected' : ''}`}
+                        onClick={() => setSelectedPlayerId(isSelected ? null : player.id)}
+                        style={{
+                          padding: '0.3rem 0.55rem',
+                          fontSize: '0.74rem',
+                          whiteSpace: 'nowrap',
+                          background: isSelected ? 'rgba(239, 68, 68, 0.35)' : 'rgba(30, 41, 59, 0.7)',
+                          borderColor: isSelected ? '#ef4444' : 'rgba(255, 255, 255, 0.1)',
+                          color: isSelected ? '#fca5a5' : '#f8fafc'
+                        }}
+                      >
+                        <span style={{ fontWeight: 800 }}>#{player.number}</span>
+                        <span>{player.name.split(' ')[0]}</span>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {/* 1-Tap Most Common Core Errors */}
+              <div style={{ fontSize: '0.82rem', fontWeight: 800, color: '#f8fafc', marginBottom: '0.45rem' }}>
+                Select Error (1-Tap Auto Records):
+              </div>
+
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: '0.5rem', marginBottom: '0.75rem' }}>
+                {/* 🌟 DROPPED BALL (INBOUNDS / NOBODY WENT) */}
+                <button
+                  type="button"
+                  className="btn-error-pick"
+                  style={{
+                    gridColumn: '1 / -1',
+                    background: 'rgba(245, 158, 11, 0.2)',
+                    borderColor: 'rgba(245, 158, 11, 0.65)',
+                    color: '#fef08a',
+                    padding: '0.75rem 0.85rem'
+                  }}
+                  onClick={() => handleErrorPoint(VOLLEYBALL_ERRORS.find(e => e.id === 'dropped_ball') || {
+                    id: 'dropped_ball',
+                    label: 'Dropped Ball (Untouched Inbounds / Miscommunication)',
+                    category: ERROR_CATEGORIES.PASS_RECEIVE
+                  })}
+                >
+                  <span style={{ fontSize: '1.4rem' }}>📍</span>
+                  <div style={{ textAlign: 'left' }}>
+                    <div style={{ fontWeight: 800, fontSize: '0.88rem' }}>Dropped Ball (Inbounds)</div>
+                    <div style={{ fontSize: '0.68rem', color: '#fde68a' }}>No player went after it / hesitation</div>
+                  </div>
+                </button>
+
+                {/* Service Errors (if serving) */}
+                {isServingPhase && (
+                  <>
                     <button
                       type="button"
                       className="btn-error-pick"
-                      style={{ padding: '0.5rem 0.4rem', flexDirection: 'column', textAlign: 'center', gap: '0.2rem' }}
                       onClick={() => handleErrorPoint(VOLLEYBALL_ERRORS.find(e => e.id === 'missed_serve_net'))}
                     >
                       <span style={{ fontSize: '1.3rem' }}>🏐</span>
-                      <span style={{ fontWeight: 800, fontSize: '0.76rem' }}>Serve in Net</span>
-                      <span style={{ fontSize: '0.65rem', color: '#fca5a5' }}>#{currentServer?.number || '1'} Server</span>
+                      <div style={{ textAlign: 'left' }}>
+                        <div style={{ fontWeight: 800, fontSize: '0.82rem' }}>Serve in Net</div>
+                        <div style={{ fontSize: '0.65rem', color: '#fca5a5' }}>#{currentServer?.number || '1'} Server</div>
+                      </div>
                     </button>
 
                     <button
                       type="button"
                       className="btn-error-pick"
-                      style={{ padding: '0.5rem 0.4rem', flexDirection: 'column', textAlign: 'center', gap: '0.2rem' }}
                       onClick={() => handleErrorPoint(VOLLEYBALL_ERRORS.find(e => e.id === 'missed_serve_out'))}
                     >
                       <span style={{ fontSize: '1.3rem' }}>🏐</span>
-                      <span style={{ fontWeight: 800, fontSize: '0.76rem' }}>Serve Out</span>
-                      <span style={{ fontSize: '0.65rem', color: '#fca5a5' }}>#{currentServer?.number || '1'} Server</span>
-                    </button>
-
-                    <button
-                      type="button"
-                      className="btn-error-pick"
-                      style={{ padding: '0.5rem 0.4rem', flexDirection: 'column', textAlign: 'center', gap: '0.2rem' }}
-                      onClick={() => handleErrorPoint(VOLLEYBALL_ERRORS.find(e => e.id === 'service_foot_fault'))}
-                    >
-                      <span style={{ fontSize: '1.3rem' }}>🦶</span>
-                      <span style={{ fontWeight: 800, fontSize: '0.76rem' }}>Foot Fault</span>
-                      <span style={{ fontSize: '0.65rem', color: '#fca5a5' }}>#{currentServer?.number || '1'} Server</span>
-                    </button>
-                  </div>
-                ) : (
-                  /* Player Grid when Receiving */
-                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(115px, 1fr))', gap: '0.4rem' }}>
-                    {activeCourtPlayers.map(({ player, zoneNum, isBackRow }) => {
-                      const isSelected = selectedPlayerId === player.id;
-
-                      return (
-                        <button
-                          key={player.id}
-                          className={`btn-player-pick ${isSelected ? 'selected' : ''}`}
-                          style={{
-                            padding: '0.45rem 0.55rem',
-                            background: isSelected ? 'rgba(239, 68, 68, 0.3)' : 'rgba(30, 41, 59, 0.8)',
-                            borderColor: isSelected ? '#ef4444' : 'rgba(255, 255, 255, 0.1)',
-                            color: isSelected ? '#fca5a5' : '#f8fafc'
-                          }}
-                          onClick={() => setSelectedPlayerId(isSelected ? null : player.id)}
-                        >
-                          <div className={`jersey-badge-sm ${player.position === 'Libero' ? 'libero-num' : ''}`} style={{ width: '22px', height: '22px', fontSize: '0.72rem' }}>
-                            #{player.number}
-                          </div>
-                          <div style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', textAlign: 'left' }}>
-                            <div style={{ fontWeight: 700, fontSize: '0.78rem' }}>{player.name.split(' ')[0]}</div>
-                            <div style={{ fontSize: '0.64rem', color: 'var(--text-muted)' }}>Z{zoneNum} {isBackRow ? '• Pass' : ''}</div>
-                          </div>
-                        </button>
-                      );
-                    })}
-
-                    {/* Team / Unforced Button */}
-                    <button
-                      className={`btn-player-pick ${selectedPlayerId === 'team' ? 'selected' : ''}`}
-                      onClick={() => setSelectedPlayerId(selectedPlayerId === 'team' ? null : 'team')}
-                      style={{
-                        padding: '0.45rem 0.55rem',
-                        background: selectedPlayerId === 'team' ? 'rgba(239, 68, 68, 0.3)' : 'rgba(255, 255, 255, 0.05)',
-                        borderColor: selectedPlayerId === 'team' ? '#ef4444' : 'rgba(255, 255, 255, 0.1)'
-                      }}
-                    >
-                      <Users size={16} color="var(--text-secondary)" />
                       <div style={{ textAlign: 'left' }}>
-                        <div style={{ fontWeight: 700, fontSize: '0.76rem' }}>Team Error</div>
-                        <div style={{ fontSize: '0.62rem', color: 'var(--text-muted)' }}>Unforced</div>
+                        <div style={{ fontWeight: 800, fontSize: '0.82rem' }}>Serve Out</div>
+                        <div style={{ fontSize: '0.65rem', color: '#fca5a5' }}>#{currentServer?.number || '1'} Server</div>
                       </div>
                     </button>
+                  </>
+                )}
+
+                {/* Pass Shank / Ace */}
+                <button
+                  type="button"
+                  className="btn-error-pick"
+                  onClick={() => handleErrorPoint(VOLLEYBALL_ERRORS.find(e => e.id === 'receive_ace_against') || {
+                    id: 'receive_ace_against',
+                    label: 'Serve Receive Shank / Ace',
+                    category: ERROR_CATEGORIES.PASS_RECEIVE
+                  })}
+                >
+                  <span style={{ fontSize: '1.3rem' }}>🎯</span>
+                  <div style={{ textAlign: 'left' }}>
+                    <div style={{ fontWeight: 800, fontSize: '0.82rem' }}>Pass Shank / Ace</div>
+                    <div style={{ fontSize: '0.65rem', color: '#fca5a5' }}>Bad pass / receiver error</div>
+                  </div>
+                </button>
+
+                {/* Attack Out / Net */}
+                <button
+                  type="button"
+                  className="btn-error-pick"
+                  onClick={() => handleErrorPoint(VOLLEYBALL_ERRORS.find(e => e.id === 'attack_out') || {
+                    id: 'attack_out',
+                    label: 'Attack (Out / Net)',
+                    category: ERROR_CATEGORIES.ATTACK
+                  })}
+                >
+                  <span style={{ fontSize: '1.3rem' }}>💥</span>
+                  <div style={{ textAlign: 'left' }}>
+                    <div style={{ fontWeight: 800, fontSize: '0.82rem' }}>Hit Out / In Net</div>
+                    <div style={{ fontSize: '0.65rem', color: '#fca5a5' }}>Spike error</div>
+                  </div>
+                </button>
+
+                {/* Hit Blocked (Roofed) */}
+                <button
+                  type="button"
+                  className="btn-error-pick"
+                  onClick={() => handleErrorPoint(VOLLEYBALL_ERRORS.find(e => e.id === 'attack_blocked') || {
+                    id: 'attack_blocked',
+                    label: 'Attack (Blocked / Roofed)',
+                    category: ERROR_CATEGORIES.ATTACK
+                  })}
+                >
+                  <span style={{ fontSize: '1.3rem' }}>🛑</span>
+                  <div style={{ textAlign: 'left' }}>
+                    <div style={{ fontWeight: 800, fontSize: '0.82rem' }}>Hit Blocked</div>
+                    <div style={{ fontSize: '0.65rem', color: '#fca5a5' }}>Opponent roof block</div>
+                  </div>
+                </button>
+
+                {/* Opponent Kill */}
+                <button
+                  type="button"
+                  className="btn-error-pick"
+                  onClick={() => handleErrorPoint(VOLLEYBALL_ERRORS.find(e => e.id === 'opp_kill') || {
+                    id: 'opp_kill',
+                    label: 'Opponent Spike Kill',
+                    category: ERROR_CATEGORIES.OPPONENT_EARNED
+                  })}
+                >
+                  <span style={{ fontSize: '1.3rem' }}>⚡</span>
+                  <div style={{ textAlign: 'left' }}>
+                    <div style={{ fontWeight: 800, fontSize: '0.82rem' }}>Opponent Kill</div>
+                    <div style={{ fontSize: '0.65rem', color: '#fca5a5' }}>Hard-driven winner</div>
+                  </div>
+                </button>
+
+                {/* Net Touch / Line Violation */}
+                <button
+                  type="button"
+                  className="btn-error-pick"
+                  onClick={() => handleErrorPoint(VOLLEYBALL_ERRORS.find(e => e.id === 'net_touch') || {
+                    id: 'net_touch',
+                    label: 'Net Touch Violation',
+                    category: ERROR_CATEGORIES.NET_COURT
+                  })}
+                >
+                  <span style={{ fontSize: '1.3rem' }}>🚫</span>
+                  <div style={{ textAlign: 'left' }}>
+                    <div style={{ fontWeight: 800, fontSize: '0.82rem' }}>Net / Line Fault</div>
+                    <div style={{ fontSize: '0.65rem', color: '#fca5a5' }}>Net touch or centerline</div>
+                  </div>
+                </button>
+              </div>
+
+              {/* Collapsible Rare Violations */}
+              <div style={{ marginTop: '0.4rem' }}>
+                <button
+                  type="button"
+                  onClick={() => setShowMoreViolations(prev => !prev)}
+                  style={{
+                    background: 'none',
+                    border: 'none',
+                    color: '#94a3b8',
+                    fontSize: '0.75rem',
+                    fontWeight: 700,
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '0.35rem',
+                    padding: '0.25rem 0'
+                  }}
+                >
+                  <span>{showMoreViolations ? '▲ Hide Technical Violations' : '▼ More Rule Violations (Double, Lift, Overlap...)'}</span>
+                </button>
+
+                {showMoreViolations && (
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(130px, 1fr))', gap: '0.4rem', marginTop: '0.4rem' }}>
+                    {[
+                      { id: 'double_contact', label: 'Double Contact', icon: '🖐️', cat: ERROR_CATEGORIES.HANDLING },
+                      { id: 'lift_carry', label: 'Lift / Carry', icon: '🤲', cat: ERROR_CATEGORIES.HANDLING },
+                      { id: 'four_hits', label: 'Four Hits', icon: '4️⃣', cat: ERROR_CATEGORIES.HANDLING },
+                      { id: 'rotation_overlap', label: 'Rotation Overlap', icon: '🔄', cat: ERROR_CATEGORIES.ROTATION },
+                      { id: 'centerline_fault', label: 'Centerline Fault', icon: '👟', cat: ERROR_CATEGORIES.NET_COURT }
+                    ].map(v => (
+                      <button
+                        key={v.id}
+                        type="button"
+                        className="btn-error-pick"
+                        style={{ padding: '0.45rem 0.55rem', fontSize: '0.74rem' }}
+                        onClick={() => handleErrorPoint(VOLLEYBALL_ERRORS.find(e => e.id === v.id) || { id: v.id, label: v.label, category: v.cat })}
+                      >
+                        <span>{v.icon}</span>
+                        <span>{v.label}</span>
+                      </button>
+                    ))}
                   </div>
                 )}
-              </div>
-
-              {/* Step 2: Category Filter Chips */}
-              <div style={{ marginBottom: '0.65rem' }}>
-                <div style={{ fontSize: '0.82rem', fontWeight: 800, color: '#f8fafc', marginBottom: '0.35rem' }}>
-                  {isServingPhase ? 'Other Rally Errors:' : '2. Tap Error (Auto-records point):'}
-                </div>
-
-                <div style={{ display: 'flex', gap: '0.3rem', overflowX: 'auto', paddingBottom: '4px' }}>
-                  {availableCategories.map(cat => (
-                    <button
-                      key={cat.id}
-                      type="button"
-                      onClick={() => setSelectedErrorCategory(cat.id)}
-                      style={{
-                        padding: '0.25rem 0.6rem',
-                        borderRadius: '999px',
-                        border: selectedErrorCategory === cat.id ? '1.5px solid #ef4444' : '1px solid rgba(255, 255, 255, 0.1)',
-                        background: selectedErrorCategory === cat.id ? 'rgba(239, 68, 68, 0.3)' : 'rgba(255, 255, 255, 0.04)',
-                        color: selectedErrorCategory === cat.id ? '#fca5a5' : '#94a3b8',
-                        fontSize: '0.74rem',
-                        fontWeight: 700,
-                        whiteSpace: 'nowrap',
-                        cursor: 'pointer'
-                      }}
-                    >
-                      {cat.label}
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              {/* Error Buttons Grid */}
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(145px, 1fr))', gap: '0.5rem', marginBottom: '0.5rem' }}>
-                {filteredErrors.map((err) => (
-                  <button
-                    key={err.id}
-                    className="btn-error-pick"
-                    style={{ padding: '0.6rem 0.75rem', minHeight: '52px' }}
-                    onClick={() => handleErrorPoint(err)}
-                  >
-                    <span style={{ fontSize: '1.25rem', flexShrink: 0 }}>{err.icon}</span>
-                    <div style={{ minWidth: 0, textAlign: 'left' }}>
-                      <div style={{ fontWeight: 800, fontSize: '0.8rem', lineHeight: 1.2 }}>{err.shortLabel || err.label}</div>
-                      <div style={{ fontSize: '0.65rem', color: '#fca5a5', opacity: 0.8, marginTop: '2px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                        {err.category}
-                      </div>
-                    </div>
-                  </button>
-                ))}
               </div>
             </div>
           )}

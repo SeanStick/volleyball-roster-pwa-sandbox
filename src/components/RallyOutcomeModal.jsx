@@ -209,61 +209,84 @@ export default function RallyOutcomeModal({
             </button>
           </div>
 
-          <div style={{ fontSize: '0.76rem', color: 'var(--text-secondary)', marginBottom: '0.5rem' }}>
-            Or log specific earned winner for stats:
+          <div style={{ fontSize: '0.74rem', color: 'var(--text-secondary)', marginBottom: '0.4rem', fontWeight: 600 }}>
+            Or 1-tap outcome:
           </div>
 
-          {/* Specific Earned Types */}
-          <div className="rally-buttons-row">
-            {/* Attack Kill */}
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.3rem', width: '100%' }}>
-              <div style={{ display: 'flex', gap: '0.35rem', flexWrap: 'wrap' }}>
-                <button
-                  className="rally-chip-btn win"
-                  onClick={() => handleDetailedUsWin('kill')}
-                >
-                  💥 Spike Kill (General)
-                </button>
-                {frontRowHitters.map(h => (
-                  <button
-                    key={h.player.id}
-                    className="rally-chip-btn win player"
-                    onClick={() => handleDetailedUsWin('kill', h.player.id)}
-                    title={`Kill by #${h.player.number} ${h.player.name} in ${h.label}`}
-                  >
-                    💥 #{h.player.number} {h.player.name.split(' ')[0]} ({h.player.position === 'Outside Hitter' ? 'OH' : h.player.position === 'Middle Blocker' ? 'MB' : 'RS'})
-                  </button>
-                ))}
-              </div>
-            </div>
+          {/* Clean 1-Tap Grid of Primary Winners */}
+          <div className="rally-quick-grid">
+            <button
+              className="rally-chip-btn win"
+              onClick={() => handleDetailedUsWin('kill')}
+              style={{ justifyContent: 'center' }}
+            >
+              💥 Spike Kill
+            </button>
 
-            {/* Other Earned Types */}
-            <div style={{ display: 'flex', gap: '0.35rem', flexWrap: 'wrap', width: '100%' }}>
-              {!isReceivePhase && (
+            {isReceivePhase ? (
+              <button
+                className="rally-chip-btn win"
+                onClick={() => handleDetailedUsWin('opp_missed_serve')}
+                style={{ justifyContent: 'center' }}
+              >
+                🏐 Opp Missed Serve
+              </button>
+            ) : (
+              <button
+                className="rally-chip-btn win player"
+                onClick={() => handleDetailedUsWin('ace', currentServer?.id)}
+                title={currentServer ? `Service Ace by #${currentServer.number} ${currentServer.name}` : 'Service Ace'}
+                style={{ justifyContent: 'center' }}
+              >
+                🏐 Service Ace {currentServer ? `(#${currentServer.number})` : ''}
+              </button>
+            )}
+
+            <button
+              className="rally-chip-btn win"
+              onClick={() => handleDetailedUsWin('block')}
+              style={{ justifyContent: 'center' }}
+            >
+              🧱 Block Kill
+            </button>
+
+            <button
+              className="rally-chip-btn win"
+              onClick={() => handleDetailedUsWin('opp_error')}
+              style={{ justifyContent: 'center' }}
+            >
+              ❌ Opp Attack/Net Error
+            </button>
+
+            <button
+              className="rally-chip-btn win"
+              onClick={() => handleDetailedUsWin('opp_dropped_ball')}
+              style={{ justifyContent: 'center' }}
+              title="Opponent miscommunication / ball dropped untouched inbounds"
+            >
+              📍 Opp Dropped Ball
+            </button>
+          </div>
+
+          {/* Quick Hitter Tags (Optional 1-Tap Player Attribution) */}
+          {frontRowHitters.length > 0 && (
+            <div className="rally-subplayer-row">
+              <span style={{ fontSize: '0.68rem', color: 'var(--text-muted)', fontWeight: 700 }}>
+                Credit Hitter:
+              </span>
+              {frontRowHitters.map(h => (
                 <button
+                  key={h.player.id}
                   className="rally-chip-btn win player"
-                  onClick={() => handleDetailedUsWin('ace', currentServer?.id)}
-                  title={currentServer ? `Service Ace by #${currentServer.number} ${currentServer.name}` : 'Service Ace'}
+                  onClick={() => handleDetailedUsWin('kill', h.player.id)}
+                  style={{ padding: '0.2rem 0.45rem', fontSize: '0.72rem' }}
+                  title={`Kill by #${h.player.number} ${h.player.name}`}
                 >
-                  🏐 Service Ace {currentServer ? `(#${currentServer.number} ${currentServer.name.split(' ')[0]})` : ''}
+                  #{h.player.number} {h.player.name.split(' ')[0]} ({h.player.position === 'Outside Hitter' ? 'OH' : h.player.position === 'Middle Blocker' ? 'MB' : 'RS'})
                 </button>
-              )}
-
-              <button
-                className="rally-chip-btn win"
-                onClick={() => handleDetailedUsWin('block')}
-              >
-                🧱 Block Kill (Roof)
-              </button>
-
-              <button
-                className="rally-chip-btn win"
-                onClick={() => handleDetailedUsWin('opp_error')}
-              >
-                ❌ Opponent Error (Out / Net)
-              </button>
+              ))}
             </div>
-          </div>
+          )}
         </div>
 
         {/* =========================================================================
@@ -289,104 +312,107 @@ export default function RallyOutcomeModal({
             </button>
           </div>
 
-          <div style={{ fontSize: '0.76rem', color: 'var(--text-secondary)', marginBottom: '0.5rem' }}>
-            Or log specific error for coaching stats:
+          <div style={{ fontSize: '0.74rem', color: 'var(--text-secondary)', marginBottom: '0.4rem', fontWeight: 600 }}>
+            Or 1-tap error:
           </div>
 
-          {/* Specific Error Types */}
-          <div className="rally-buttons-row">
+          {/* Clean 1-Tap Grid of Primary Errors */}
+          <div className="rally-quick-grid">
+            {/* 🌟 DROPPED BALL - FIRST & PROMINENT */}
+            <button
+              className="rally-chip-btn dropped-ball"
+              onClick={() => handleDetailedOpponentWin({
+                id: 'dropped_ball',
+                label: 'Dropped Ball (Untouched Inbounds / Miscommunication)',
+                category: ERROR_CATEGORIES.PASS_RECEIVE
+              })}
+              title="Ball dropped inbounds untouched - no player pursued or called for it"
+              style={{ justifyContent: 'center', gridColumn: 'span 2' }}
+            >
+              📍 Dropped Ball (Inbounds / Nobody Went)
+            </button>
+
             {isReceivePhase ? (
-              /* Receive Phase Errors (Pass / Attack / Handling) */
-              <>
-                <div style={{ display: 'flex', gap: '0.35rem', flexWrap: 'wrap', width: '100%' }}>
-                  <button
-                    className="rally-chip-btn loss"
-                    onClick={() => handleDetailedOpponentWin({ id: 'receive_ace_against', label: 'Serve Receive Shank / Ace', category: ERROR_CATEGORIES.PASS_RECEIVE })}
-                  >
-                    🎯 Pass Shank / Ace
-                  </button>
-                  {backRowPassers.map(p => (
-                    <button
-                      key={p.player.id}
-                      className="rally-chip-btn loss player"
-                      onClick={() => handleDetailedOpponentWin({ id: 'receive_ace_against', label: 'Serve Receive Shank / Ace', category: ERROR_CATEGORIES.PASS_RECEIVE }, p.player.id)}
-                      title={`Receive error by #${p.player.number} ${p.player.name}`}
-                    >
-                      🎯 #{p.player.number} {p.player.name.split(' ')[0]} ({p.player.position === 'Libero' ? 'Libero' : p.player.position === 'Outside Hitter' ? 'OH' : 'Passer'})
-                    </button>
-                  ))}
-                </div>
-
-                <div style={{ display: 'flex', gap: '0.35rem', flexWrap: 'wrap', width: '100%' }}>
-                  <button
-                    className="rally-chip-btn loss"
-                    onClick={() => handleDetailedOpponentWin({ id: 'attack_net', label: 'Attack (Into Net)', category: ERROR_CATEGORIES.ATTACK })}
-                  >
-                    💥 Hit in Net
-                  </button>
-                  <button
-                    className="rally-chip-btn loss"
-                    onClick={() => handleDetailedOpponentWin({ id: 'attack_out', label: 'Attack (Out of Bounds)', category: ERROR_CATEGORIES.ATTACK })}
-                  >
-                    💥 Hit Out
-                  </button>
-                  <button
-                    className="rally-chip-btn loss"
-                    onClick={() => handleDetailedOpponentWin({ id: 'attack_blocked', label: 'Attack (Blocked / Roofed)', category: ERROR_CATEGORIES.ATTACK })}
-                  >
-                    🛑 Hit Blocked
-                  </button>
-                  <button
-                    className="rally-chip-btn loss"
-                    onClick={() => handleDetailedOpponentWin({ id: 'double_contact', label: 'Double Contact', category: ERROR_CATEGORIES.HANDLING })}
-                  >
-                    🖐️ Double Contact
-                  </button>
-                </div>
-              </>
+              <button
+                className="rally-chip-btn loss"
+                onClick={() => handleDetailedOpponentWin({ id: 'receive_ace_against', label: 'Serve Receive Shank / Ace', category: ERROR_CATEGORIES.PASS_RECEIVE })}
+                style={{ justifyContent: 'center' }}
+              >
+                🎯 Pass Shank / Ace
+              </button>
             ) : (
-              /* Serving Phase Errors (Missed Serve / Transition) */
               <>
-                <div style={{ display: 'flex', gap: '0.35rem', flexWrap: 'wrap', width: '100%' }}>
-                  <button
-                    className="rally-chip-btn loss player"
-                    onClick={() => handleDetailedOpponentWin({ id: 'missed_serve_net', label: 'Missed Serve (Into Net)', category: ERROR_CATEGORIES.SERVICE }, currentServer?.id)}
-                    title={currentServer ? `Missed serve in net by #${currentServer.number} ${currentServer.name}` : 'Missed Serve in Net'}
-                  >
-                    🏐 Serve in Net {currentServer ? `(#${currentServer.number} ${currentServer.name.split(' ')[0]})` : ''}
-                  </button>
-                  <button
-                    className="rally-chip-btn loss player"
-                    onClick={() => handleDetailedOpponentWin({ id: 'missed_serve_out', label: 'Missed Serve (Out of Bounds)', category: ERROR_CATEGORIES.SERVICE }, currentServer?.id)}
-                    title={currentServer ? `Missed serve out by #${currentServer.number} ${currentServer.name}` : 'Missed Serve Out'}
-                  >
-                    🏐 Serve Out {currentServer ? `(#${currentServer.number} ${currentServer.name.split(' ')[0]})` : ''}
-                  </button>
-                </div>
-
-                <div style={{ display: 'flex', gap: '0.35rem', flexWrap: 'wrap', width: '100%' }}>
-                  <button
-                    className="rally-chip-btn loss"
-                    onClick={() => handleDetailedOpponentWin({ id: 'opp_kill', label: 'Opponent Spike Kill', category: ERROR_CATEGORIES.OPPONENT_EARNED })}
-                  >
-                    ⚡ Opponent Kill
-                  </button>
-                  <button
-                    className="rally-chip-btn loss"
-                    onClick={() => handleDetailedOpponentWin({ id: 'attack_net', label: 'Transition Hit in Net', category: ERROR_CATEGORIES.ATTACK })}
-                  >
-                    💥 Transition Hit in Net
-                  </button>
-                  <button
-                    className="rally-chip-btn loss"
-                    onClick={() => handleDetailedOpponentWin({ id: 'net_touch', label: 'Net Touch Violation', category: ERROR_CATEGORIES.NET_COURT })}
-                  >
-                    🚫 Net Touch
-                  </button>
-                </div>
+                <button
+                  className="rally-chip-btn loss player"
+                  onClick={() => handleDetailedOpponentWin({ id: 'missed_serve_net', label: 'Missed Serve (Into Net)', category: ERROR_CATEGORIES.SERVICE }, currentServer?.id)}
+                  style={{ justifyContent: 'center' }}
+                  title={currentServer ? `Missed serve in net by #${currentServer.number} ${currentServer.name}` : 'Missed Serve in Net'}
+                >
+                  🏐 Serve in Net {currentServer ? `(#${currentServer.number})` : ''}
+                </button>
+                <button
+                  className="rally-chip-btn loss player"
+                  onClick={() => handleDetailedOpponentWin({ id: 'missed_serve_out', label: 'Missed Serve (Out of Bounds)', category: ERROR_CATEGORIES.SERVICE }, currentServer?.id)}
+                  style={{ justifyContent: 'center' }}
+                  title={currentServer ? `Missed serve out by #${currentServer.number} ${currentServer.name}` : 'Missed Serve Out'}
+                >
+                  🏐 Serve Out {currentServer ? `(#${currentServer.number})` : ''}
+                </button>
               </>
             )}
+
+            <button
+              className="rally-chip-btn loss"
+              onClick={() => handleDetailedOpponentWin({ id: 'attack_out', label: 'Attack (Out / Net)', category: ERROR_CATEGORIES.ATTACK })}
+              style={{ justifyContent: 'center' }}
+            >
+              💥 Hit Out / In Net
+            </button>
+
+            <button
+              className="rally-chip-btn loss"
+              onClick={() => handleDetailedOpponentWin({ id: 'attack_blocked', label: 'Attack (Blocked / Roofed)', category: ERROR_CATEGORIES.ATTACK })}
+              style={{ justifyContent: 'center' }}
+            >
+              🛑 Hit Blocked
+            </button>
+
+            <button
+              className="rally-chip-btn loss"
+              onClick={() => handleDetailedOpponentWin({ id: 'opp_kill', label: 'Opponent Spike Kill', category: ERROR_CATEGORIES.OPPONENT_EARNED })}
+              style={{ justifyContent: 'center' }}
+            >
+              ⚡ Opponent Kill
+            </button>
+
+            <button
+              className="rally-chip-btn loss"
+              onClick={() => handleDetailedOpponentWin({ id: 'net_touch', label: 'Net / Double Violation', category: ERROR_CATEGORIES.NET_COURT })}
+              style={{ justifyContent: 'center' }}
+            >
+              🚫 Net / Violation
+            </button>
           </div>
+
+          {/* Quick Passer Tags for Receive Breakdowns (Optional) */}
+          {isReceivePhase && backRowPassers.length > 0 && (
+            <div className="rally-subplayer-row">
+              <span style={{ fontSize: '0.68rem', color: 'var(--text-muted)', fontWeight: 700 }}>
+                Credit Passer:
+              </span>
+              {backRowPassers.map(p => (
+                <button
+                  key={p.player.id}
+                  className="rally-chip-btn loss player"
+                  onClick={() => handleDetailedOpponentWin({ id: 'receive_ace_against', label: 'Serve Receive Shank / Ace', category: ERROR_CATEGORIES.PASS_RECEIVE }, p.player.id)}
+                  style={{ padding: '0.2rem 0.45rem', fontSize: '0.72rem' }}
+                  title={`Receive error by #${p.player.number} ${p.player.name}`}
+                >
+                  #{p.player.number} {p.player.name.split(' ')[0]} ({p.player.position === 'Libero' ? 'L' : 'Pass'})
+                </button>
+              ))}
+            </div>
+          )}
         </div>
 
         {/* Modal Footer with Fast Diagramming Bypass */}

@@ -609,7 +609,12 @@ export default function FormationsView({
       prev[violation.zoneKey] = violation.replacedPlayer.id;
     }
     if (setLineup) setLineup(prev);
-    if (setRotation) setRotation(r => (r === 1 ? 6 : r - 1));
+    const prevRot = rotation === 1 ? 6 : rotation - 1;
+    if (onSelectRotation) {
+      onSelectRotation(prevRot);
+    } else if (setRotation) {
+      setRotation(prevRot);
+    }
   };
 
   const handleRotChange = (rNum) => {

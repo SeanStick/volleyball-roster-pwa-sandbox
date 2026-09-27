@@ -510,7 +510,7 @@ export default function TeamManagerModal({
                 type="text"
                 required
                 className="form-input"
-                placeholder="e.g. CVA Blue - 10th or Varsity Squad"
+                placeholder="e.g. Apex Blue - 16U or Varsity Squad"
                 value={newTeamName}
                 onChange={(e) => setNewTeamName(e.target.value)}
               />

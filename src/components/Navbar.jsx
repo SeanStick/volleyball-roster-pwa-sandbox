@@ -78,7 +78,7 @@ export default function Navbar({
                   textOverflow: 'ellipsis'
                 }}
               >
-                {activeTeam.teamName || 'CVA Black - 9th'} {activeTeam.season ? `(${activeTeam.season})` : ''}
+                {activeTeam.teamName || 'Apex Elite - 16U'} {activeTeam.season ? `(${activeTeam.season})` : ''}
               </span>
             </button>
           )}

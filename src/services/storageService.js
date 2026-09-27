@@ -20,20 +20,20 @@ export const DEFAULT_SAVED_LINEUPS = [
     name: 'Tournament Starting 6-2',
     description: 'Textbook 6-2 rotation: S1 serving first in Zone 1, S2 in Zone 4, and Libero replacing Middle 2.',
     lineup: {
-      pos1: 'p-1', // Reese Stickrod (Setter 1)
-      pos2: 'p-2', // Gracyn Brandt (OH 1)
-      pos3: 'p-3', // Lexi Wright (Middle 1)
-      pos4: 'p-6', // Baylee King (Setter 2 / Opposite)
-      pos5: 'p-7', // Aliza Jackson (OH 2)
-      pos6: 'p-4'  // Tierney Hicks (Middle 2 / DS)
+      pos1: 'p-1', // Maya Lin (Setter 1)
+      pos2: 'p-2', // Chloe Rivera (OH 1)
+      pos3: 'p-3', // Avery Chen (Middle 1)
+      pos4: 'p-6', // Brooke Bennett (Setter 2 / Opposite)
+      pos5: 'p-7', // Hailey Cooper (OH 2)
+      pos6: 'p-4'  // Kendall Scott (Middle 2 / DS)
     },
-    liberoId: 'p-5', // Lucy Wetrich (Libero)
+    liberoId: 'p-5', // Piper Reed (Libero)
     createdAt: '2026-08-20T12:00:00.000Z'
   },
   {
     id: 'preset-defense-heavy',
     name: 'Defensive Boost (DS Back-Row)',
-    description: 'Defensive configuration with DS Tierney Hicks covering back-row receive alongside Libero Lucy Wetrich.',
+    description: 'Defensive configuration with DS Kendall Scott covering back-row receive alongside Libero Piper Reed.',
     lineup: {
       pos1: 'p-1',
       pos2: 'p-2',
@@ -135,46 +135,46 @@ export const SAMPLE_MATCH_HISTORY = [
 export const INITIAL_SAMPLE_ROSTER = [
   {
     id: 'p-1',
-    name: 'Aubrie Stickrod',
+    name: 'Maya Lin',
     number: 7,
     position: 'Setter',
     secondaryPosition: 'Right Side',
     isCaptain: true,
     isStarter: true,
     isFirstServer: true,
-    height: '"',
+    height: '5\'9"',
     status: 'Active',
     notes: ''
   },
   {
     id: 'p-2',
-    name: 'Gracyn Brandt',
+    name: 'Chloe Rivera',
     number: 14,
     position: 'Outside Hitter',
     secondaryPosition: 'Defensive Specialist',
     isCaptain: false,
     isStarter: true,
     isFirstServer: false,
-    height: '',
+    height: '5\'11"',
     status: 'Active',
     notes: ''
   },
   {
     id: 'p-3',
-    name: 'Lexi Wright',
+    name: 'Avery Chen',
     number: 11,
     position: 'Middle Blocker',
     secondaryPosition: '',
     isCaptain: false,
     isStarter: true,
     isFirstServer: false,
-    height: '',
+    height: '6\'1"',
     status: 'Active',
     notes: ''
   },
   {
     id: 'p-4',
-    name: 'Tierney Hicks',
+    name: 'Kendall Scott',
     number: 4,
     position: 'Defensive Specialist',
     secondaryPosition: 'Outside Hitter',
@@ -187,47 +187,47 @@ export const INITIAL_SAMPLE_ROSTER = [
   },
   {
     id: 'p-5',
-    name: 'Lucy Wetrich',
+    name: 'Piper Reed',
     number: 9,
     position: 'Libero',
     secondaryPosition: '',
     isCaptain: false,
     isStarter: true,
     isFirstServer: false,
-    height: '',
+    height: '5\'6"',
     status: 'Active',
     notes: ''
   },
   {
     id: 'p-6',
-    name: 'Baylee King',
+    name: 'Brooke Bennett',
     number: 18,
     position: 'Setter',
     secondaryPosition: 'Right Side',
     isCaptain: false,
     isStarter: true,
     isFirstServer: false,
-    height: '',
+    height: '5\'10"',
     status: 'Active',
     notes: ''
   },
   {
     id: 'p-7',
-    name: 'Aliza Jackson',
+    name: 'Hailey Cooper',
     number: 2,
     position: 'Outside Hitter',
     secondaryPosition: 'Right Side',
     isCaptain: false,
     isStarter: false,
     isFirstServer: false,
-    height: '',
+    height: '5\'10"',
     status: 'Active',
     notes: ''
   }
 ];
 
 export const INITIAL_TEAM_SETTINGS = {
-  teamName: 'CVA Black - 9th',
+  teamName: 'Apex Elite - 16U',
   season: '2026 - 2027',
   primaryColor: '#ff6b35',
   secondaryColor: '#1e3a8a',
@@ -254,7 +254,33 @@ export const storageService = {
         this.saveRoster(INITIAL_SAMPLE_ROSTER);
         return INITIAL_SAMPLE_ROSTER;
       }
-      return JSON.parse(data);
+      const parsed = JSON.parse(data);
+      if (Array.isArray(parsed)) {
+        // Automatic migration of legacy real default names to fictitious names
+        const NAME_MIGRATIONS = {
+          'Aubrie Stickrod': 'Maya Lin',
+          'Reese Stickrod': 'Maya Lin',
+          'Gracyn Brandt': 'Chloe Rivera',
+          'Lexi Wright': 'Avery Chen',
+          'Tierney Hicks': 'Kendall Scott',
+          'Lucy Wetrich': 'Piper Reed',
+          'Baylee King': 'Brooke Bennett',
+          'Aliza Jackson': 'Hailey Cooper'
+        };
+        let updated = false;
+        const migrated = parsed.map(p => {
+          if (p && NAME_MIGRATIONS[p.name]) {
+            updated = true;
+            return { ...p, name: NAME_MIGRATIONS[p.name] };
+          }
+          return p;
+        });
+        if (updated) {
+          this.saveRoster(migrated);
+          return migrated;
+        }
+      }
+      return parsed;
     } catch (e) {
       console.error('Error reading roster from localStorage:', e);
       return INITIAL_SAMPLE_ROSTER;
@@ -284,6 +310,10 @@ export const storageService = {
         return INITIAL_TEAM_SETTINGS;
       }
       const parsed = JSON.parse(data);
+      if (parsed && parsed.teamName === 'CVA Black - 9th') {
+        parsed.teamName = 'Apex Elite - 16U';
+        this.saveTeamSettings(parsed);
+      }
       if (!parsed.userRole) {
         parsed.userRole = 'head_coach';
       }
@@ -746,6 +776,18 @@ export const storageService = {
       if (data) {
         const parsed = JSON.parse(data);
         if (Array.isArray(parsed) && parsed.length > 0) {
+          let updated = false;
+          const migrated = parsed.map(t => {
+            if (t && t.teamName === 'CVA Black - 9th') {
+              updated = true;
+              return { ...t, teamName: 'Apex Elite - 16U' };
+            }
+            return t;
+          });
+          if (updated) {
+            this.saveTeamsList(migrated);
+            return migrated;
+          }
           return parsed;
         }
       }
@@ -754,7 +796,7 @@ export const storageService = {
       const initialTeams = [
         {
           id: DEFAULT_TEAM_ID,
-          teamName: defaultSettings.teamName || 'CVA Black - 9th',
+          teamName: defaultSettings.teamName || 'Apex Elite - 16U',
           season: defaultSettings.season || '2026 - 2027',
           primaryColor: defaultSettings.primaryColor || '#ff6b35',
           secondaryColor: defaultSettings.secondaryColor || '#1e3a8a',
@@ -766,7 +808,7 @@ export const storageService = {
       return initialTeams;
     } catch (e) {
       console.error('Error reading teams list:', e);
-      return [{ id: DEFAULT_TEAM_ID, teamName: 'My Volleyball Team', season: '2026' }];
+      return [{ id: DEFAULT_TEAM_ID, teamName: 'Apex Elite - 16U', season: '2026' }];
     }
   },
 
@@ -813,6 +855,23 @@ export const storageService = {
       }
       const parsed = JSON.parse(data);
       if (Array.isArray(parsed) && parsed.length > 0) {
+        let updated = false;
+        const migrated = parsed.map(preset => {
+          if (preset?.description?.includes('Tierney Hicks') || preset?.description?.includes('Lucy Wetrich')) {
+            updated = true;
+            return {
+              ...preset,
+              description: preset.description
+                .replace(/Tierney Hicks/g, 'Kendall Scott')
+                .replace(/Lucy Wetrich/g, 'Piper Reed')
+            };
+          }
+          return preset;
+        });
+        if (updated) {
+          this.saveSavedLineups(migrated);
+          return migrated;
+        }
         return parsed;
       }
       return DEFAULT_SAVED_LINEUPS;

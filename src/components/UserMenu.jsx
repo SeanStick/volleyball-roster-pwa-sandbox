@@ -353,7 +353,7 @@ export default function UserMenu({
                   Active Team {activeTeam.shareCode ? `• ${activeTeam.shareCode}` : ''}
                 </div>
                 <div style={{ fontSize: '0.82rem', fontWeight: 800, color: '#ffffff' }}>
-                  {activeTeam.teamName || 'CVA Black - 9th'}
+                  {activeTeam.teamName || 'Apex Elite - 16U'}
                 </div>
               </div>
               <div style={{ width: '10px', height: '10px', borderRadius: '50%', background: activeTeam.primaryColor || '#ff6b35' }} />

@@ -451,7 +451,7 @@ export default function AuthModal({ isOpen, onClose, onAuthSuccess, initialTab =
                 />
                 <input
                   type="text"
-                  placeholder="Coach Stickrod"
+                  placeholder="Coach Taylor"
                   className="form-input"
                   style={{ paddingLeft: '2.4rem' }}
                   value={displayName}

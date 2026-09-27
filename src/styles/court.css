@@ -498,7 +498,7 @@
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
   backdrop-filter: blur(12px);
   position: relative;
-  z-index: 100;
+  z-index: 25;
   flex-wrap: wrap;
 }
 

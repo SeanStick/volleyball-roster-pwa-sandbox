@@ -6,7 +6,6 @@ import {
   CloudOff,
   RefreshCw,
   LogOut,
-  Settings,
   ChevronDown,
   Users,
   Shield,
@@ -213,7 +212,7 @@ export default function UserMenu({
   };
 
   return (
-    <div style={{ position: 'relative' }} ref={dropdownRef}>
+    <div style={{ position: 'relative', zIndex: isOpen ? 1005 : 'auto' }} ref={dropdownRef}>
       {/* Trigger Button */}
       <button
         type="button"
@@ -307,7 +306,7 @@ export default function UserMenu({
             border: '1px solid var(--border-glass)',
             borderRadius: 'var(--radius-md)',
             boxShadow: '0 16px 36px rgba(0, 0, 0, 0.65)',
-            zIndex: 1000,
+            zIndex: 1005,
             padding: '0.65rem',
             animation: 'fadeIn 0.15s ease-out'
           }}
@@ -948,35 +947,6 @@ export default function UserMenu({
                   {lastSyncTime}
                 </span>
               )}
-            </button>
-
-            <button
-              type="button"
-              onClick={() => {
-                setIsOpen(false);
-                if (onOpenFirebaseSettingsModal) onOpenFirebaseSettingsModal();
-              }}
-              style={{
-                width: '100%',
-                display: 'flex',
-                alignItems: 'center',
-                gap: '0.6rem',
-                padding: '0.55rem 0.75rem',
-                background: 'transparent',
-                border: 'none',
-                borderRadius: 'var(--radius-sm)',
-                color: '#f1f5f9',
-                fontSize: '0.82rem',
-                fontWeight: 600,
-                cursor: 'pointer',
-                textAlign: 'left',
-                transition: 'background 0.15s'
-              }}
-              onMouseEnter={(e) => (e.currentTarget.style.background = 'rgba(255, 255, 255, 0.08)')}
-              onMouseLeave={(e) => (e.currentTarget.style.background = 'transparent')}
-            >
-              <Settings size={15} color="#94a3b8" />
-              <span>Firebase Cloud Settings</span>
             </button>
 
             <div style={{ height: '1px', background: 'var(--border-glass)', margin: '0.4rem 0' }} />

@@ -278,7 +278,7 @@ export default function AutoSubConfirmModal({
             </div>
 
             {/* Incoming Player */}
-            {activeIncoming && (
+            {activeIncoming ? (
               <div
                 style={{
                   display: 'flex',
@@ -329,6 +329,24 @@ export default function AutoSubConfirmModal({
                 </div>
                 <div style={{ fontSize: '0.72rem', color: '#6ee7b7' }}>
                   {activeIncoming.position || 'Player'}
+                </div>
+              </div>
+            ) : (
+              <div
+                style={{
+                  display: 'flex',
+                  flexDirection: 'column',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  textAlign: 'center',
+                  padding: '0.8rem 0.5rem',
+                  borderRadius: 'var(--radius-md)',
+                  background: 'rgba(255, 255, 255, 0.04)',
+                  border: '1.5px dashed rgba(255, 255, 255, 0.2)'
+                }}
+              >
+                <div style={{ fontSize: '0.75rem', color: '#94a3b8' }}>
+                  Select player below
                 </div>
               </div>
             )}
@@ -439,20 +457,23 @@ export default function AutoSubConfirmModal({
               type="button"
               className="btn btn-primary btn-sm"
               onClick={handleConfirm}
+              disabled={!activeIncoming}
               style={{
                 padding: '0.55rem 1.25rem',
                 borderRadius: '8px',
-                background: 'linear-gradient(135deg, #10b981, #059669)',
-                borderColor: '#10b981',
+                background: activeIncoming ? 'linear-gradient(135deg, #10b981, #059669)' : '#475569',
+                borderColor: activeIncoming ? '#10b981' : '#475569',
                 fontWeight: 800,
                 fontSize: '0.86rem',
                 display: 'flex',
                 alignItems: 'center',
                 gap: '0.45rem',
-                boxShadow: '0 4px 14px rgba(16, 185, 129, 0.4)'
+                opacity: activeIncoming ? 1 : 0.6,
+                cursor: activeIncoming ? 'pointer' : 'not-allowed',
+                boxShadow: activeIncoming ? '0 4px 14px rgba(16, 185, 129, 0.4)' : 'none'
               }}
             >
-              <UserCheck size={16} /> Confirm #{activeIncoming?.number} {activeIncoming?.name} In
+              <UserCheck size={16} /> Confirm {activeIncoming ? `#${activeIncoming.number} ${activeIncoming.name}` : 'Sub'} In
             </button>
           </div>
 

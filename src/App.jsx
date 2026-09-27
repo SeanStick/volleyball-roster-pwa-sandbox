@@ -1117,18 +1117,25 @@ export default function App() {
     } = autoSubModalData;
 
     const finalPlayer = chosenPlayer || autoSubModalData.incomingPlayer;
-    const finalLineup = { ...pendingLineup, [targetZone]: finalPlayer.id };
+    const finalLineup = { ...(pendingLineup || lineup) };
+    if (finalPlayer?.id && targetZone) {
+      finalLineup[targetZone] = finalPlayer.id;
+    }
 
     setLineup(finalLineup);
-    setRotation(pendingRotation);
-    setPhase(pendingPhase);
-    setMatchStats(pendingStats);
-    lastScoreStateRef.current = { ourScore: pendingStats.ourScore, opponentScore: pendingStats.opponentScore || 0 };
+    if (pendingRotation !== undefined) setRotation(pendingRotation);
+    if (pendingPhase) setPhase(pendingPhase);
+    if (pendingStats) {
+      setMatchStats(pendingStats);
+      lastScoreStateRef.current = { ourScore: pendingStats.ourScore, opponentScore: pendingStats.opponentScore || 0 };
+    }
 
-    recordAutoSubHistory(targetZone, outgoingPlayer, finalPlayer, isLiberoExchange);
+    if (targetZone && outgoingPlayer && finalPlayer) {
+      recordAutoSubHistory(targetZone, outgoingPlayer, finalPlayer, isLiberoExchange);
+    }
 
     let nextExchanges = { ...liberoExchanges };
-    if (isLiberoExchange && outgoingPlayer) {
+    if (isLiberoExchange && outgoingPlayer?.id) {
       delete nextExchanges[outgoingPlayer.id];
       setLiberoExchanges(nextExchanges);
     }
@@ -1137,42 +1144,43 @@ export default function App() {
       notificationService.setAutoSubConfirmation(false);
     }
 
+    const subEntry = (outgoingPlayer && finalPlayer) ? [{
+      id: `sub-${Date.now()}`,
+      timestamp: new Date().toISOString(),
+      zoneKey: targetZone,
+      outgoingPlayerId: outgoingPlayer.id,
+      outgoingPlayerName: outgoingPlayer.name,
+      outgoingPlayerNumber: outgoingPlayer.number,
+      incomingPlayerId: finalPlayer.id,
+      incomingPlayerName: finalPlayer.name,
+      incomingPlayerNumber: finalPlayer.number,
+      isLiberoExchange: Boolean(isLiberoExchange),
+      subNumber: isLiberoExchange ? null : ((subHistory || []).filter(s => !s.isLiberoExchange).length + 1)
+    }] : [];
+
     syncCloudImmediately({
-      matchStats: pendingStats,
+      matchStats: pendingStats || matchStats,
       matchState: {
         lineup: finalLineup,
         startingLineup,
-        rotation: pendingRotation,
-        phase: pendingPhase,
+        rotation: pendingRotation ?? rotation,
+        phase: pendingPhase || phase,
         liberoExchanges: nextExchanges,
         liberoServingRotation,
-        subHistory: [
-          {
-            id: `sub-${Date.now()}`,
-            timestamp: new Date().toISOString(),
-            zoneKey: targetZone,
-            outgoingPlayerId: outgoingPlayer.id,
-            outgoingPlayerName: outgoingPlayer.name,
-            outgoingPlayerNumber: outgoingPlayer.number,
-            incomingPlayerId: finalPlayer.id,
-            incomingPlayerName: finalPlayer.name,
-            incomingPlayerNumber: finalPlayer.number,
-            isLiberoExchange: Boolean(isLiberoExchange),
-            subNumber: isLiberoExchange ? null : (subHistory.filter(s => !s.isLiberoExchange).length + 1)
-          },
-          ...subHistory
-        ],
+        subHistory: [...subEntry, ...(subHistory || [])],
         maxSubs,
         enforcePositionLock
       },
       lastScoreEvent: scoreEvent
     });
 
-    setSyncToast({
-      type: 'court_change',
-      title: 'Auto-Substitution Confirmed',
-      message: `#${finalPlayer.number} ${finalPlayer.name} subbed in for #${outgoingPlayer.number} ${outgoingPlayer.name}.`
-    });
+    if (finalPlayer && outgoingPlayer) {
+      setSyncToast({
+        type: 'court_change',
+        title: 'Auto-Substitution Confirmed',
+        message: `#${finalPlayer.number} ${finalPlayer.name} subbed in for #${outgoingPlayer.number} ${outgoingPlayer.name}.`
+      });
+    }
 
     setAutoSubModalData(null);
   };
@@ -1180,22 +1188,24 @@ export default function App() {
   const handleDeclineAutoSub = () => {
     if (!autoSubModalData) return;
     const { pendingLineup, pendingRotation, pendingPhase, pendingStats, scoreEvent } = autoSubModalData;
-    setLineup(pendingLineup);
-    setRotation(pendingRotation);
-    setPhase(pendingPhase);
-    setMatchStats(pendingStats);
-    lastScoreStateRef.current = { ourScore: pendingStats.ourScore, opponentScore: pendingStats.opponentScore || 0 };
+    if (pendingLineup) setLineup(pendingLineup);
+    if (pendingRotation !== undefined) setRotation(pendingRotation);
+    if (pendingPhase) setPhase(pendingPhase);
+    if (pendingStats) {
+      setMatchStats(pendingStats);
+      lastScoreStateRef.current = { ourScore: pendingStats.ourScore, opponentScore: pendingStats.opponentScore || 0 };
+    }
 
     syncCloudImmediately({
-      matchStats: pendingStats,
+      matchStats: pendingStats || matchStats,
       matchState: {
-        lineup: pendingLineup,
+        lineup: pendingLineup || lineup,
         startingLineup,
-        rotation: pendingRotation,
-        phase: pendingPhase,
+        rotation: pendingRotation ?? rotation,
+        phase: pendingPhase || phase,
         liberoExchanges,
         liberoServingRotation,
-        subHistory,
+        subHistory: subHistory || [],
         maxSubs,
         enforcePositionLock
       },
@@ -1334,7 +1344,7 @@ export default function App() {
         zoneName: ZONE_LABELS[autoSubTriggered.zoneKey]?.name || 'Left Front',
         reason: 'Rule 19.3.1 Libero Front-Row Exchange',
         ruleNote: 'Liberos cannot play in the front row and must exchange for the original player upon rotating to Zone 4.',
-        pendingLineup,
+        pendingLineup: nextLineup,
         pendingRotation: nextRot,
         pendingPhase: nextPhase,
         pendingStats: nextStats,

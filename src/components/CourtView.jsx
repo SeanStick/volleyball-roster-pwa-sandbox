@@ -41,6 +41,7 @@ import {
   detect62SubstitutionOpportunities
 } from '../services/volleyballRules';
 import { storageService } from '../services/storageService';
+import { notificationService } from '../services/notificationService';
 import LiberoPromptModal from './LiberoPromptModal';
 import LiberoServingPromptModal from './LiberoServingPromptModal';
 import LiberoReentryPromptModal from './LiberoReentryPromptModal';
@@ -240,10 +241,20 @@ export default function CourtView({
     const exitCheck = checkLiberoRotationViolation(lineup, roster, liberoExchanges);
 
     if (exitCheck.willViolate) {
-      // Pause rotation & open Libero Front-Row Exit Modal
-      setLiberoViolationData(exitCheck);
-      setIsLiberoPromptOpen(true);
-      return;
+      const shouldConfirm = notificationService.getAutoSubConfirmation();
+      if (shouldConfirm) {
+        // Pause rotation & open Libero Front-Row Exit Modal
+        setLiberoViolationData(exitCheck);
+        setIsLiberoPromptOpen(true);
+        return;
+      } else {
+        // Auto-sub automatically without opening modal when coach turned off notifications
+        const replacement = exitCheck.replacedPlayer || roster.find(p => p.position === 'Middle Blocker' && !Object.values(lineup).includes(p.id));
+        if (replacement) {
+          handleExecuteSilentAutoSub(exitCheck.libero, replacement, 'pos4', switchToServe);
+          return;
+        }
+      }
     }
 
     // Step 2: Check Libero Serving Opportunity in Zone 1 (Server Position)
@@ -344,8 +355,12 @@ export default function CourtView({
   /**
    * Confirms Libero Front-Row Exit from Prompt and continues rotation flow
    */
-  const handleConfirmLiberoSubAndRotate = (replacementPlayer) => {
+  const handleConfirmLiberoSubAndRotate = (replacementPlayer, turnOffFuture = false) => {
     if (!liberoViolationData || !replacementPlayer) return;
+
+    if (turnOffFuture) {
+      notificationService.setAutoSubConfirmation(false);
+    }
 
     const libero = liberoViolationData.libero;
 
@@ -404,6 +419,49 @@ export default function CourtView({
 
     executeDirectRotation(nextLineup);
     confetti({ particleCount: 35, spread: 50, origin: { y: 0.6 } });
+  };
+
+  /**
+   * Silently executes auto-sub without opening modal when coach turned off notifications
+   */
+  const handleExecuteSilentAutoSub = (libero, replacementPlayer, zoneKey = 'pos4', switchToServe = false) => {
+    const nextLineup = rotateLineupClockwise(lineup);
+    nextLineup[zoneKey] = replacementPlayer.id;
+
+    const newHistoryEntry = {
+      id: `sub-${Date.now()}`,
+      timestamp: new Date().toISOString(),
+      zoneKey,
+      outgoingPlayerId: libero.id,
+      outgoingPlayerName: libero.name,
+      outgoingPlayerNumber: libero.number,
+      incomingPlayerId: replacementPlayer.id,
+      incomingPlayerName: replacementPlayer.name,
+      incomingPlayerNumber: replacementPlayer.number,
+      isLiberoExchange: true,
+      subNumber: null
+    };
+    setSubHistory(prev => [newHistoryEntry, ...prev]);
+
+    setLiberoExchanges(prev => {
+      const next = { ...prev };
+      delete next[libero.id];
+      return next;
+    });
+
+    const nextRot = rotation === 6 ? 1 : rotation + 1;
+    setLineup(nextLineup);
+    setRotation(nextRot);
+    if (switchToServe) setPhase('serve');
+
+    // Check if Libero can re-enter post-rotation
+    const isLiberoOnCourtNow = teamLibero ? Object.values(nextLineup).includes(teamLibero.id) : false;
+    if (teamLibero && !isLiberoOnCourtNow) {
+      const reentryCheck = checkLiberoReentryOpportunity(nextLineup, roster, liberoExchanges);
+      if (reentryCheck.canReenter && reentryCheck.candidatePlayer) {
+        setReentryPromptData(reentryCheck);
+      }
+    }
   };
 
   /**

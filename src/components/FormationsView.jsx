@@ -41,6 +41,7 @@ import {
 import FormationCanvas from './FormationCanvas';
 import FormationAnimationPlayer from './FormationAnimationPlayer';
 import FormationTacticsGuide from './FormationTacticsGuide';
+import { notificationService } from '../services/notificationService';
 import LiberoPromptModal from './LiberoPromptModal';
 import LiberoServingPromptModal from './LiberoServingPromptModal';
 import LiberoReentryPromptModal from './LiberoReentryPromptModal';
@@ -292,10 +293,20 @@ export default function FormationsView({
     const exitCheck = checkLiberoRotationViolation(lineup, roster, liberoExchanges);
 
     if (exitCheck.willViolate) {
-      // Pause rotation & open Libero Front-Row Alert Modal
-      setLiberoViolationData(exitCheck);
-      setIsLiberoPromptOpen(true);
-      return;
+      const shouldConfirm = notificationService.getAutoSubConfirmation();
+      if (shouldConfirm) {
+        // Pause rotation & open Libero Front-Row Alert Modal
+        setLiberoViolationData(exitCheck);
+        setIsLiberoPromptOpen(true);
+        return;
+      } else {
+        // Auto-sub automatically without opening modal when coach turned off notifications
+        const replacement = exitCheck.replacedPlayer || roster.find(p => p.position === 'Middle Blocker' && !Object.values(lineup).includes(p.id));
+        if (replacement) {
+          handleConfirmLiberoSubAndRotate(replacement, false);
+          return;
+        }
+      }
     }
 
     // Step 2: Check Libero Serving Rule 19.3.1.3 (Zone 1 Server Position)
@@ -347,8 +358,12 @@ export default function FormationsView({
   /**
    * Confirms Libero Front-Row Exit from Prompt and continues rotation flow
    */
-  const handleConfirmLiberoSubAndRotate = (replacementPlayer) => {
+  const handleConfirmLiberoSubAndRotate = (replacementPlayer, turnOffFuture = false) => {
     if (!liberoViolationData || !replacementPlayer) return;
+
+    if (turnOffFuture) {
+      notificationService.setAutoSubConfirmation(false);
+    }
 
     const libero = liberoViolationData.libero;
 

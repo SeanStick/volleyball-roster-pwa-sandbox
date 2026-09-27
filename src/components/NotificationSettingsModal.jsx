@@ -13,7 +13,8 @@ import {
   Trophy,
   AlertTriangle,
   Info,
-  Sparkles
+  Sparkles,
+  ArrowLeftRight
 } from 'lucide-react';
 import { notificationService } from '../services/notificationService';
 import VolleyballIcon from './icons/VolleyballIcon';
@@ -517,6 +518,39 @@ export default function NotificationSettingsModal({ isOpen, onClose }) {
                 disabled={!prefs.enabled}
                 onChange={() => {}}
                 style={{ accentColor: '#ec4899', width: '18px', height: '18px', cursor: 'pointer' }}
+              />
+            </div>
+
+            {/* Auto-Substitution Confirmations */}
+            <div
+              onClick={() => handleTogglePref('confirmAutoSubs')}
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                padding: '0.75rem 1rem',
+                borderRadius: '10px',
+                background: 'rgba(255, 255, 255, 0.04)',
+                border: '1px solid rgba(255, 255, 255, 0.08)',
+                cursor: 'pointer'
+              }}
+            >
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.65rem' }}>
+                <ArrowLeftRight size={18} color="#a855f7" />
+                <div>
+                  <div style={{ fontSize: '0.88rem', fontWeight: 800, color: '#f8fafc' }}>
+                    Auto-Substitution Confirmations
+                  </div>
+                  <div style={{ fontSize: '0.74rem', color: '#94a3b8' }}>
+                    Confirm player entering court when auto-subbed (Libero front-row, sub partners)
+                  </div>
+                </div>
+              </div>
+              <input
+                type="checkbox"
+                checked={prefs.confirmAutoSubs !== false}
+                onChange={() => {}}
+                style={{ accentColor: '#a855f7', width: '18px', height: '18px', cursor: 'pointer' }}
               />
             </div>
           </div>

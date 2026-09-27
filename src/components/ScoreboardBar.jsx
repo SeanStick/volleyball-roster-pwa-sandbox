@@ -33,6 +33,7 @@ import QuickPointModal from './QuickPointModal';
 import RallyEditModal from './RallyEditModal';
 import TimeoutAdvisorModal from './TimeoutAdvisorModal';
 import { voiceScoreService } from '../services/voiceScoreService';
+import { notificationService } from '../services/notificationService';
 
 export default function ScoreboardBar({
   matchStats,
@@ -157,6 +158,23 @@ export default function ScoreboardBar({
       } catch {}
       return next;
     });
+  };
+
+  // 🔄 Auto-Sub Notification Confirmation Preference
+  const [isAutoSubNotifyEnabled, setIsAutoSubNotifyEnabled] = useState(() => notificationService.getAutoSubConfirmation());
+
+  useEffect(() => {
+    const handlePrefsChange = () => {
+      setIsAutoSubNotifyEnabled(notificationService.getAutoSubConfirmation());
+    };
+    window.addEventListener('notification-prefs-changed', handlePrefsChange);
+    return () => window.removeEventListener('notification-prefs-changed', handlePrefsChange);
+  }, []);
+
+  const handleToggleAutoSubNotify = () => {
+    const nextVal = !isAutoSubNotifyEnabled;
+    setIsAutoSubNotifyEnabled(nextVal);
+    notificationService.setAutoSubConfirmation(nextVal);
   };
 
   // ✏️ Rally Edit / Overturn Modal State
@@ -1255,6 +1273,37 @@ export default function ScoreboardBar({
                     </div>
                     <span style={{ fontSize: '0.75rem', fontWeight: 900, color: isTrackingEnabled ? '#60a5fa' : '#64748b' }}>
                       {isTrackingEnabled ? 'ACTIVE' : 'OFF'}
+                    </span>
+                  </div>
+
+                  {/* Auto-Sub Notifications & Confirmation Toggle */}
+                  <div
+                    onClick={handleToggleAutoSubNotify}
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'space-between',
+                      padding: '0.75rem 0.9rem',
+                      borderRadius: 'var(--radius-md)',
+                      background: isAutoSubNotifyEnabled ? 'rgba(168, 85, 247, 0.15)' : 'rgba(255, 255, 255, 0.04)',
+                      border: `1px solid ${isAutoSubNotifyEnabled ? '#a855f7' : 'rgba(255, 255, 255, 0.08)'}`,
+                      cursor: 'pointer',
+                      transition: 'all 0.15s ease'
+                    }}
+                  >
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.65rem' }}>
+                      <ArrowLeftRight size={18} color={isAutoSubNotifyEnabled ? '#c084fc' : '#94a3b8'} />
+                      <div>
+                        <div style={{ fontSize: '0.86rem', fontWeight: 800, color: isAutoSubNotifyEnabled ? '#e9d5ff' : '#f8fafc' }}>
+                          Auto-Sub Notifications & Confirmation: {isAutoSubNotifyEnabled ? 'ON' : 'OFF'}
+                        </div>
+                        <div style={{ fontSize: '0.72rem', color: '#94a3b8' }}>
+                          {isAutoSubNotifyEnabled ? 'Shows notification to confirm players entering court on auto-subs' : 'Auto-subs players silently during rotation without interrupting'}
+                        </div>
+                      </div>
+                    </div>
+                    <span style={{ fontSize: '0.75rem', fontWeight: 900, color: isAutoSubNotifyEnabled ? '#c084fc' : '#64748b' }}>
+                      {isAutoSubNotifyEnabled ? 'ACTIVE' : 'MUTED'}
                     </span>
                   </div>
                 </div>

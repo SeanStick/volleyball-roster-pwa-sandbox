@@ -1,6 +1,7 @@
-import React from 'react';
-import { AlertTriangle, ShieldAlert, ArrowRight, UserCheck, X } from 'lucide-react';
+import React, { useState } from 'react';
+import { AlertTriangle, ShieldAlert, ArrowRight, UserCheck, X, BellOff, CheckCircle2 } from 'lucide-react';
 import { FRONT_ROW_ZONES, ZONE_LABELS } from '../services/volleyballRules';
+import { notificationService } from '../services/notificationService';
 
 export default function LiberoPromptModal({
   isOpen,
@@ -10,10 +11,21 @@ export default function LiberoPromptModal({
   benchPlayers = [],
   onConfirmSubAndRotate
 }) {
+  const [turnOffNotifications, setTurnOffNotifications] = useState(false);
+
   if (!isOpen || !libero) return null;
 
   // Front row eligible bench players (non-liberos)
   const eligibleBench = benchPlayers.filter(p => p.position !== 'Libero' && !p.isLibero);
+
+  const handleConfirm = (player) => {
+    if (turnOffNotifications) {
+      notificationService.setAutoSubConfirmation(false);
+    }
+    if (onConfirmSubAndRotate) {
+      onConfirmSubAndRotate(player, turnOffNotifications);
+    }
+  };
 
   return (
     <div className="modal-overlay" onClick={onClose} style={{ zIndex: 1100 }}>
@@ -90,7 +102,7 @@ export default function LiberoPromptModal({
             </div>
             <div
               className="libero-return-card"
-              onClick={() => onConfirmSubAndRotate(replacedPlayer)}
+              onClick={() => handleConfirm(replacedPlayer)}
               style={{
                 background: 'linear-gradient(135deg, rgba(16, 185, 129, 0.18), rgba(6, 78, 59, 0.3))',
                 border: '1px solid #10b981',
@@ -120,7 +132,7 @@ export default function LiberoPromptModal({
                 </div>
                 <div>
                   <div style={{ fontWeight: 800, color: '#ffffff', fontSize: '0.95rem' }}>
-                    Return {replacedPlayer.name} to Zone 4
+                    Return #{replacedPlayer.number} {replacedPlayer.name} to Zone 4
                   </div>
                   <div style={{ fontSize: '0.75rem', color: '#6ee7b7' }}>
                     Original player covered by Libero ({replacedPlayer.position || 'Middle'})
@@ -129,7 +141,7 @@ export default function LiberoPromptModal({
               </div>
 
               <button className="btn btn-primary btn-sm" style={{ background: '#10b981', borderColor: '#059669' }}>
-                <UserCheck size={14} /> Return & Rotate
+                <UserCheck size={14} /> Confirm & Rotate
               </button>
             </div>
           </div>
@@ -159,7 +171,7 @@ export default function LiberoPromptModal({
                   key={player.id}
                   className="bench-chip"
                   style={{ cursor: 'pointer' }}
-                  onClick={() => onConfirmSubAndRotate(player)}
+                  onClick={() => handleConfirm(player)}
                 >
                   <span className="bench-chip-num">#{player.number}</span>
                   <span className="bench-chip-name">{player.name}</span>
@@ -170,9 +182,43 @@ export default function LiberoPromptModal({
           )}
         </div>
 
+        {/* Turn Off Notifications Toggle Option */}
+        <div
+          onClick={() => setTurnOffNotifications(prev => !prev)}
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            padding: '0.7rem 0.9rem',
+            borderRadius: 'var(--radius-md)',
+            background: turnOffNotifications ? 'rgba(245, 158, 11, 0.12)' : 'rgba(255, 255, 255, 0.04)',
+            border: `1px solid ${turnOffNotifications ? '#f59e0b' : 'rgba(255, 255, 255, 0.08)'}`,
+            cursor: 'pointer',
+            marginTop: '1.25rem'
+          }}
+        >
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
+            <BellOff size={16} color={turnOffNotifications ? '#fbbf24' : '#94a3b8'} />
+            <div>
+              <div style={{ fontSize: '0.8rem', fontWeight: 800, color: turnOffNotifications ? '#fef3c7' : '#e2e8f0' }}>
+                Don't show this notification again
+              </div>
+              <div style={{ fontSize: '0.68rem', color: '#94a3b8' }}>
+                Auto-confirm future substitutions silently (re-enable anytime in Match Tools)
+              </div>
+            </div>
+          </div>
+          <input
+            type="checkbox"
+            checked={turnOffNotifications}
+            onChange={() => {}}
+            style={{ accentColor: '#f59e0b', width: '16px', height: '16px', cursor: 'pointer' }}
+          />
+        </div>
+
         {/* Modal Footer */}
         <div style={{
-          marginTop: '1.5rem',
+          marginTop: '1rem',
           paddingTop: '1rem',
           borderTop: '1px solid var(--border-glass)',
           display: 'flex',

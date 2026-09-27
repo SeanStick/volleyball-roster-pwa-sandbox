@@ -7,7 +7,8 @@ const DEFAULT_PREFS = {
   notifyNewGame: true,
   notifySetPoints: true,
   notifyTimeouts: true,
-  notifySound: true
+  notifySound: true,
+  confirmAutoSubs: true // Notify & confirm when player is auto subbed in
 };
 
 export const notificationService = {
@@ -24,9 +25,24 @@ export const notificationService = {
   savePreferences(prefs) {
     try {
       localStorage.setItem(NOTIFICATION_PREFS_KEY, JSON.stringify(prefs));
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(new CustomEvent('notification-prefs-changed', { detail: prefs }));
+      }
     } catch (e) {
       console.error('Error saving notification preferences:', e);
     }
+  },
+
+  getAutoSubConfirmation() {
+    const prefs = this.getPreferences();
+    return prefs.confirmAutoSubs !== undefined ? prefs.confirmAutoSubs : true;
+  },
+
+  setAutoSubConfirmation(enabled) {
+    const prefs = this.getPreferences();
+    const updated = { ...prefs, confirmAutoSubs: Boolean(enabled) };
+    this.savePreferences(updated);
+    return updated;
   },
 
   isSupported() {

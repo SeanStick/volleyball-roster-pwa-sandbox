@@ -19,7 +19,7 @@ import {
   Award,
   AlertCircle
 } from 'lucide-react';
-import { askGeminiHeadCoach } from '../services/geminiService';
+import { askGeminiHeadCoach, getRandomHuddleSpeech } from '../services/geminiService';
 import { storageService } from '../services/storageService';
 import { speakTimeoutAdvice, stopSpeakingAdvice } from '../services/timeoutAdvisorService';
 
@@ -55,7 +55,7 @@ export default function GeminiCoachModal({
     { label: '💪 Motivational Pep Talk', query: 'Give the team an inspiring, fired-up huddle speech to lock in and win this set.' }
   ];
 
-  // Fetch advice when opened or when manually triggered
+  // Fetch advice when opened or when manually triggered (always rotates to a new huddle speech)
   const handleAnalyze = async (overrideQuestion = null) => {
     // Require a login for AI Coach to analyze
     if (!user || !user.uid) {
@@ -81,7 +81,8 @@ export default function GeminiCoachModal({
           opponentName
         },
         customQuestion: questionToAsk,
-        apiKey: apiKey
+        apiKey: apiKey,
+        excludeSpeech: adviceData?.motivationalSpeech || ''
       });
 
       setAdviceData(result);
@@ -90,6 +91,24 @@ export default function GeminiCoachModal({
     } finally {
       setLoading(false);
     }
+  };
+
+  // Dedicated instant refresh specifically for Head Coach Huddle Speech
+  const handleRegenerateSpeechOnly = () => {
+    stopSpeakingAdvice();
+    setIsSpeaking(false);
+    const newSpeech = getRandomHuddleSpeech(
+      {
+        matchStats,
+        rotation,
+        phase,
+        roster,
+        courtLineup,
+        opponentName
+      },
+      adviceData?.motivationalSpeech || ''
+    );
+    setAdviceData(prev => prev ? { ...prev, motivationalSpeech: newSpeech } : null);
   };
 
   useEffect(() => {
@@ -697,26 +716,51 @@ export default function GeminiCoachModal({
                     </h3>
                   </div>
 
-                  <button
-                    type="button"
-                    onClick={handleSpeak}
-                    style={{
-                      background: isSpeaking ? '#ef4444' : 'rgba(245, 158, 11, 0.25)',
-                      color: isSpeaking ? '#fff' : '#fef08a',
-                      border: `1px solid ${isSpeaking ? '#ef4444' : 'rgba(245, 158, 11, 0.5)'}`,
-                      borderRadius: '6px',
-                      padding: '0.2rem 0.5rem',
-                      fontSize: '0.72rem',
-                      fontWeight: 800,
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: '0.25rem',
-                      cursor: 'pointer'
-                    }}
-                  >
-                    {isSpeaking ? <VolumeX size={12} /> : <Volume2 size={12} />}
-                    <span>{isSpeaking ? 'Stop' : 'Play to Team'}</span>
-                  </button>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                    <button
+                      type="button"
+                      onClick={handleRegenerateSpeechOnly}
+                      disabled={loading || !adviceData}
+                      style={{
+                        background: 'rgba(245, 158, 11, 0.18)',
+                        color: '#fef08a',
+                        border: '1px solid rgba(245, 158, 11, 0.4)',
+                        borderRadius: '6px',
+                        padding: '0.2rem 0.55rem',
+                        fontSize: '0.72rem',
+                        fontWeight: 800,
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '0.3rem',
+                        cursor: 'pointer'
+                      }}
+                      title="Rotate to a fresh motivational huddle speech"
+                    >
+                      <RefreshCw size={11} className={loading ? 'animate-spin' : ''} />
+                      <span>New Speech</span>
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={handleSpeak}
+                      style={{
+                        background: isSpeaking ? '#ef4444' : 'rgba(245, 158, 11, 0.25)',
+                        color: isSpeaking ? '#fff' : '#fef08a',
+                        border: `1px solid ${isSpeaking ? '#ef4444' : 'rgba(245, 158, 11, 0.5)'}`,
+                        borderRadius: '6px',
+                        padding: '0.2rem 0.5rem',
+                        fontSize: '0.72rem',
+                        fontWeight: 800,
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '0.25rem',
+                        cursor: 'pointer'
+                      }}
+                    >
+                      {isSpeaking ? <VolumeX size={12} /> : <Volume2 size={12} />}
+                      <span>{isSpeaking ? 'Stop' : 'Play to Team'}</span>
+                    </button>
+                  </div>
                 </div>
 
                 <div

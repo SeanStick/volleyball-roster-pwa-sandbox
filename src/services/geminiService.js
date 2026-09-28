@@ -163,7 +163,8 @@ export async function askGeminiHeadCoach({
   gameData = {},
   customQuestion = '',
   apiKey = null,
-  model = 'gemini-1.5-flash'
+  model = 'gemini-1.5-flash',
+  excludeSpeech = ''
 }) {
   const safeQuestion = typeof customQuestion === 'string' ? customQuestion.trim() : '';
   const safeApiKey = typeof apiKey === 'string' ? apiKey.trim() : '';
@@ -196,7 +197,7 @@ Tone: Authoritative, energetic, inspiring, sharp, professional yet passionate. N
 
   // If no API key configured, use local intelligent head coach generator
   if (!activeKey) {
-    return generateLocalHeadCoachAdvice(gameData, safeQuestion);
+    return generateLocalHeadCoachAdvice(gameData, safeQuestion, excludeSpeech);
   }
 
   try {
@@ -213,13 +214,13 @@ Tone: Authoritative, energetic, inspiring, sharp, professional yet passionate. N
             role: 'user',
             parts: [
               {
-                text: `${systemInstruction}\n\n${promptContext}\n\nCoach, step in right now and give us your tactical gameplan and huddle speech:`
+                text: `${systemInstruction}\n\n${promptContext}\n\nCoach, step in right now and give us your tactical gameplan and an entirely FRESH, newly composed huddle speech (different from previous timeouts, variation id: ${Date.now()}):`
               }
             ]
           }
         ],
         generationConfig: {
-          temperature: 0.75,
+          temperature: 0.9,
           topK: 40,
           topP: 0.95,
           maxOutputTokens: 1200
@@ -231,7 +232,7 @@ Tone: Authoritative, energetic, inspiring, sharp, professional yet passionate. N
       const errJson = await response.json().catch(() => ({}));
       const message = errJson?.error?.message || `HTTP ${response.status} ${response.statusText}`;
       console.warn('Gemini API call failed, falling back to local coach intelligence:', message);
-      const fallback = generateLocalHeadCoachAdvice(gameData, customQuestion);
+      const fallback = generateLocalHeadCoachAdvice(gameData, safeQuestion, excludeSpeech);
       fallback.apiError = message;
       return fallback;
     }
@@ -300,18 +301,76 @@ function parseGeminiCoachResponse(rawText) {
   };
 }
 
-/**
- * Generates an instant, highly realistic Head Coach tactical breakdown and motivation
- * when an API key is not configured or network request fails.
- */
-export function generateLocalHeadCoachAdvice(gameData = {}, customQuestion = '') {
-  const safeQuestion = typeof customQuestion === 'string' ? customQuestion.trim() : '';
-  const { matchStats = {}, rotation = 1, phase = 'receive', opponentName = 'Opponent', roster = [], courtLineup = {} } = gameData;
+let lastSpeechIndex = -1;
+
+export const HUDDLE_SPEECHES = {
+  crunchTime: [
+    `"Look at me. This is why we practice 6 days a week! We live for these pressure points! Take a deep breath, trust your training, and trust the player standing next to you. No hesitation, no fear of mistakes — we attack this next point together on three! 1, 2, 3, FIGHT!"`,
+    `"Game time! Championship volleyball comes down to discipline in the 20s. First ball side-out. High hands at the net, crisp platform in the back, and let's swing aggressive. Don't play not to lose — play to WIN!"`,
+    `"Every rep in the gym, every early morning sprint was for this exact moment. Lock eyes, demand the ball, and execute your assignment. No one hesitates. We finish this together!"`,
+    `"Composure and courage. That's what wins sets right here. Serve tough to their deep corner, set your feet on defense, and put the ball away with authority. Look at each other, believe, and let's take it!"`,
+    `"This is where mental toughness wins the match. Block out the crowd, block out the score. Focus on your contact point and your footwork. One point at a time. Let's go!"`
+  ],
+  trailing: [
+    `"Listen to me: they didn't win this match, we gave them easy points. That stops RIGHT NOW. It's one pass, one clean set, one violent swing. We chip away point by point. Eyes up, chest out, let's go take our momentum back!"`,
+    `"Breathe. Reset your minds. Look around this huddle — every single one of you has fought back from bigger deficits than this. Don't look at the scoreboard, look at the ball. Win the first contact, trust the pass, and put all the pressure back on their side of the net. Let's go!"`,
+    `"Adversity is where champions are made! They think they have us on our heels. Prove them wrong right now! Be vocal, communicate on the seams, and play with absolute fearless conviction. One side-out, right here, right now!"`,
+    `"Stop overthinking! When we play free and aggressive, nobody can touch us. I want louder calls, deeper coverage, and full commitment on every single approach. Put the errors in the rearview mirror and fight for the next point!"`,
+    `"This set is far from over. All it takes is one great dig, one emphatic kill to flip the momentum. Bring the noise, celebrate each other, and show them what this team is made of!"`
+  ],
+  leading: [
+    `"We have them on their heels, but great teams don't just win — they put their foot on the gas! Stay relentless. Do not give them a single free ball. Every touch must have purpose. Stay hungry, stay locked in, finish this set!"`,
+    `"Keep the pressure on! Do not let up for even half a second. They are waiting for us to make errors — don't give them anything cheap. Serve aggressively, seal the line, and shut the door right now!"`,
+    `"Celebrate the points, but stay completely locked into the next whistle. Great teams finish with relentless precision. Talk early, transition fast, and let's bury this set!"`,
+    `"We dictated the tempo all set, and we are not slowing down now. Keep your platforms solid, swing high off the hands, and finish with authority!"`
+  ],
+  general: [
+    `"We are right here! Match their energy and raise the standard. Be vocal, cover your hitters, and celebrate every single hustle play. Bring the energy, play for each other, and execute!"`,
+    `"Trust the system! Every pass doesn't have to be perfect — make it workable and let our hitters do damage. Floor defenders, stay low and hungry. Let's win this transition rally!"`,
+    `"Who wants this ball more? Look at their eyes across the net — they're tired! This is our moment to outwork them, out-hustle them, and out-compete them on every single touch!"`,
+    `"Energy is a choice, team! Pump each other up, scream for the ball, and fly around the floor. When we play with joy and fire, we are unstoppable!"`,
+    `"Communication is our superpower! Call the ball loud, call the seams early, and call the hitter's tendencies. Six players moving as one heartbeat. Let's go get this point!"`
+  ]
+};
+
+export function getRandomHuddleSpeech(gameData = {}, excludeSpeech = '') {
+  const { matchStats = {} } = gameData;
   const ourScore = matchStats.ourScore || 0;
   const oppScore = matchStats.opponentScore || 0;
   const isTrailing = ourScore < oppScore;
   const isLeading = ourScore > oppScore;
   const isCrunchTime = ourScore >= 20 || oppScore >= 20;
+
+  let pool;
+  if (isCrunchTime) {
+    pool = [...HUDDLE_SPEECHES.crunchTime, ...HUDDLE_SPEECHES.trailing];
+  } else if (isTrailing) {
+    pool = [...HUDDLE_SPEECHES.trailing, ...HUDDLE_SPEECHES.general];
+  } else if (isLeading) {
+    pool = [...HUDDLE_SPEECHES.leading, ...HUDDLE_SPEECHES.general];
+  } else {
+    pool = [...HUDDLE_SPEECHES.general, ...HUDDLE_SPEECHES.trailing];
+  }
+
+  const cleanExclude = typeof excludeSpeech === 'string' ? excludeSpeech.trim() : '';
+  const available = pool.filter(s => s.trim() !== cleanExclude);
+  const candidates = available.length > 0 ? available : pool;
+  
+  let idx = Math.floor(Math.random() * candidates.length);
+  if (idx === lastSpeechIndex && candidates.length > 1) {
+    idx = (idx + 1) % candidates.length;
+  }
+  lastSpeechIndex = idx;
+  return candidates[idx];
+}
+
+/**
+ * Generates an instant, highly realistic Head Coach tactical breakdown and motivation
+ * when an API key is not configured or network request fails.
+ */
+export function generateLocalHeadCoachAdvice(gameData = {}, customQuestion = '', excludeSpeech = '') {
+  const safeQuestion = typeof customQuestion === 'string' ? customQuestion.trim() : '';
+  const { matchStats = {}, rotation = 1, phase = 'receive', opponentName = 'Opponent', roster = [], courtLineup = {} } = gameData;
 
   const getPlayer = (id) => roster.find(p => p.id === id);
   const setter = getPlayer(courtLineup.pos1) || getPlayer(courtLineup.pos4) || { name: 'Setter', number: 'S' };
@@ -321,7 +380,6 @@ export function generateLocalHeadCoachAdvice(gameData = {}, customQuestion = '')
 
   const tacticalAdvice = [];
   const playerFocus = [];
-  let motivationalSpeech = '';
 
   if (phase === 'receive') {
     tacticalAdvice.push(`Side-out priority in Rotation ${rotation}: Call the seam early! Let ${libero.name} take ownership of the deep float seams and keep the ball 3 feet off the net.`);
@@ -337,15 +395,7 @@ export function generateLocalHeadCoachAdvice(gameData = {}, customQuestion = '')
   playerFocus.push(`#${oh1.number} ${oh1.name}: Attack high off the hands. If the block is closed, tool off the outside hand or tip into the campfire donut.`);
   playerFocus.push(`#${libero.number} ${libero.name}: Be the loudest voice in the gym. Command the back row and freeze your platform through contact.`);
 
-  if (isCrunchTime) {
-    motivationalSpeech = `"Look at me. This is why we practice 6 days a week! We live for these pressure points! Take a deep breath, trust your training, and trust the player standing next to you. No hesitation, no fear of mistakes — we attack this next point together on three! 1, 2, 3, FIGHT!"`;
-  } else if (isTrailing) {
-    motivationalSpeech = `"Listen to me: they didn't win this match, we gave them easy points. That stops RIGHT NOW. It's one pass, one clean set, one violent swing. We chip away point by point. Eyes up, chest out, let's go take our momentum back!"`;
-  } else if (isLeading) {
-    motivationalSpeech = `"We have them on their heels, but great teams don't just win — they put their foot on the gas! Stay relentless. Do not give them a single free ball. Every touch must have purpose. Stay hungry, stay locked in, finish this set!"`;
-  } else {
-    motivationalSpeech = `"We are right here! Match their energy and raise the standard. Be vocal, cover your hitters, and celebrate every single hustle play. Bring the energy, play for each other, and execute!"`;
-  }
+  const motivationalSpeech = getRandomHuddleSpeech(gameData, excludeSpeech);
 
   if (safeQuestion) {
     tacticalAdvice.unshift(`Regarding "${safeQuestion}": Focus on discipline over power. Make them earn every ball and win the transition rallies.`);

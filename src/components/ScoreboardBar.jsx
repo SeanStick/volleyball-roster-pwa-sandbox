@@ -66,7 +66,8 @@ export default function ScoreboardBar({
   userRole = 'head_coach',
   onOpenWhiteboard,
   onNavigateTab,
-  onOpenGeminiCoach
+  onOpenGeminiCoach,
+  isLoggedIn = false
 }) {
   const [isPointModalOpen, setIsPointModalOpen] = useState(false);
   const [scoringTeam, setScoringTeam] = useState('us'); // 'us' | 'opponent'
@@ -479,7 +480,7 @@ export default function ScoreboardBar({
                 {onOpenGeminiCoach && (
                   <button
                     type="button"
-                    onClick={onOpenGeminiCoach}
+                    onClick={() => onOpenGeminiCoach()}
                     style={{
                       background: 'linear-gradient(135deg, #a855f7 0%, #3b82f6 100%)',
                       color: '#ffffff',
@@ -494,10 +495,10 @@ export default function ScoreboardBar({
                       cursor: 'pointer',
                       boxShadow: '0 2px 10px rgba(168, 85, 247, 0.5)'
                     }}
-                    title="Ask Gemini Head Coach for real-time tactical adjustments and motivational speech"
+                    title={isLoggedIn ? "Ask Gemini Head Coach for real-time tactical adjustments and motivational speech" : "Sign in required to access Gemini AI Head Coach"}
                   >
                     <Sparkles size={13} color="#fdf4ff" className="animate-pulse" />
-                    <span>✨ Gemini Coach</span>
+                    <span>{isLoggedIn ? "✨ Gemini Coach" : "✨ Gemini Coach 🔒"}</span>
                   </button>
                 )}
 
@@ -1025,7 +1026,7 @@ export default function ScoreboardBar({
             <button
               type="button"
               className="btn btn-secondary btn-sm"
-              onClick={onOpenGeminiCoach}
+              onClick={() => onOpenGeminiCoach()}
               style={{
                 background: 'linear-gradient(135deg, rgba(168, 85, 247, 0.22), rgba(59, 130, 246, 0.32))',
                 borderColor: 'rgba(168, 85, 247, 0.55)',
@@ -1037,10 +1038,10 @@ export default function ScoreboardBar({
                 alignItems: 'center',
                 gap: '0.35rem'
               }}
-              title="Consult Gemini Head Coach for tactical advice & motivational speech"
+              title={isLoggedIn ? "Consult Gemini Head Coach for tactical advice & motivational speech" : "Sign in required to access Gemini AI Head Coach"}
             >
               <Sparkles size={13} color="#c084fc" className="animate-pulse" />
-              <span>AI Coach</span>
+              <span>{isLoggedIn ? "AI Coach" : "AI Coach 🔒"}</span>
             </button>
           )}
 
@@ -1468,8 +1469,12 @@ export default function ScoreboardBar({
                       }}
                     >
                       <Sparkles size={18} color="#f472b6" />
-                      <div style={{ fontWeight: 800, fontSize: '0.85rem' }}>✨ Gemini Head Coach</div>
-                      <div style={{ fontSize: '0.7rem', color: '#fbcfe8' }}>AI tactics & huddle speech</div>
+                      <div style={{ fontWeight: 800, fontSize: '0.85rem' }}>
+                        {isLoggedIn ? '✨ Gemini Head Coach' : '✨ Gemini Coach 🔒'}
+                      </div>
+                      <div style={{ fontSize: '0.7rem', color: '#fbcfe8' }}>
+                        {isLoggedIn ? 'AI tactics & huddle speech' : 'Sign in required to unlock'}
+                      </div>
                     </button>
                   )}
                 </div>

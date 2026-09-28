@@ -102,8 +102,15 @@ export default function App() {
   const [isGeminiCoachOpen, setIsGeminiCoachOpen] = useState(false);
   const [geminiCoachQuestion, setGeminiCoachQuestion] = useState('');
 
-  const handleOpenGeminiCoach = (question = '') => {
-    setGeminiCoachQuestion(question || '');
+  const handleOpenGeminiCoach = (questionOrEvent = '') => {
+    // Require a login for the AI coach to be an option
+    if (!user || !user.uid) {
+      setAuthModalTab('login');
+      setIsAuthModalOpen(true);
+      return;
+    }
+    const validQuestion = typeof questionOrEvent === 'string' ? questionOrEvent : '';
+    setGeminiCoachQuestion(validQuestion);
     setIsGeminiCoachOpen(true);
   };
 
@@ -2250,6 +2257,7 @@ export default function App() {
           onDeletePoint={handleDeletePointById}
           onNavigateTab={(tab) => setActiveTab(tab)}
           onOpenGeminiCoach={handleOpenGeminiCoach}
+          isLoggedIn={Boolean(user?.uid)}
         />
       )}
 
@@ -2571,6 +2579,7 @@ export default function App() {
           onUpdatePoint={handleUpdatePoint}
           onDeletePoint={handleDeletePointById}
           onOpenGeminiCoach={handleOpenGeminiCoach}
+          isLoggedIn={Boolean(user?.uid)}
         />
       )}
 
@@ -2807,11 +2816,18 @@ export default function App() {
             setIsGeminiCoachOpen(false);
             setGeminiCoachQuestion('');
           }}
+          user={user}
+          onOpenAuthModal={() => {
+            setIsGeminiCoachOpen(false);
+            setAuthModalTab('login');
+            setIsAuthModalOpen(true);
+          }}
           matchStats={matchStats}
           roster={roster}
-          lineup={lineup}
+          courtLineup={lineup}
           rotation={rotation}
           phase={phase}
+          opponentName={matchStats?.opponentName || 'Opponent'}
           teamSettings={teamSettings}
           initialQuestion={geminiCoachQuestion}
         />

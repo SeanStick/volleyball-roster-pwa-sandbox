@@ -32,6 +32,7 @@ export function buildGameContextPrompt({
   opponentName = 'Opponent',
   customQuestion = ''
 }) {
+  const safeCustomQuestion = typeof customQuestion === 'string' ? customQuestion.trim() : '';
   const ourScore = matchStats.ourScore || 0;
   const oppScore = matchStats.opponentScore || 0;
   const setNumber = matchStats.setNumber || 1;
@@ -138,7 +139,7 @@ STATISTICAL BREAKDOWN IN CURRENT MATCH:
 - Timeouts Remaining for Us: ${matchStats.ourTimeoutsRemaining !== undefined ? matchStats.ourTimeoutsRemaining : 2}
 - Timeouts Remaining for Opponent: ${matchStats.opponentTimeoutsRemaining !== undefined ? matchStats.opponentTimeoutsRemaining : 2}
 
-${customQuestion ? `COACH'S SPECIFIC INQUIRY / FOCUS:\n"${customQuestion}"\n` : ''}
+${safeCustomQuestion ? `COACH'S SPECIFIC INQUIRY / FOCUS:\n"${safeCustomQuestion}"\n` : ''}
 `;
 }
 
@@ -159,13 +160,18 @@ ${customQuestion ? `COACH'S SPECIFIC INQUIRY / FOCUS:\n"${customQuestion}"\n` : 
  * }>}
  */
 export async function askGeminiHeadCoach({
-  gameData,
+  gameData = {},
   customQuestion = '',
   apiKey = null,
   model = 'gemini-1.5-flash'
 }) {
-  const activeKey = apiKey || storageService.getGeminiApiKey();
-  const promptContext = buildGameContextPrompt({ ...gameData, customQuestion });
+  const safeQuestion = typeof customQuestion === 'string' ? customQuestion.trim() : '';
+  const safeApiKey = typeof apiKey === 'string' ? apiKey.trim() : '';
+  const storedKey = storageService.getGeminiApiKey();
+  const safeStoredKey = typeof storedKey === 'string' ? storedKey.trim() : '';
+  const activeKey = safeApiKey || safeStoredKey;
+
+  const promptContext = buildGameContextPrompt({ ...gameData, customQuestion: safeQuestion });
 
   const systemInstruction = `You are a legendary, championship-winning Volleyball Head Coach.
 You are in the middle of a live competitive volleyball match, coaching from the sideline during a critical moment / timeout.
@@ -189,12 +195,12 @@ Organize your response clearly with these three exact headers:
 Tone: Authoritative, energetic, inspiring, sharp, professional yet passionate. No generic clichés — make it feel like you are standing in the huddle with them right now.`;
 
   // If no API key configured, use local intelligent head coach generator
-  if (!activeKey || activeKey.trim() === '') {
-    return generateLocalHeadCoachAdvice(gameData, customQuestion);
+  if (!activeKey) {
+    return generateLocalHeadCoachAdvice(gameData, safeQuestion);
   }
 
   try {
-    const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${encodeURIComponent(activeKey.trim())}`;
+    const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${encodeURIComponent(activeKey)}`;
     
     const response = await fetch(endpoint, {
       method: 'POST',
@@ -298,7 +304,8 @@ function parseGeminiCoachResponse(rawText) {
  * Generates an instant, highly realistic Head Coach tactical breakdown and motivation
  * when an API key is not configured or network request fails.
  */
-export function generateLocalHeadCoachAdvice(gameData, customQuestion = '') {
+export function generateLocalHeadCoachAdvice(gameData = {}, customQuestion = '') {
+  const safeQuestion = typeof customQuestion === 'string' ? customQuestion.trim() : '';
   const { matchStats = {}, rotation = 1, phase = 'receive', opponentName = 'Opponent', roster = [], courtLineup = {} } = gameData;
   const ourScore = matchStats.ourScore || 0;
   const oppScore = matchStats.opponentScore || 0;
@@ -340,8 +347,8 @@ export function generateLocalHeadCoachAdvice(gameData, customQuestion = '') {
     motivationalSpeech = `"We are right here! Match their energy and raise the standard. Be vocal, cover your hitters, and celebrate every single hustle play. Bring the energy, play for each other, and execute!"`;
   }
 
-  if (customQuestion) {
-    tacticalAdvice.unshift(`Regarding "${customQuestion}": Focus on discipline over power. Make them earn every ball and win the transition rallies.`);
+  if (safeQuestion) {
+    tacticalAdvice.unshift(`Regarding "${safeQuestion}": Focus on discipline over power. Make them earn every ball and win the transition rallies.`);
   }
 
   return {

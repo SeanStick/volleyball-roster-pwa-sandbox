@@ -961,7 +961,7 @@ export const storageService = {
 
   saveGeminiApiKey(apiKey) {
     try {
-      if (!apiKey || !apiKey.trim()) {
+      if (typeof apiKey !== 'string' || !apiKey.trim()) {
         localStorage.removeItem(GEMINI_API_KEY);
       } else {
         localStorage.setItem(GEMINI_API_KEY, apiKey.trim());

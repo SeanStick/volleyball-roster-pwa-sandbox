@@ -26,6 +26,8 @@ import { speakTimeoutAdvice, stopSpeakingAdvice } from '../services/timeoutAdvis
 export default function GeminiCoachModal({
   isOpen,
   onClose,
+  user = null,
+  onOpenAuthModal = null,
   matchStats = {},
   rotation = 1,
   phase = 'receive',
@@ -34,9 +36,10 @@ export default function GeminiCoachModal({
   opponentName = 'Opponent',
   initialQuestion = ''
 }) {
+  const safeInitialQuestion = typeof initialQuestion === 'string' ? initialQuestion : '';
   const [adviceData, setAdviceData] = useState(null);
   const [loading, setLoading] = useState(false);
-  const [customQuestion, setCustomQuestion] = useState(initialQuestion || '');
+  const [customQuestion, setCustomQuestion] = useState(safeInitialQuestion);
   const [apiKey, setApiKey] = useState(() => storageService.getGeminiApiKey() || '');
   const [isApiKeyOpen, setIsApiKeyOpen] = useState(false);
   const [tempApiKey, setTempApiKey] = useState('');
@@ -54,11 +57,18 @@ export default function GeminiCoachModal({
 
   // Fetch advice when opened or when manually triggered
   const handleAnalyze = async (overrideQuestion = null) => {
+    // Require a login for AI Coach to analyze
+    if (!user || !user.uid) {
+      return;
+    }
+
     setLoading(true);
     stopSpeakingAdvice();
     setIsSpeaking(false);
 
-    const questionToAsk = overrideQuestion !== null ? overrideQuestion : customQuestion;
+    const questionToAsk = typeof overrideQuestion === 'string'
+      ? overrideQuestion
+      : (typeof customQuestion === 'string' ? customQuestion : '');
 
     try {
       const result = await askGeminiHeadCoach({
@@ -84,16 +94,21 @@ export default function GeminiCoachModal({
 
   useEffect(() => {
     if (isOpen) {
-      handleAnalyze(initialQuestion || '');
+      const q = typeof initialQuestion === 'string' ? initialQuestion : '';
+      setCustomQuestion(q);
+      if (user?.uid) {
+        handleAnalyze(q);
+      }
     } else {
       stopSpeakingAdvice();
       setIsSpeaking(false);
     }
-  }, [isOpen]);
+  }, [isOpen, initialQuestion, user?.uid]);
 
   const handleSaveApiKey = () => {
-    storageService.saveGeminiApiKey(tempApiKey);
-    setApiKey(tempApiKey.trim());
+    const cleanKey = typeof tempApiKey === 'string' ? tempApiKey.trim() : '';
+    storageService.saveGeminiApiKey(cleanKey);
+    setApiKey(cleanKey);
     setIsApiKeyOpen(false);
     // Re-run analysis with new key
     setTimeout(() => {
@@ -436,28 +451,85 @@ export default function GeminiCoachModal({
             flex: 1
           }}
         >
-          {/* Quick Scenario Chips */}
-          <div>
-            <div style={{ fontSize: '0.72rem', fontWeight: 800, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.04em', marginBottom: '0.4rem' }}>
-              Quick Situational Inquiries:
+          {(!user || !user.uid) ? (
+            <div
+              style={{
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'center',
+                justifyContent: 'center',
+                textAlign: 'center',
+                padding: '2.5rem 1.5rem',
+                background: 'rgba(255, 255, 255, 0.02)',
+                borderRadius: '16px',
+                border: '1.5px dashed rgba(168, 85, 247, 0.35)',
+                margin: 'auto 0'
+              }}
+            >
+              <div
+                style={{
+                  width: '60px',
+                  height: '60px',
+                  borderRadius: '50%',
+                  background: 'linear-gradient(135deg, rgba(168, 85, 247, 0.25), rgba(59, 130, 246, 0.35))',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  marginBottom: '1rem',
+                  border: '1px solid rgba(168, 85, 247, 0.5)'
+                }}
+              >
+                <Sparkles size={28} color="#c084fc" />
+              </div>
+              <h3 style={{ margin: '0 0 0.5rem 0', fontSize: '1.2rem', color: '#f8fafc', fontWeight: 800 }}>
+                Sign In Required for AI Coach
+              </h3>
+              <p style={{ margin: '0 0 1.5rem 0', fontSize: '0.86rem', color: '#94a3b8', maxWidth: '400px', lineHeight: 1.5 }}>
+                To consult the Gemini Head Coach for tactical rotations, live error adjustments, and huddle pep talks, please log in or create a free coach account.
+              </p>
+              <button
+                type="button"
+                className="btn btn-primary"
+                onClick={() => {
+                  if (onOpenAuthModal) onOpenAuthModal();
+                }}
+                style={{
+                  background: 'linear-gradient(135deg, #a855f7 0%, #7c3aed 100%)',
+                  border: 'none',
+                  padding: '0.65rem 1.5rem',
+                  fontSize: '0.9rem',
+                  fontWeight: 800,
+                  boxShadow: '0 4px 14px rgba(168, 85, 247, 0.4)',
+                  cursor: 'pointer'
+                }}
+              >
+                Sign In to Unlock AI Coach
+              </button>
             </div>
-            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.4rem' }}>
-              {QUICK_PROMPTS.map(p => (
-                <button
-                  key={p.label}
-                  type="button"
-                  onClick={() => handleSelectChip(p)}
-                  style={{
-                    fontSize: '0.74rem',
-                    fontWeight: 700,
-                    padding: '0.3rem 0.65rem',
-                    borderRadius: '8px',
-                    background: selectedChip === p.label ? 'rgba(168, 85, 247, 0.25)' : 'rgba(255, 255, 255, 0.05)',
-                    border: `1px solid ${selectedChip === p.label ? '#a855f7' : 'rgba(255, 255, 255, 0.1)'}`,
-                    color: selectedChip === p.label ? '#e9d5ff' : '#cbd5e1',
-                    cursor: 'pointer',
-                    transition: 'all 0.15s'
-                  }}
+          ) : (
+            <>
+              {/* Quick Scenario Chips */}
+              <div>
+                <div style={{ fontSize: '0.72rem', fontWeight: 800, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.04em', marginBottom: '0.4rem' }}>
+                  Quick Situational Inquiries:
+                </div>
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.4rem' }}>
+                  {QUICK_PROMPTS.map(p => (
+                    <button
+                      key={p.label}
+                      type="button"
+                      onClick={() => handleSelectChip(p)}
+                      style={{
+                        fontSize: '0.74rem',
+                        fontWeight: 700,
+                        padding: '0.3rem 0.65rem',
+                        borderRadius: '8px',
+                        background: selectedChip === p.label ? 'rgba(168, 85, 247, 0.25)' : 'rgba(255, 255, 255, 0.05)',
+                        border: `1px solid ${selectedChip === p.label ? '#a855f7' : 'rgba(255, 255, 255, 0.1)'}`,
+                        color: selectedChip === p.label ? '#e9d5ff' : '#cbd5e1',
+                        cursor: 'pointer',
+                        transition: 'all 0.15s'
+                      }}
                 >
                   {p.label}
                 </button>
@@ -680,8 +752,9 @@ export default function GeminiCoachModal({
             <form
               onSubmit={(e) => {
                 e.preventDefault();
-                if (customQuestion.trim()) {
-                  handleAnalyze();
+                const q = typeof customQuestion === 'string' ? customQuestion.trim() : '';
+                if (q) {
+                  handleAnalyze(q);
                 }
               }}
               style={{ display: 'flex', gap: '0.5rem' }}
@@ -691,13 +764,13 @@ export default function GeminiCoachModal({
                 placeholder="e.g. Their middle is dominating on quick 1s, how do we counter?"
                 className="form-input"
                 style={{ flex: 1, fontSize: '0.82rem', padding: '0.5rem 0.75rem' }}
-                value={customQuestion}
+                value={typeof customQuestion === 'string' ? customQuestion : ''}
                 onChange={(e) => setCustomQuestion(e.target.value)}
               />
               <button
                 type="submit"
                 className="btn btn-primary btn-sm"
-                disabled={loading || !customQuestion.trim()}
+                disabled={loading || typeof customQuestion !== 'string' || !customQuestion.trim()}
                 style={{
                   background: 'linear-gradient(135deg, #a855f7, #7c3aed)',
                   borderColor: '#a855f7',
@@ -713,9 +786,11 @@ export default function GeminiCoachModal({
               </button>
             </form>
           </div>
+        </>
+      )}
 
-        </div>
-      </div>
+    </div>
+  </div>
     </div>
   );
 }

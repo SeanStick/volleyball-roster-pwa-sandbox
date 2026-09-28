@@ -57,7 +57,8 @@ export default function MatchStatsView({
   onOpenMatchSetup,
   onUpdatePoint,
   onDeletePoint,
-  onOpenGeminiCoach
+  onOpenGeminiCoach,
+  isLoggedIn = false
 }) {
   const [selectedSetFilter, setSelectedSetFilter] = useState('ALL');
   const [suggestionFilter, setSuggestionFilter] = useState('ALL'); // 'ALL' | 'CRITICAL' | 'TACTICAL' | 'ROTATION' | 'HISTORICAL'
@@ -272,7 +273,7 @@ export default function MatchStatsView({
             <button
               className="btn btn-secondary"
               onClick={() => onOpenGeminiCoach('Analyze our match statistics, error trends, and rotational efficiency, and provide tactical recommendations for the rest of the game.')}
-              title="Get AI Head Coach strategic critique based on match statistics"
+              title={isLoggedIn ? "Get AI Head Coach strategic critique based on match statistics" : "Sign in required to access Gemini AI Head Coach"}
               style={{
                 background: 'linear-gradient(135deg, rgba(236, 72, 153, 0.25), rgba(168, 85, 247, 0.35))',
                 borderColor: '#ec4899',
@@ -281,7 +282,7 @@ export default function MatchStatsView({
               }}
             >
               <Sparkles size={16} color="#f472b6" />
-              <span>✨ Gemini Head Coach</span>
+              <span>{isLoggedIn ? '✨ Gemini Head Coach' : '✨ Gemini Head Coach 🔒'}</span>
             </button>
           )}
 

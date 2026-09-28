@@ -29,20 +29,25 @@ export default function FirebaseSettingsModal({ isOpen, onClose, onConfigSaved, 
 
   const handleParseJsonConfig = (text) => {
     setConfigText(text);
+    if (!text || typeof text !== 'string') return;
     try {
-      let cleaned = text.trim();
-      if (cleaned.startsWith('const firebaseConfig =')) {
-        cleaned = cleaned.replace(/^const\s+firebaseConfig\s*=\s*/, '').replace(/;$/, '');
-      }
-      const parsed = Function(`'use strict'; return (${cleaned})`)();
-      if (parsed && typeof parsed === 'object') {
-        if (parsed.projectId) setProjectId(parsed.projectId);
-        if (parsed.apiKey) setApiKey(parsed.apiKey);
-        if (parsed.authDomain) setAuthDomain(parsed.authDomain);
-        if (parsed.storageBucket) setStorageBucket(parsed.storageBucket);
-      }
+      // Safe key-value extraction without dynamic code evaluation or eval
+      const extractField = (name) => {
+        const match = text.match(new RegExp(`["']?${name}["']?\\s*:\\s*["']([^"']+)["']`));
+        return match ? match[1].trim() : null;
+      };
+
+      const parsedProjectId = extractField('projectId');
+      const parsedApiKey = extractField('apiKey');
+      const parsedAuthDomain = extractField('authDomain');
+      const parsedStorageBucket = extractField('storageBucket');
+
+      if (parsedProjectId) setProjectId(parsedProjectId);
+      if (parsedApiKey) setApiKey(parsedApiKey);
+      if (parsedAuthDomain) setAuthDomain(parsedAuthDomain);
+      if (parsedStorageBucket) setStorageBucket(parsedStorageBucket);
     } catch (e) {
-      // Keep typing
+      // Safe fallback - keep typing
     }
   };
 
@@ -169,7 +174,7 @@ export default function FirebaseSettingsModal({ isOpen, onClose, onConfigSaved, 
             <a
               href="https://console.firebase.google.com"
               target="_blank"
-              rel="noreferrer"
+              rel="noopener noreferrer"
               style={{ fontSize: '0.75rem', color: 'var(--accent-orange)', display: 'flex', alignItems: 'center', gap: '3px', textDecoration: 'none' }}
             >
               Firebase Console <ExternalLink size={12} />

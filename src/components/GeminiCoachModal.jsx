@@ -318,7 +318,7 @@ export default function GeminiCoachModal({
               <a
                 href="https://aistudio.google.com/app/apikey"
                 target="_blank"
-                rel="noreferrer"
+                rel="noopener noreferrer"
                 style={{
                   fontSize: '0.72rem',
                   color: '#a855f7',

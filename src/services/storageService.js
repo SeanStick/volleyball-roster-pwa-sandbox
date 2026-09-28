@@ -643,16 +643,24 @@ export const storageService = {
   exportCSV() {
     const roster = this.getRoster();
     const headers = ['Number', 'Name', 'Position', 'Secondary Position', 'Captain', 'Starter', 'Height', 'Status', 'Notes'];
+    
+    // Security: Neutralize formula injection (CWE-1236) by escaping formula prefixes
+    const sanitizeCsvCell = (val) => {
+      const str = String(val ?? '');
+      const safeStr = /^[=+\-@\t\r]/.test(str) ? `'${str}` : str;
+      return `"${safeStr.replace(/"/g, '""')}"`;
+    };
+
     const rows = roster.map(p => [
       p.number,
-      `"${(p.name || '').replace(/"/g, '""')}"`,
-      `"${p.position || ''}"`,
-      `"${p.secondaryPosition || ''}"`,
+      sanitizeCsvCell(p.name),
+      sanitizeCsvCell(p.position),
+      sanitizeCsvCell(p.secondaryPosition),
       p.isCaptain ? 'Yes' : 'No',
       p.isStarter ? 'Yes' : 'No',
-      `"${p.height || ''}"`,
-      `"${p.status || ''}"`,
-      `"${(p.notes || '').replace(/"/g, '""')}"`
+      sanitizeCsvCell(p.height),
+      sanitizeCsvCell(p.status),
+      sanitizeCsvCell(p.notes)
     ]);
 
     const csvContent = [headers.join(','), ...rows.map(r => r.join(','))].join('\n');
@@ -667,14 +675,41 @@ export const storageService = {
 
   importJSON(jsonText) {
     try {
+      if (!jsonText || typeof jsonText !== 'string') throw new Error('Invalid JSON input');
       const parsed = JSON.parse(jsonText);
+      
+      const cleanPlayer = (raw, idx) => {
+        if (!raw || typeof raw !== 'object') return null;
+        let num = parseInt(raw.number, 10);
+        if (isNaN(num) || num < 0 || num > 99) num = 0;
+        const cleanStr = (val, maxLen) => typeof val === 'string' ? val.replace(/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/g, '').trim().slice(0, maxLen) : '';
+        const validStatuses = ['Active', 'Injured', 'Bench', 'Absent'];
+        return {
+          id: typeof raw.id === 'string' && raw.id.trim() ? raw.id.trim() : `p-${Date.now()}-${idx}`,
+          number: num,
+          name: cleanStr(raw.name, 60) || 'Player',
+          position: cleanStr(raw.position, 40) || 'Outside Hitter',
+          secondaryPosition: cleanStr(raw.secondaryPosition, 40) || '',
+          isCaptain: Boolean(raw.isCaptain),
+          isStarter: Boolean(raw.isStarter),
+          isFirstServer: Boolean(raw.isFirstServer),
+          height: cleanStr(raw.height, 20),
+          status: validStatuses.includes(raw.status) ? raw.status : 'Active',
+          notes: cleanStr(raw.notes, 500)
+        };
+      };
+
       if (Array.isArray(parsed)) {
-        this.saveRoster(parsed);
-        return { success: true, roster: parsed };
+        const sanitized = parsed.map(cleanPlayer).filter(Boolean);
+        this.saveRoster(sanitized);
+        return { success: true, roster: sanitized };
       } else if (parsed && Array.isArray(parsed.roster)) {
-        this.saveRoster(parsed.roster);
-        if (parsed.teamSettings) this.saveTeamSettings(parsed.teamSettings);
-        return { success: true, roster: parsed.roster, settings: parsed.teamSettings };
+        const sanitized = parsed.roster.map(cleanPlayer).filter(Boolean);
+        this.saveRoster(sanitized);
+        if (parsed.teamSettings && typeof parsed.teamSettings === 'object') {
+          this.saveTeamSettings(parsed.teamSettings);
+        }
+        return { success: true, roster: sanitized, settings: parsed.teamSettings };
       }
       throw new Error('Invalid JSON format for roster');
     } catch (e) {
@@ -684,9 +719,11 @@ export const storageService = {
 
   importCSV(csvText) {
     try {
+      if (!csvText || typeof csvText !== 'string') throw new Error('Invalid CSV input');
       const lines = csvText.trim().split('\n');
       if (lines.length < 2) throw new Error('CSV is empty or missing data rows');
 
+      const cleanStr = (val, maxLen) => typeof val === 'string' ? val.replace(/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/g, '').trim().slice(0, maxLen) : '';
       const newPlayers = [];
       for (let i = 1; i < lines.length; i++) {
         const line = lines[i];
@@ -697,17 +734,19 @@ export const storageService = {
         const cols = match.map(c => c.replace(/^"|"$/g, '').trim());
 
         if (cols.length >= 2) {
+          let num = parseInt(cols[0], 10);
+          if (isNaN(num) || num < 0 || num > 99) num = 0;
           newPlayers.push({
             id: `p-${Date.now()}-${i}`,
-            number: parseInt(cols[0], 10) || 0,
-            name: cols[1] || 'Unknown Player',
-            position: cols[2] || 'Outside Hitter',
-            secondaryPosition: cols[3] || '',
+            number: num,
+            name: cleanStr(cols[1], 60) || 'Unknown Player',
+            position: cleanStr(cols[2], 40) || 'Outside Hitter',
+            secondaryPosition: cleanStr(cols[3], 40) || '',
             isCaptain: (cols[4] || '').toLowerCase().startsWith('y'),
             isStarter: (cols[5] || '').toLowerCase().startsWith('y'),
-            height: cols[6] || '',
-            status: cols[7] || 'Active',
-            notes: cols[8] || ''
+            height: cleanStr(cols[6], 20) || '',
+            status: ['Active', 'Injured', 'Bench', 'Absent'].includes(cols[7]) ? cols[7] : 'Active',
+            notes: cleanStr(cols[8], 500) || ''
           });
         }
       }

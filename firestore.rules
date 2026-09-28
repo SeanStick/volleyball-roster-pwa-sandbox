@@ -9,23 +9,23 @@ service cloud.firestore {
     }
 
     // -------------------------------------------------------------
-    // User Profile & User Team Indexes
+    // User Profile & User Team Indexes (Strict User Isolation)
     // -------------------------------------------------------------
     match /users/{userId} {
-      allow read, write: if request.auth != null;
+      allow read, write: if request.auth != null && request.auth.uid == userId;
     }
     match /users/{userId}/{document=**} {
-      allow read, write: if request.auth != null;
+      allow read, write: if request.auth != null && request.auth.uid == userId;
     }
     
-    // Legacy rosters fallback
+    // Legacy rosters fallback (Authenticated access only)
     match /volleyball_rosters/{teamId} {
-      allow read, write: if true;
+      allow read, write: if request.auth != null;
     }
 
-    // Default authenticated access
+    // Default deny all unmatched collections for production defense-in-depth
     match /{document=**} {
-      allow read, write: if request.auth != null;
+      allow read, write: if false;
     }
   }
 }

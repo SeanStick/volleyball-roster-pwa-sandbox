@@ -46,6 +46,7 @@ import MatchRecapModal from './components/MatchRecapModal';
 import LineupStudioModal from './components/LineupStudioModal';
 import NotificationSettingsModal from './components/NotificationSettingsModal';
 import AutoSubConfirmModal from './components/AutoSubConfirmModal';
+import GeminiCoachModal from './components/GeminiCoachModal';
 import { storageService, DEFAULT_TEAM_ID } from './services/storageService';
 import { notificationService } from './services/notificationService';
 import { firebaseService } from './services/firebaseService';
@@ -98,6 +99,13 @@ export default function App() {
   const [isImportExportModalOpen, setIsImportExportModalOpen] = useState(false);
   const [isDrillsModalOpen, setIsDrillsModalOpen] = useState(false);
   const [isNotificationModalOpen, setIsNotificationModalOpen] = useState(false);
+  const [isGeminiCoachOpen, setIsGeminiCoachOpen] = useState(false);
+  const [geminiCoachQuestion, setGeminiCoachQuestion] = useState('');
+
+  const handleOpenGeminiCoach = (question = '') => {
+    setGeminiCoachQuestion(question || '');
+    setIsGeminiCoachOpen(true);
+  };
 
   // -------------------------------------------------------------
   // Core Application Data State
@@ -2241,6 +2249,7 @@ export default function App() {
           onUpdatePoint={handleUpdatePoint}
           onDeletePoint={handleDeletePointById}
           onNavigateTab={(tab) => setActiveTab(tab)}
+          onOpenGeminiCoach={handleOpenGeminiCoach}
         />
       )}
 
@@ -2561,6 +2570,7 @@ export default function App() {
           onOpenMatchSetup={() => setIsMatchSetupModalOpen(true)}
           onUpdatePoint={handleUpdatePoint}
           onDeletePoint={handleDeletePointById}
+          onOpenGeminiCoach={handleOpenGeminiCoach}
         />
       )}
 
@@ -2786,6 +2796,24 @@ export default function App() {
           reason={autoSubModalData.reason}
           ruleNote={autoSubModalData.ruleNote}
           benchPlayers={roster.filter(p => !Object.values(lineup).includes(p.id))}
+        />
+      )}
+
+      {/* 🧠✨ Gemini AI Head Coach Tactical Advisor & Huddle Pep Talk */}
+      {isGeminiCoachOpen && (
+        <GeminiCoachModal
+          isOpen={isGeminiCoachOpen}
+          onClose={() => {
+            setIsGeminiCoachOpen(false);
+            setGeminiCoachQuestion('');
+          }}
+          matchStats={matchStats}
+          roster={roster}
+          lineup={lineup}
+          rotation={rotation}
+          phase={phase}
+          teamSettings={teamSettings}
+          initialQuestion={geminiCoachQuestion}
         />
       )}
     </div>

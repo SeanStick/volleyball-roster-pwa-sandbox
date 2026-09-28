@@ -34,7 +34,8 @@ export default function TimeoutAdvisorModal({
   roster = [],
   courtLineup = {},
   opponentName = 'Opponent',
-  onOpenWhiteboard
+  onOpenWhiteboard,
+  onOpenGeminiCoach
 }) {
   const [brief, setBrief] = useState(null);
   const [tacticalIndex, setTacticalIndex] = useState(0);
@@ -437,29 +438,56 @@ export default function TimeoutAdvisorModal({
             gap: '0.65rem'
           }}
         >
-          {/* Tactical Whiteboard Quick Diagram Link */}
-          {onOpenWhiteboard ? (
-            <button
-              type="button"
-              onClick={() => {
-                onClose();
-                onOpenWhiteboard();
-              }}
-              className="btn btn-secondary btn-sm"
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: '0.35rem',
-                fontSize: '0.8rem',
-                borderColor: 'rgba(59, 130, 246, 0.5)',
-                color: '#93c5fd'
-              }}
-              title="Open whiteboard to diagram a 15-second play"
-            >
-              <PenTool size={14} color="#60a5fa" />
-              <span>Diagram Play</span>
-            </button>
-          ) : <div />}
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap' }}>
+            {onOpenGeminiCoach && (
+              <button
+                type="button"
+                onClick={() => {
+                  stopSpeakingAdvice();
+                  onClose();
+                  onOpenGeminiCoach();
+                }}
+                className="btn btn-secondary btn-sm"
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '0.35rem',
+                  fontSize: '0.8rem',
+                  background: 'linear-gradient(135deg, rgba(168, 85, 247, 0.25), rgba(59, 130, 246, 0.35))',
+                  borderColor: 'rgba(168, 85, 247, 0.6)',
+                  color: '#e9d5ff',
+                  fontWeight: 800
+                }}
+                title="Ask Gemini Head Coach for live tactical adjustments & motivational speech"
+              >
+                <Sparkles size={14} color="#c084fc" className="animate-pulse" />
+                <span>Ask Gemini Head Coach</span>
+              </button>
+            )}
+
+            {onOpenWhiteboard && (
+              <button
+                type="button"
+                onClick={() => {
+                  onClose();
+                  onOpenWhiteboard();
+                }}
+                className="btn btn-secondary btn-sm"
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '0.35rem',
+                  fontSize: '0.8rem',
+                  borderColor: 'rgba(59, 130, 246, 0.5)',
+                  color: '#93c5fd'
+                }}
+                title="Open whiteboard to diagram a 15-second play"
+              >
+                <PenTool size={14} color="#60a5fa" />
+                <span>Diagram Play</span>
+              </button>
+            )}
+          </div>
 
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
             <button

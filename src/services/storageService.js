@@ -12,6 +12,7 @@ const SAVED_LINEUPS_KEY = 'gostandoverthere_saved_lineups_v1';
 const LEGACY_ROSTER_KEY = 'spikesync_volleyball_roster_v1';
 const LEGACY_TEAM_KEY = 'spikesync_team_settings_v1';
 const DEFAULT_MATCH_SETTINGS_KEY = 'gostandoverthere_default_match_settings_v1';
+const GEMINI_API_KEY = 'gostandoverthere_gemini_api_key_v1';
 export const DEFAULT_TEAM_ID = 'team-default';
 
 export const DEFAULT_SAVED_LINEUPS = [
@@ -946,5 +947,27 @@ export const storageService = {
     if (Array.isArray(bundle.daySchedule)) this.saveDaySchedule(bundle.daySchedule);
     if (Array.isArray(bundle.savedLineups)) this.saveSavedLineups(bundle.savedLineups);
     if (bundle.teamId) this.setActiveTeamId(bundle.teamId);
+  },
+
+  getGeminiApiKey() {
+    try {
+      const stored = localStorage.getItem(GEMINI_API_KEY);
+      if (stored) return stored;
+      return (typeof import.meta !== 'undefined' && import.meta.env?.VITE_GEMINI_API_KEY) || '';
+    } catch {
+      return '';
+    }
+  },
+
+  saveGeminiApiKey(apiKey) {
+    try {
+      if (!apiKey || !apiKey.trim()) {
+        localStorage.removeItem(GEMINI_API_KEY);
+      } else {
+        localStorage.setItem(GEMINI_API_KEY, apiKey.trim());
+      }
+    } catch (e) {
+      console.error('Error saving Gemini API key:', e);
+    }
   }
 };

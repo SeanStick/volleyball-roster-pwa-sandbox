@@ -64,9 +64,9 @@ export default function ScoreboardBar({
   rotation = 1,
   phase = 'serve',
   userRole = 'head_coach',
-  isCoachOrAssistant = true,
   onOpenWhiteboard,
-  onNavigateTab
+  onNavigateTab,
+  onOpenGeminiCoach
 }) {
   const [isPointModalOpen, setIsPointModalOpen] = useState(false);
   const [scoringTeam, setScoringTeam] = useState('us'); // 'us' | 'opponent'
@@ -475,28 +475,53 @@ export default function ScoreboardBar({
 
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.65rem' }}>
             {isCoachOrAssistant && (
-              <button
-                type="button"
-                onClick={() => setIsTimeoutAdvisorOpen(true)}
-                style={{
-                  background: 'linear-gradient(135deg, rgba(168, 85, 247, 0.95), rgba(126, 34, 206, 0.95))',
-                  color: '#ffffff',
-                  border: '1px solid rgba(255, 255, 255, 0.35)',
-                  borderRadius: '8px',
-                  padding: '0.35rem 0.65rem',
-                  fontSize: '0.76rem',
-                  fontWeight: 800,
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '0.3rem',
-                  cursor: 'pointer',
-                  boxShadow: '0 2px 10px rgba(168, 85, 247, 0.4)'
-                }}
-                title="Open In-Game Tactical & Motivational Huddle Advisor"
-              >
-                <Sparkles size={13} color="#fdf4ff" />
-                <span>🧠 Huddle Advisor</span>
-              </button>
+              <>
+                {onOpenGeminiCoach && (
+                  <button
+                    type="button"
+                    onClick={onOpenGeminiCoach}
+                    style={{
+                      background: 'linear-gradient(135deg, #a855f7 0%, #3b82f6 100%)',
+                      color: '#ffffff',
+                      border: '1px solid rgba(255, 255, 255, 0.4)',
+                      borderRadius: '8px',
+                      padding: '0.35rem 0.65rem',
+                      fontSize: '0.76rem',
+                      fontWeight: 800,
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '0.3rem',
+                      cursor: 'pointer',
+                      boxShadow: '0 2px 10px rgba(168, 85, 247, 0.5)'
+                    }}
+                    title="Ask Gemini Head Coach for real-time tactical adjustments and motivational speech"
+                  >
+                    <Sparkles size={13} color="#fdf4ff" className="animate-pulse" />
+                    <span>✨ Gemini Coach</span>
+                  </button>
+                )}
+
+                <button
+                  type="button"
+                  onClick={() => setIsTimeoutAdvisorOpen(true)}
+                  style={{
+                    background: 'rgba(255, 255, 255, 0.12)',
+                    color: '#ffffff',
+                    border: '1px solid rgba(255, 255, 255, 0.25)',
+                    borderRadius: '8px',
+                    padding: '0.35rem 0.6rem',
+                    fontSize: '0.76rem',
+                    fontWeight: 700,
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '0.3rem',
+                    cursor: 'pointer'
+                  }}
+                  title="Open In-Game Tactical & Motivational Huddle Advisor"
+                >
+                  <span>🧠 Huddle Tips</span>
+                </button>
+              </>
             )}
 
             <div
@@ -995,6 +1020,30 @@ export default function ScoreboardBar({
             <span>Undo</span>
           </button>
 
+          {/* ✨ Gemini AI Head Coach Button */}
+          {onOpenGeminiCoach && (
+            <button
+              type="button"
+              className="btn btn-secondary btn-sm"
+              onClick={onOpenGeminiCoach}
+              style={{
+                background: 'linear-gradient(135deg, rgba(168, 85, 247, 0.22), rgba(59, 130, 246, 0.32))',
+                borderColor: 'rgba(168, 85, 247, 0.55)',
+                color: '#e9d5ff',
+                fontSize: '0.78rem',
+                fontWeight: 800,
+                padding: '0.4rem 0.65rem',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '0.35rem'
+              }}
+              title="Consult Gemini Head Coach for tactical advice & motivational speech"
+            >
+              <Sparkles size={13} color="#c084fc" className="animate-pulse" />
+              <span>AI Coach</span>
+            </button>
+          )}
+
           {/* ⚙️ Consolidated Match Tools Trigger */}
           <button
             type="button"
@@ -1087,6 +1136,7 @@ export default function ScoreboardBar({
           courtLineup={lineup}
           opponentName={opponentName}
           onOpenWhiteboard={onOpenWhiteboard}
+          onOpenGeminiCoach={onOpenGeminiCoach}
         />
       )}
 
@@ -1393,6 +1443,33 @@ export default function ScoreboardBar({
                       <Edit3 size={18} color="#34d399" />
                       <div style={{ fontWeight: 800, fontSize: '0.85rem' }}>Whiteboard</div>
                       <div style={{ fontSize: '0.7rem', color: '#a7f3d0' }}>Tactical drawings</div>
+                    </button>
+                  )}
+
+                  {onOpenGeminiCoach && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setIsMatchToolsOpen(false);
+                        onOpenGeminiCoach();
+                      }}
+                      style={{
+                        background: 'linear-gradient(135deg, rgba(236, 72, 153, 0.2), rgba(168, 85, 247, 0.35))',
+                        border: '1.5px solid rgba(236, 72, 153, 0.5)',
+                        borderRadius: 'var(--radius-md)',
+                        padding: '0.75rem',
+                        display: 'flex',
+                        flexDirection: 'column',
+                        alignItems: 'flex-start',
+                        gap: '0.4rem',
+                        cursor: 'pointer',
+                        color: '#fff',
+                        textAlign: 'left'
+                      }}
+                    >
+                      <Sparkles size={18} color="#f472b6" />
+                      <div style={{ fontWeight: 800, fontSize: '0.85rem' }}>✨ Gemini Head Coach</div>
+                      <div style={{ fontSize: '0.7rem', color: '#fbcfe8' }}>AI tactics & huddle speech</div>
                     </button>
                   )}
                 </div>

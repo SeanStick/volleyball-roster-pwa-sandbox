@@ -2253,6 +2253,8 @@ export default function App() {
           roster={roster}
           rotation={rotation}
           phase={phase}
+          liberoExchanges={liberoExchanges}
+          liberoServingRotation={liberoServingRotation}
           userRole={userRole}
           isCoachOrAssistant={isCoachOrAssistant}
           onOpenWhiteboard={() => setActiveTab('whiteboard')}

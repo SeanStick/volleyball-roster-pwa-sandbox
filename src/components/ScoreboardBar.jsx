@@ -26,13 +26,15 @@ import {
   ArrowRightLeft,
   Settings,
   X,
-  FileText
+  FileText,
+  Eye
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
 import VolleyballIcon from './icons/VolleyballIcon';
 import QuickPointModal from './QuickPointModal';
 import RallyEditModal from './RallyEditModal';
 import TimeoutAdvisorModal from './TimeoutAdvisorModal';
+import NextUpBanner from './NextUpBanner';
 import { voiceScoreService } from '../services/voiceScoreService';
 import { notificationService } from '../services/notificationService';
 
@@ -64,6 +66,8 @@ export default function ScoreboardBar({
   roster = [],
   rotation = 1,
   phase = 'serve',
+  liberoExchanges = {},
+  liberoServingRotation = null,
   userRole = 'head_coach',
   onOpenWhiteboard,
   onNavigateTab,
@@ -158,6 +162,26 @@ export default function ScoreboardBar({
       const next = !prev;
       try {
         localStorage.setItem('gostandoverthere_direct_score', String(next));
+      } catch {}
+      return next;
+    });
+  };
+
+  // 🏐 "Next Up" Sideout Anticipation Banner Preference
+  const [showNextUpBanner, setShowNextUpBanner] = useState(() => {
+    try {
+      const saved = localStorage.getItem('gostandoverthere_show_next_up');
+      return saved === null ? true : saved === 'true';
+    } catch {
+      return true;
+    }
+  });
+
+  const handleToggleNextUpBanner = () => {
+    setShowNextUpBanner(prev => {
+      const next = !prev;
+      try {
+        localStorage.setItem('gostandoverthere_show_next_up', String(next));
       } catch {}
       return next;
     });
@@ -1083,6 +1107,19 @@ export default function ScoreboardBar({
         </div>
       </div>
 
+      {/* 🏐 "Next Up" Sideout & Front-Row Preview Banner */}
+      {showNextUpBanner && (
+        <NextUpBanner
+          lineup={lineup}
+          roster={roster}
+          rotation={rotation}
+          phase={phase}
+          liberoServingRotation={liberoServingRotation}
+          liberoExchanges={liberoExchanges}
+          onNavigateTab={onNavigateTab}
+        />
+      )}
+
       {/* Lightning Point & Error Logging Modal */}
       <QuickPointModal
         isOpen={isPointModalOpen}
@@ -1295,6 +1332,37 @@ export default function ScoreboardBar({
                     </div>
                     <span style={{ fontSize: '0.75rem', fontWeight: 900, color: isVoiceActive ? '#c084fc' : '#64748b' }}>
                       {isVoiceActive ? 'ACTIVE' : 'OFF'}
+                    </span>
+                  </div>
+
+                  {/* 🏐 "Next Up" Sideout Anticipation Banner Toggle */}
+                  <div
+                    onClick={handleToggleNextUpBanner}
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'space-between',
+                      padding: '0.75rem 0.9rem',
+                      borderRadius: 'var(--radius-md)',
+                      background: showNextUpBanner ? 'rgba(56, 189, 248, 0.15)' : 'rgba(255, 255, 255, 0.04)',
+                      border: `1px solid ${showNextUpBanner ? '#38bdf8' : 'rgba(255, 255, 255, 0.08)'}`,
+                      cursor: 'pointer',
+                      transition: 'all 0.15s ease'
+                    }}
+                  >
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.65rem' }}>
+                      <Eye size={18} color={showNextUpBanner ? '#38bdf8' : '#94a3b8'} />
+                      <div>
+                        <div style={{ fontSize: '0.86rem', fontWeight: 800, color: showNextUpBanner ? '#7dd3fc' : '#f8fafc' }}>
+                          Next Up Sideout Anticipation Banner: {showNextUpBanner ? 'ON' : 'OFF'}
+                        </div>
+                        <div style={{ fontSize: '0.72rem', color: '#94a3b8' }}>
+                          {showNextUpBanner ? 'Displays upcoming server and front-row attackers in real time' : 'Hides the sideout rotation preview banner'}
+                        </div>
+                      </div>
+                    </div>
+                    <span style={{ fontSize: '0.75rem', fontWeight: 900, color: showNextUpBanner ? '#38bdf8' : '#64748b' }}>
+                      {showNextUpBanner ? 'ACTIVE' : 'OFF'}
                     </span>
                   </div>
 

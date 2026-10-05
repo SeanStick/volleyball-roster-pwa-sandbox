@@ -54,6 +54,34 @@ const BASE_ZONE_COORDS_FULL = {
   pos2: { x: 80, y: 62 }
 };
 
+/**
+ * Smoothly interpolates an array of points into a natural, curved SVG path using midpoint quadratic beziers.
+ * When close=true, joins the final point back to the start point to form an enclosed tactical zone/polygon.
+ */
+function getSmoothPathD(points, close = false) {
+  if (!points || points.length === 0) return '';
+  if (points.length === 1) return `M ${points[0].x} ${points[0].y}`;
+  if (points.length === 2) {
+    return `M ${points[0].x} ${points[0].y} L ${points[1].x} ${points[1].y}${close ? ' Z' : ''}`;
+  }
+
+  let d = `M ${points[0].x} ${points[0].y}`;
+  for (let i = 0; i < points.length - 1; i++) {
+    const pCurrent = points[i];
+    const pNext = points[i + 1];
+    const midX = (pCurrent.x + pNext.x) / 2;
+    const midY = (pCurrent.y + pNext.y) / 2;
+    d += ` Q ${pCurrent.x} ${pCurrent.y}, ${midX} ${midY}`;
+  }
+  const last = points[points.length - 1];
+  d += ` L ${last.x} ${last.y}`;
+
+  if (close) {
+    d += ' Z';
+  }
+  return d;
+}
+
 const COLOR_PALETTE = [
   { name: 'Cyan', hex: '#00f5ff' },
   { name: 'Yellow', hex: '#fde047' },
@@ -493,12 +521,39 @@ export default function WhiteboardPage({
 
     e.preventDefault();
     const { x, y } = getNormalizedCoords(e);
+
+    if (activeTool === 'eraser') {
+      setIsDrawing(true);
+      eraseStrokeAt(x, y);
+      return;
+    }
+
     setIsDrawing(true);
     setCurrentStroke({
       tool: activeTool,
       color: activeColor,
       width: strokeWidth,
       points: [{ x, y }]
+    });
+  };
+
+  const eraseStrokeAt = (x, y) => {
+    setDrawings((prev) => {
+      const removed = [];
+      const remaining = [];
+      prev.forEach((stroke) => {
+        if (!stroke.points || stroke.points.length === 0) return;
+        const isHit = stroke.points.some((pt) => Math.hypot(pt.x - x, pt.y - y) <= 4.5);
+        if (isHit) {
+          removed.push(stroke);
+        } else {
+          remaining.push(stroke);
+        }
+      });
+      if (removed.length > 0) {
+        setRedoStack((r) => [...r, ...removed]);
+      }
+      return remaining;
     });
   };
 
@@ -529,6 +584,13 @@ export default function WhiteboardPage({
       return;
     }
 
+    if (isDrawing && activeTool === 'eraser') {
+      e.preventDefault();
+      const { x, y } = getNormalizedCoords(e);
+      eraseStrokeAt(x, y);
+      return;
+    }
+
     if (isDrawing && currentStroke) {
       e.preventDefault();
       const { x, y } = getNormalizedCoords(e);
@@ -542,6 +604,10 @@ export default function WhiteboardPage({
   const handlePointerUp = () => {
     if (draggedToken) {
       setDraggedToken(null);
+    }
+    if (activeTool === 'eraser') {
+      setIsDrawing(false);
+      return;
     }
     if (isDrawing && currentStroke) {
       setDrawings((prev) => [...prev, currentStroke]);
@@ -866,9 +932,9 @@ export default function WhiteboardPage({
                 type="button"
                 className={`tool-btn ${activeTool === 'zone' ? 'active' : ''}`}
                 onClick={() => setActiveTool('zone')}
-                title="Zone / Area Circle"
+                title="Coverage Zone / Target Area (Draw boundary around any area)"
               >
-                <Circle size={15} />
+                <Target size={15} />
                 <span>Zone</span>
               </button>
 
@@ -1036,26 +1102,27 @@ export default function WhiteboardPage({
               {/* Freehand Drawn Strokes Layer */}
               {drawings.map((stroke, idx) => {
                 if (!stroke.points || stroke.points.length < 2) return null;
-                if (stroke.tool === 'zone') {
-                  const p1 = stroke.points[0];
-                  const pLast = stroke.points[stroke.points.length - 1];
-                  const rx = Math.abs(pLast.x - p1.x);
-                  const ry = Math.abs(pLast.y - p1.y);
+                const isZone = stroke.tool === 'zone';
+                const pathD = getSmoothPathD(stroke.points, isZone);
+
+                if (isZone) {
                   return (
-                    <ellipse
-                      key={idx}
-                      cx={p1.x}
-                      cy={p1.y}
-                      rx={rx || 8}
-                      ry={ry || 8}
-                      fill={`${stroke.color}25`}
-                      stroke={stroke.color}
-                      strokeWidth="1.5"
-                    />
+                    <g key={idx}>
+                      <path
+                        d={pathD}
+                        fill={stroke.color}
+                        fillOpacity="0.22"
+                        stroke={stroke.color}
+                        strokeWidth={Math.max(1.4, (stroke.width || 2.5) * 0.65)}
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeDasharray="3,1.5"
+                        style={{ filter: 'drop-shadow(0 2px 6px rgba(0,0,0,0.25))' }}
+                      />
+                    </g>
                   );
                 }
 
-                const pathD = stroke.points.reduce((acc, pt, i) => `${acc} ${i === 0 ? 'M' : 'L'} ${pt.x} ${pt.y}`, '');
                 return (
                   <path
                     key={idx}
@@ -1074,13 +1141,15 @@ export default function WhiteboardPage({
               {/* Current in-progress stroke */}
               {currentStroke && currentStroke.points && currentStroke.points.length > 1 && (
                 <path
-                  d={currentStroke.points.reduce((acc, pt, i) => `${acc} ${i === 0 ? 'M' : 'L'} ${pt.x} ${pt.y}`, '')}
-                  fill="none"
+                  d={getSmoothPathD(currentStroke.points, currentStroke.tool === 'zone')}
+                  fill={currentStroke.tool === 'zone' ? currentStroke.color : 'none'}
+                  fillOpacity={currentStroke.tool === 'zone' ? 0.22 : 0}
                   stroke={currentStroke.color}
-                  strokeWidth={currentStroke.width || 2}
+                  strokeWidth={currentStroke.tool === 'zone' ? Math.max(1.4, (currentStroke.width || 2.5) * 0.65) : (currentStroke.width || 2)}
                   strokeLinecap="round"
                   strokeLinejoin="round"
-                  strokeDasharray={currentStroke.tool === 'dashed' ? '4,3' : 'none'}
+                  strokeDasharray={currentStroke.tool === 'zone' ? '3,1.5' : (currentStroke.tool === 'dashed' ? '4,3' : 'none')}
+                  markerEnd={currentStroke.tool === 'arrow' ? 'url(#arrowHead)' : 'none'}
                 />
               )}
             </svg>

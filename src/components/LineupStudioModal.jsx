@@ -17,7 +17,8 @@ import {
   Activity,
   HeartCrack,
   Info,
-  ChevronRight
+  ChevronRight,
+  FileText
 } from 'lucide-react';
 import VolleyballIcon from './icons/VolleyballIcon';
 import confetti from 'canvas-confetti';
@@ -62,7 +63,8 @@ export default function LineupStudioModal({
   onSavePreset,
   onDeletePreset,
   onApplyLineup,
-  onUpdateRosterPlayer
+  onUpdateRosterPlayer,
+  onOpenR2LineupCard
 }) {
   const activeLineupInput = propLineup || currentLineup || {};
   const activeStartingLineupInput = propStartingLineup || currentStartingLineup || {};
@@ -326,6 +328,30 @@ export default function LineupStudioModal({
           </div>
 
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+            {onOpenR2LineupCard && (
+              <button
+                type="button"
+                onClick={onOpenR2LineupCard}
+                style={{
+                  background: 'linear-gradient(135deg, rgba(56, 189, 248, 0.2), rgba(14, 165, 233, 0.35))',
+                  border: '1px solid #38bdf8',
+                  borderRadius: '999px',
+                  padding: '0.25rem 0.65rem',
+                  color: '#ffffff',
+                  fontSize: '0.74rem',
+                  fontWeight: 800,
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '0.35rem'
+                }}
+                title="Preview Official R2 Lineup Card (USAV / NFHS)"
+              >
+                <FileText size={12} color="#38bdf8" />
+                <span>R2 Card</span>
+              </button>
+            )}
+
             <button
               type="button"
               onClick={() => setShowAvailabilityDrawer(!showAvailabilityDrawer)}

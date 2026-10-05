@@ -1,0 +1,792 @@
+/* =========================================================================
+   OFFICIAL R2 LINEUP CARD STYLES
+   Designed for sideline coaching, referee card presentation, and official printing
+   ========================================================================= */
+
+.r2-modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(3, 7, 18, 0.85);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  z-index: 9999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+  overflow-y: auto;
+  animation: r2FadeIn 0.2s ease-out;
+}
+
+@keyframes r2FadeIn {
+  from { opacity: 0; transform: scale(0.98); }
+  to { opacity: 1; transform: scale(1); }
+}
+
+.r2-modal-card {
+  background: #0f172a;
+  border: 1.5px solid rgba(255, 255, 255, 0.14);
+  border-radius: 20px;
+  width: 100%;
+  max-width: 760px;
+  box-shadow: 0 25px 60px -15px rgba(0, 0, 0, 0.8), 0 0 35px rgba(56, 189, 248, 0.15);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  color: #f8fafc;
+  transition: all 0.25s ease;
+}
+
+/* Full-Screen Hi-Vis Referee Presentation Mode */
+.r2-modal-card.hivis-mode {
+  max-width: 96vw;
+  height: 94vh;
+  background: #050811;
+  border-color: #38bdf8;
+  box-shadow: 0 0 50px rgba(56, 189, 248, 0.35);
+}
+
+.r2-card-header {
+  padding: 1rem 1.25rem;
+  background: linear-gradient(135deg, rgba(30, 41, 59, 0.95), rgba(15, 23, 42, 0.98));
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.r2-header-title-wrap {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.r2-icon-badge {
+  width: 40px;
+  height: 40px;
+  border-radius: 12px;
+  background: linear-gradient(135deg, rgba(56, 189, 248, 0.2), rgba(14, 165, 233, 0.35));
+  border: 1px solid rgba(56, 189, 248, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #38bdf8;
+  flex-shrink: 0;
+}
+
+.r2-title {
+  font-family: var(--font-display, sans-serif);
+  font-size: 1.15rem;
+  font-weight: 800;
+  color: #ffffff;
+  letter-spacing: 0.3px;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.r2-subtitle {
+  font-size: 0.78rem;
+  color: #94a3b8;
+  margin-top: 0.15rem;
+}
+
+.r2-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.r2-btn-icon {
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  color: #cbd5e1;
+  padding: 0.45rem 0.7rem;
+  border-radius: 10px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.r2-btn-icon:hover {
+  background: rgba(255, 255, 255, 0.12);
+  color: #ffffff;
+  border-color: rgba(255, 255, 255, 0.25);
+}
+
+.r2-btn-icon.active {
+  background: rgba(56, 189, 248, 0.2);
+  border-color: #38bdf8;
+  color: #38bdf8;
+}
+
+.r2-btn-close {
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  color: #94a3b8;
+  width: 34px;
+  height: 34px;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.r2-btn-close:hover {
+  background: rgba(239, 68, 68, 0.2);
+  border-color: rgba(239, 68, 68, 0.5);
+  color: #f87171;
+}
+
+/* Modal Body Content */
+.r2-card-body {
+  padding: 1.25rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1.1rem;
+  overflow-y: auto;
+  max-height: 80vh;
+}
+
+.hivis-mode .r2-card-body {
+  max-height: calc(94vh - 80px);
+  justify-content: space-between;
+}
+
+/* Coach Controls Ribbon */
+.r2-controls-ribbon {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  background: rgba(30, 41, 59, 0.5);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 14px;
+  padding: 0.6rem 0.85rem;
+}
+
+.r2-mode-pills {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  background: rgba(15, 23, 42, 0.8);
+  padding: 0.25rem;
+  border-radius: 10px;
+  border: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.r2-mode-pill {
+  background: transparent;
+  border: none;
+  color: #94a3b8;
+  padding: 0.35rem 0.65rem;
+  border-radius: 7px;
+  font-size: 0.78rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.r2-mode-pill.active {
+  background: #0284c7;
+  color: #ffffff;
+  box-shadow: 0 2px 8px rgba(2, 132, 199, 0.4);
+}
+
+.r2-set-selector {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.r2-set-btn {
+  background: rgba(15, 23, 42, 0.8);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  color: #cbd5e1;
+  padding: 0.3rem 0.6rem;
+  border-radius: 8px;
+  font-size: 0.76rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.r2-set-btn.active {
+  background: #f59e0b;
+  border-color: #f59e0b;
+  color: #0f172a;
+}
+
+.r2-serve-toggle {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  background: rgba(15, 23, 42, 0.8);
+  padding: 0.25rem 0.5rem;
+  border-radius: 8px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.r2-serve-choice {
+  background: transparent;
+  border: none;
+  font-size: 0.75rem;
+  font-weight: 700;
+  padding: 0.25rem 0.5rem;
+  border-radius: 6px;
+  color: #64748b;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.r2-serve-choice.selected {
+  background: #10b981;
+  color: #ffffff;
+}
+
+/* =========================================================================
+   OFFICIAL VOLLEYBALL 6-BOX LINEUP SHEET CONTAINER
+   ========================================================================= */
+
+.r2-sheet-paper {
+  background: linear-gradient(180deg, #1e293b 0%, #0f172a 100%);
+  border: 2px solid #334155;
+  border-radius: 16px;
+  padding: 1.25rem;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.1);
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  position: relative;
+}
+
+.hivis-mode .r2-sheet-paper {
+  background: #020617;
+  border: 2px solid #38bdf8;
+  padding: 1.5rem;
+  flex: 1;
+}
+
+/* Metadata Bar (Team, Opponent, Set, Ref Verification) */
+.r2-sheet-meta {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 0.75rem;
+  border-bottom: 2px dashed rgba(255, 255, 255, 0.15);
+  padding-bottom: 0.85rem;
+}
+
+.r2-meta-item {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+}
+
+.r2-meta-label {
+  font-size: 0.65rem;
+  text-transform: uppercase;
+  letter-spacing: 0.8px;
+  font-weight: 700;
+  color: #94a3b8;
+}
+
+.r2-meta-value {
+  font-size: 0.95rem;
+  font-weight: 800;
+  color: #ffffff;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Court Net Indicator */
+.r2-court-net-line {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.75rem;
+  padding: 0.35rem 0;
+  position: relative;
+}
+
+.r2-court-net-line::before,
+.r2-court-net-line::after {
+  content: '';
+  flex: 1;
+  height: 2px;
+  background: repeating-linear-gradient(90deg, #64748b 0, #64748b 8px, transparent 8px, transparent 14px);
+}
+
+.r2-net-badge {
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  color: #f8fafc;
+  background: #334155;
+  border: 1px solid #475569;
+  padding: 0.2rem 0.8rem;
+  border-radius: 99px;
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+/* 6-Box Grid (IV, III, II on top; V, VI, I on bottom) */
+.r2-six-box-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 0.75rem;
+}
+
+.hivis-mode .r2-six-box-grid {
+  gap: 1rem;
+  flex: 1;
+}
+
+.r2-box {
+  background: rgba(15, 23, 42, 0.8);
+  border: 2px solid #334155;
+  border-radius: 12px;
+  padding: 0.85rem 0.65rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  position: relative;
+  transition: all 0.2s ease;
+  cursor: pointer;
+  user-select: none;
+}
+
+.r2-box:hover {
+  border-color: #38bdf8;
+  background: rgba(30, 41, 59, 0.9);
+  transform: translateY(-2px);
+}
+
+.r2-box.is-server-box {
+  border-color: #10b981;
+  box-shadow: 0 0 15px rgba(16, 185, 129, 0.2);
+}
+
+.hivis-mode .r2-box {
+  padding: 1.25rem 0.75rem;
+  border-width: 3px;
+  border-color: #475569;
+  justify-content: center;
+}
+
+.r2-box-roman {
+  position: absolute;
+  top: 6px;
+  left: 8px;
+  font-size: 0.8rem;
+  font-weight: 900;
+  font-family: var(--font-display, sans-serif);
+  color: #38bdf8;
+  letter-spacing: 0.5px;
+}
+
+.r2-box-zone-label {
+  position: absolute;
+  top: 6px;
+  right: 8px;
+  font-size: 0.65rem;
+  font-weight: 700;
+  color: #64748b;
+  text-transform: uppercase;
+}
+
+.r2-box-number {
+  font-family: var(--font-jersey, Impact, sans-serif);
+  font-size: 2.25rem;
+  font-weight: 800;
+  line-height: 1;
+  margin-top: 0.6rem;
+  margin-bottom: 0.25rem;
+  color: #ffffff;
+  letter-spacing: 0.5px;
+}
+
+.hivis-mode .r2-box-number {
+  font-size: 3.25rem;
+  color: #f8fafc;
+}
+
+.r2-box-name {
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: #e2e8f0;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.hivis-mode .r2-box-name {
+  font-size: 1.05rem;
+}
+
+.r2-box-pos-badge {
+  font-size: 0.65rem;
+  font-weight: 700;
+  padding: 0.15rem 0.45rem;
+  border-radius: 99px;
+  background: rgba(255, 255, 255, 0.08);
+  color: #94a3b8;
+  margin-top: 0.3rem;
+  text-transform: uppercase;
+}
+
+/* Captain Circle (Official Ref Mark) */
+.r2-captain-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.2rem;
+  font-size: 0.65rem;
+  font-weight: 800;
+  color: #f59e0b;
+  border: 1px solid #f59e0b;
+  border-radius: 99px;
+  padding: 0.1rem 0.4rem;
+  margin-top: 0.25rem;
+}
+
+.r2-server-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.2rem;
+  font-size: 0.65rem;
+  font-weight: 800;
+  color: #10b981;
+  border: 1px solid #10b981;
+  border-radius: 99px;
+  padding: 0.1rem 0.4rem;
+  margin-top: 0.25rem;
+}
+
+/* Official Ref Footer: Liberos & Captain */
+.r2-sheet-footer {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 0.75rem;
+  border-top: 2px dashed rgba(255, 255, 255, 0.15);
+  padding-top: 0.85rem;
+}
+
+.r2-libero-card {
+  background: rgba(139, 92, 246, 0.12);
+  border: 1.5px solid rgba(139, 92, 246, 0.4);
+  border-radius: 10px;
+  padding: 0.65rem 0.85rem;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.r2-libero-num {
+  font-family: var(--font-jersey, Impact, sans-serif);
+  font-size: 1.7rem;
+  font-weight: 800;
+  color: #c084fc;
+}
+
+.r2-libero-details {
+  display: flex;
+  flex-direction: column;
+}
+
+.r2-libero-label {
+  font-size: 0.65rem;
+  font-weight: 800;
+  color: #a855f7;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.r2-libero-name {
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: #ffffff;
+}
+
+.r2-captain-card {
+  background: rgba(245, 158, 11, 0.12);
+  border: 1.5px solid rgba(245, 158, 11, 0.4);
+  border-radius: 10px;
+  padding: 0.65rem 0.85rem;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.r2-captain-num {
+  font-family: var(--font-jersey, Impact, sans-serif);
+  font-size: 1.7rem;
+  font-weight: 800;
+  color: #fbbf24;
+}
+
+/* Quick Swap Dropdown / Drawer in Modal */
+.r2-swap-drawer {
+  background: rgba(15, 23, 42, 0.95);
+  border: 1.5px solid #38bdf8;
+  border-radius: 14px;
+  padding: 0.85rem;
+  margin-top: 0.5rem;
+}
+
+.r2-swap-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 0.6rem;
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: #38bdf8;
+}
+
+.r2-swap-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+  gap: 0.45rem;
+  max-height: 160px;
+  overflow-y: auto;
+}
+
+.r2-swap-player-btn {
+  background: rgba(30, 41, 59, 0.8);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 8px;
+  padding: 0.4rem 0.6rem;
+  color: #cbd5e1;
+  text-align: left;
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  cursor: pointer;
+  font-size: 0.78rem;
+  transition: all 0.15s;
+}
+
+.r2-swap-player-btn:hover {
+  background: #0284c7;
+  border-color: #38bdf8;
+  color: #ffffff;
+}
+
+/* Footer / Action Bar */
+.r2-card-actions-bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding-top: 0.5rem;
+}
+
+.r2-action-btns-left,
+.r2-action-btns-right {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.r2-action-btn {
+  padding: 0.55rem 0.95rem;
+  border-radius: 10px;
+  font-size: 0.82rem;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  cursor: pointer;
+  transition: all 0.15s;
+  border: none;
+}
+
+.r2-action-btn.secondary {
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  color: #cbd5e1;
+}
+
+.r2-action-btn.secondary:hover {
+  background: rgba(255, 255, 255, 0.15);
+  color: #ffffff;
+}
+
+.r2-action-btn.primary {
+  background: linear-gradient(135deg, #0284c7, #0369a1);
+  color: #ffffff;
+  box-shadow: 0 4px 12px rgba(2, 132, 199, 0.35);
+}
+
+.r2-action-btn.primary:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 6px 16px rgba(2, 132, 199, 0.45);
+}
+
+/* Toast confirmation */
+.r2-toast {
+  position: absolute;
+  bottom: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: #10b981;
+  color: #ffffff;
+  padding: 0.5rem 1rem;
+  border-radius: 99px;
+  font-size: 0.82rem;
+  font-weight: 700;
+  box-shadow: 0 4px 15px rgba(16, 185, 129, 0.4);
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  animation: r2FadeIn 0.2s ease-out;
+  z-index: 10;
+}
+
+/* =========================================================================
+   OFFICIAL R2 LINEUP CARD PRINT MEDIA STYLES
+   Ensures standard 8.5x11 printable official sheet for NFHS/USAV scorekeepers
+   ========================================================================= */
+
+@media print {
+  /* Override global print hiding so the official lineup card prints perfectly */
+  body * {
+    visibility: hidden;
+  }
+
+  .r2-modal-overlay,
+  .r2-sheet-paper,
+  .r2-sheet-paper * {
+    visibility: visible !important;
+  }
+
+  .r2-modal-overlay {
+    position: absolute !important;
+    left: 0 !important;
+    top: 0 !important;
+    width: 100% !important;
+    height: auto !important;
+    background: #ffffff !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    overflow: visible !important;
+  }
+
+  .r2-modal-card {
+    background: #ffffff !important;
+    border: none !important;
+    box-shadow: none !important;
+    max-width: 100% !important;
+    color: #000000 !important;
+  }
+
+  .r2-card-header,
+  .r2-controls-ribbon,
+  .r2-swap-drawer,
+  .r2-card-actions-bar,
+  .r2-btn-close,
+  .no-print {
+    display: none !important;
+  }
+
+  .r2-sheet-paper {
+    background: #ffffff !important;
+    border: 2px solid #000000 !important;
+    color: #000000 !important;
+    border-radius: 0 !important;
+    padding: 1.5rem !important;
+    width: 100% !important;
+    box-shadow: none !important;
+  }
+
+  .r2-meta-label {
+    color: #475569 !important;
+  }
+
+  .r2-meta-value {
+    color: #000000 !important;
+  }
+
+  .r2-court-net-line::before,
+  .r2-court-net-line::after {
+    background: #000000 !important;
+  }
+
+  .r2-net-badge {
+    background: #ffffff !important;
+    color: #000000 !important;
+    border: 2px solid #000000 !important;
+  }
+
+  .r2-box {
+    background: #ffffff !important;
+    border: 2px solid #000000 !important;
+    color: #000000 !important;
+    border-radius: 0 !important;
+  }
+
+  .r2-box-roman {
+    color: #000000 !important;
+  }
+
+  .r2-box-zone-label {
+    color: #334155 !important;
+  }
+
+  .r2-box-number {
+    color: #000000 !important;
+    font-size: 2.8rem !important;
+  }
+
+  .r2-box-name {
+    color: #000000 !important;
+    font-size: 0.95rem !important;
+  }
+
+  .r2-box-pos-badge {
+    border: 1px solid #000000 !important;
+    color: #000000 !important;
+    background: transparent !important;
+  }
+
+  .r2-captain-badge,
+  .r2-server-badge {
+    border-color: #000000 !important;
+    color: #000000 !important;
+  }
+
+  .r2-libero-card {
+    background: #ffffff !important;
+    border: 2px solid #000000 !important;
+    border-radius: 0 !important;
+  }
+
+  .r2-libero-num,
+  .r2-libero-name,
+  .r2-libero-label {
+    color: #000000 !important;
+  }
+
+  .r2-captain-card {
+    background: #ffffff !important;
+    border: 2px solid #000000 !important;
+    border-radius: 0 !important;
+  }
+
+  .r2-captain-num {
+    color: #000000 !important;
+  }
+}

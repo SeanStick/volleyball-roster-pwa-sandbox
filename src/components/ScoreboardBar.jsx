@@ -25,7 +25,8 @@ import {
   Zap,
   ArrowRightLeft,
   Settings,
-  X
+  X,
+  FileText
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
 import VolleyballIcon from './icons/VolleyballIcon';
@@ -67,7 +68,8 @@ export default function ScoreboardBar({
   onOpenWhiteboard,
   onNavigateTab,
   onOpenGeminiCoach,
-  isLoggedIn = false
+  isLoggedIn = false,
+  onOpenR2LineupCard
 }) {
   const [isPointModalOpen, setIsPointModalOpen] = useState(false);
   const [scoringTeam, setScoringTeam] = useState('us'); // 'us' | 'opponent'
@@ -1390,6 +1392,33 @@ export default function ScoreboardBar({
                       <Sparkles size={18} color="#c084fc" />
                       <div style={{ fontWeight: 800, fontSize: '0.85rem' }}>Lineup Studio</div>
                       <div style={{ fontSize: '0.7rem', color: '#e9d5ff' }}>6-2 Optimizer & Fit</div>
+                    </button>
+                  )}
+
+                  {onOpenR2LineupCard && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setIsMatchToolsOpen(false);
+                        onOpenR2LineupCard();
+                      }}
+                      style={{
+                        background: 'linear-gradient(135deg, rgba(56, 189, 248, 0.2), rgba(14, 165, 233, 0.35))',
+                        border: '1.5px solid rgba(56, 189, 248, 0.5)',
+                        borderRadius: 'var(--radius-md)',
+                        padding: '0.75rem',
+                        display: 'flex',
+                        flexDirection: 'column',
+                        alignItems: 'flex-start',
+                        gap: '0.4rem',
+                        cursor: 'pointer',
+                        color: '#fff',
+                        textAlign: 'left'
+                      }}
+                    >
+                      <FileText size={18} color="#38bdf8" />
+                      <div style={{ fontWeight: 800, fontSize: '0.85rem' }}>Official R2 Card</div>
+                      <div style={{ fontSize: '0.7rem', color: '#bae6fd' }}>6-Box Ref Sheet</div>
                     </button>
                   )}
 

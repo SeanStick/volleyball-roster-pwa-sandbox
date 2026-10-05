@@ -21,7 +21,8 @@ import {
   Archive,
   Flag,
   FolderOpen,
-  ChevronDown
+  ChevronDown,
+  FileText
 } from 'lucide-react';
 import VolleyballIcon from './icons/VolleyballIcon';
 import confetti from 'canvas-confetti';
@@ -87,7 +88,8 @@ export default function CourtView({
   onResetScore,
   onResetFullMatch,
   onNavigateTab,
-  onUpdateMatchDetails
+  onUpdateMatchDetails,
+  onOpenR2LineupCard
 }) {
   // 6-2 System Validation
   const validation62 = validate62Formation(lineup, roster);
@@ -1033,6 +1035,31 @@ export default function CourtView({
             </div>
           )}
 
+          {/* Official R2 Lineup Card Button */}
+          {onOpenR2LineupCard && (
+            <button
+              type="button"
+              className="subs-status-pill"
+              onClick={onOpenR2LineupCard}
+              style={{
+                borderColor: '#38bdf8',
+                background: 'linear-gradient(135deg, rgba(56, 189, 248, 0.18), rgba(14, 165, 233, 0.28))',
+                padding: '0.3rem 0.65rem',
+                fontSize: '0.74rem',
+                color: '#38bdf8',
+                fontWeight: 800,
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '0.35rem'
+              }}
+              title="Official R2 Lineup Card (NFHS / USAV)"
+            >
+              <FileText size={13} color="#38bdf8" />
+              <span>R2 Card</span>
+            </button>
+          )}
+
           {/* Consolidated Actions Dropdown */}
           <div className="live-action-menu-wrapper" ref={actionsMenuRef}>
             <button
@@ -1049,6 +1076,20 @@ export default function CourtView({
             {isActionsOpen && (
               <div className="live-action-dropdown">
                 <div className="live-action-group-title">Lineup & Presets</div>
+                {onOpenR2LineupCard && (
+                  <button
+                    type="button"
+                    className="live-action-item"
+                    onClick={() => {
+                      setIsActionsOpen(false);
+                      onOpenR2LineupCard();
+                    }}
+                  >
+                    <FileText size={14} color="#38bdf8" />
+                    <span>Official R2 Lineup Card</span>
+                  </button>
+                )}
+
                 <button
                   type="button"
                   className="live-action-item"

@@ -44,6 +44,7 @@ import GameCenterModal from './components/GameCenterModal';
 import SetBreakModal from './components/SetBreakModal';
 import MatchRecapModal from './components/MatchRecapModal';
 import LineupStudioModal from './components/LineupStudioModal';
+import OfficialLineupCardModal from './components/OfficialLineupCardModal';
 import NotificationSettingsModal from './components/NotificationSettingsModal';
 import AutoSubConfirmModal from './components/AutoSubConfirmModal';
 import GeminiCoachModal from './components/GeminiCoachModal';
@@ -92,6 +93,7 @@ export default function App() {
   const [lastCompletedSet, setLastCompletedSet] = useState(null);
   const [daySchedule, setDaySchedule] = useState(() => storageService.getDaySchedule());
   const [isLineupStudioOpen, setIsLineupStudioOpen] = useState(false);
+  const [isR2LineupCardOpen, setIsR2LineupCardOpen] = useState(false);
   const [savedLineupPresets, setSavedLineupPresets] = useState(() => storageService.getSavedLineups());
   const [isFirebaseSettingsModalOpen, setIsFirebaseSettingsModalOpen] = useState(false);
   const [isPlayerModalOpen, setIsPlayerModalOpen] = useState(false);
@@ -2244,6 +2246,7 @@ export default function App() {
           onCallTimeout={handleCallTimeout}
           onOpenSubModal={() => setActiveTab('court')}
           onOpenLineupStudio={() => setIsLineupStudioOpen(true)}
+          onOpenR2LineupCard={() => setIsR2LineupCardOpen(true)}
           subHistory={subHistory}
           maxSubs={maxSubs}
           lineup={lineup}
@@ -2512,6 +2515,7 @@ export default function App() {
           onDeletePreset={handleDeleteLineupPreset}
           onApplyPresetLineup={handleApplyLineupFromStudio}
           onOpenLineupStudio={() => setIsLineupStudioOpen(true)}
+          onOpenR2LineupCard={() => setIsR2LineupCardOpen(true)}
           onOpenMatchWizard={() => setIsMatchWizardOpen(true)}
           onRallyWonByUs={handleRallyWonByUs}
           onRallyWonByOpponent={handleRallyWonByOpponent}
@@ -2779,6 +2783,30 @@ export default function App() {
           onDeletePreset={handleDeleteLineupPreset}
           onApplyLineup={handleApplyLineupFromStudio}
           onUpdateRosterPlayer={handleUpdateRosterPlayerStatus}
+          onOpenR2LineupCard={() => setIsR2LineupCardOpen(true)}
+        />
+      )}
+
+      {/* 📋 Official R2 Lineup Card (USAV / NFHS / NCAA) */}
+      {isR2LineupCardOpen && (
+        <OfficialLineupCardModal
+          isOpen={isR2LineupCardOpen}
+          onClose={() => setIsR2LineupCardOpen(false)}
+          roster={roster}
+          lineup={lineup}
+          startingLineup={startingLineup}
+          rotation={rotation}
+          phase={phase}
+          liberoServingRotation={liberoServingRotation}
+          matchStats={matchStats}
+          teamName={teams.find(t => t.id === activeTeamId)?.name || teamSettings?.name || 'Our Team'}
+          onApplyLineup={(newLineup, isStarting) => {
+            if (isStarting) {
+              setStartingLineup(newLineup);
+            } else {
+              setLineup(newLineup);
+            }
+          }}
         />
       )}
 

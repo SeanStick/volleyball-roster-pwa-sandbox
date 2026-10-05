@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   X,
   Maximize2,
@@ -52,6 +52,21 @@ export default function GymSidelineHUDModal({
 
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [isPlayingTimeOpen, setIsPlayingTimeOpen] = useState(false);
+  const lastScoreTapRef = useRef(0);
+
+  const handleSafePlusUs = () => {
+    const now = Date.now();
+    if (now - lastScoreTapRef.current < 280) return;
+    lastScoreTapRef.current = now;
+    if (onPlusUs) onPlusUs();
+  };
+
+  const handleSafePlusOpponent = () => {
+    const now = Date.now();
+    if (now - lastScoreTapRef.current < 280) return;
+    lastScoreTapRef.current = now;
+    if (onPlusOpponent) onPlusOpponent();
+  };
 
   const {
     ourScore = 0,
@@ -245,7 +260,7 @@ export default function GymSidelineHUDModal({
             <button
               type="button"
               className="hud-giant-btn us"
-              onClick={onPlusUs}
+              onClick={handleSafePlusUs}
               title="Add 1 Point to Us (+1 US)"
             >
               <Plus size={28} />
@@ -310,7 +325,7 @@ export default function GymSidelineHUDModal({
             <button
               type="button"
               className="hud-giant-btn opp"
-              onClick={onPlusOpponent}
+              onClick={handleSafePlusOpponent}
               title="Add 1 Point to Opponent (+1 OPP)"
             >
               <Plus size={28} />

@@ -86,6 +86,10 @@ export default function ScoreboardBar({
   const [activeTimeout, setActiveTimeout] = useState(null); // { team: 'us'|'opponent', secondsLeft: 60 }
   const [timeoutSeconds, setTimeoutSeconds] = useState(60);
   const [isTimeoutAdvisorOpen, setIsTimeoutAdvisorOpen] = useState(false);
+  const timeoutEndTimeRef = useRef(null);
+  const lastScoreTapRef = useRef(0);
+
+  const isCoachOrAssistant = userRole === 'head_coach' || userRole === 'assistant_coach';
 
   const {
     courtNumber = 'Court 1',
@@ -114,29 +118,27 @@ export default function ScoreboardBar({
   const isMatchLost = opponentSetsWon >= 2;
   const isMatchComplete = isMatchWon || isMatchLost;
 
-  // Active Timeout Countdown Timer
+  // Active Timeout Countdown Timer (Wall-clock accurate across phone sleep/lock screen)
   useEffect(() => {
-    let timer = null;
-    if (activeTimeout && timeoutSeconds > 0) {
-      timer = setInterval(() => {
-        setTimeoutSeconds((prev) => {
-          if (prev <= 1) {
-            clearInterval(timer);
-            return 0;
-          }
-          return prev - 1;
-        });
-      }, 1000);
-    }
-    return () => {
-      if (timer) clearInterval(timer);
+    if (!activeTimeout) return;
+    const checkTimeout = () => {
+      if (!timeoutEndTimeRef.current) return;
+      const left = Math.max(0, Math.ceil((timeoutEndTimeRef.current - Date.now()) / 1000));
+      setTimeoutSeconds(left);
+      if (left <= 0) {
+        setActiveTimeout(null);
+      }
     };
-  }, [activeTimeout, timeoutSeconds]);
+    checkTimeout();
+    const interval = setInterval(checkTimeout, 500);
+    return () => clearInterval(interval);
+  }, [activeTimeout]);
 
   const handleStartTimeoutTimer = (team) => {
     if (onCallTimeout) {
       onCallTimeout(team);
     }
+    timeoutEndTimeRef.current = Date.now() + 60000;
     setActiveTimeout(team);
     setTimeoutSeconds(60);
     if (isCoachOrAssistant) {
@@ -145,6 +147,7 @@ export default function ScoreboardBar({
   };
 
   const handleEndTimeoutTimer = () => {
+    timeoutEndTimeRef.current = null;
     setActiveTimeout(null);
     setTimeoutSeconds(60);
     setIsTimeoutAdvisorOpen(false);
@@ -349,6 +352,10 @@ export default function ScoreboardBar({
 
   // Fast +1 US Action (Instant 0ms in Direct Score Mode, or opens detailed modal)
   const handlePlusUs = (forceDetailed = false) => {
+    const now = Date.now();
+    if (now - lastScoreTapRef.current < 280) return;
+    lastScoreTapRef.current = now;
+
     if (isDirectScoreMode && !forceDetailed) {
       onRallyWonByUs({
         pointWonBy: 'us',
@@ -376,6 +383,10 @@ export default function ScoreboardBar({
 
   // Fast +1 OPP Action
   const handlePlusOpponent = (forceDetailed = false) => {
+    const now = Date.now();
+    if (now - lastScoreTapRef.current < 280) return;
+    lastScoreTapRef.current = now;
+
     if (isDirectScoreMode && !forceDetailed) {
       onRallyWonByOpponent({
         pointWonBy: 'opponent',

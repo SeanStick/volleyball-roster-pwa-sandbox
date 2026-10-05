@@ -644,6 +644,20 @@ export default function App() {
     currentDeviceId
   ]);
 
+  // Live Match Protection: Prevent accidental swipe-close or tab navigation during active rallies
+  useEffect(() => {
+    const handleBeforeUnload = (e) => {
+      const hasActiveMatch = ((matchStats?.ourScore || 0) > 0 || (matchStats?.opponentScore || 0) > 0 || (matchStats?.setNumber || 1) > 1);
+      if (hasActiveMatch) {
+        e.preventDefault();
+        e.returnValue = '';
+        return '';
+      }
+    };
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    return () => window.removeEventListener('beforeunload', handleBeforeUnload);
+  }, [matchStats?.ourScore, matchStats?.opponentScore, matchStats?.setNumber]);
+
   // -------------------------------------------------------------
   // Tournament & Match Setup Handlers
   // -------------------------------------------------------------
@@ -1507,6 +1521,8 @@ export default function App() {
 
     let nextRot = rotation;
     let nextPhase = phase;
+    let nextLineup = lineup;
+
     if (lastPoint.rotation && lastPoint.rotation !== rotation) {
       nextRot = lastPoint.rotation;
       handleUpdateRotation(lastPoint.rotation);
@@ -1514,6 +1530,10 @@ export default function App() {
     if (lastPoint.phase && lastPoint.phase !== phase) {
       nextPhase = lastPoint.phase;
       setPhase(lastPoint.phase);
+    }
+    if (lastPoint.lineup && Object.keys(lastPoint.lineup).length > 0) {
+      nextLineup = { ...lastPoint.lineup };
+      setLineup(nextLineup);
     }
 
     const scoreEvent = {
@@ -1542,7 +1562,7 @@ export default function App() {
     syncCloudImmediately({
       matchStats: nextStats,
       matchState: {
-        lineup,
+        lineup: nextLineup,
         startingLineup,
         rotation: nextRot,
         phase: nextPhase,

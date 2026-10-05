@@ -19,6 +19,21 @@ if ('caches' in window) {
   });
 }
 
+// Catch unhandled promise rejections & auto-recover from dynamic module chunk misses after deployments
+window.addEventListener('unhandledrejection', (event) => {
+  const msg = event?.reason?.message || '';
+  if (
+    msg.includes('Failed to fetch dynamically imported module') ||
+    msg.includes('Importing a module script failed') ||
+    msg.includes('error loading dynamically imported module')
+  ) {
+    console.warn('Dynamic chunk import failed after app update. Initiating soft reload...');
+    window.location.reload();
+  } else {
+    console.warn('Handled global unhandledrejection:', event?.reason);
+  }
+});
+
 // Global App Error Boundary to prevent blank white screens
 class AppErrorBoundary extends React.Component {
   constructor(props) {

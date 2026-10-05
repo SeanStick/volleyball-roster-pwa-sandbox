@@ -57,12 +57,14 @@ export default function UserMenu({
   }, []);
 
   const getInitials = (name, email) => {
-    if (name && name.trim()) {
-      const parts = name.trim().split(' ');
-      if (parts.length >= 2) return `${parts[0][0]}${parts[1][0]}`.toUpperCase();
-      return name.substring(0, 2).toUpperCase();
+    if (name && typeof name === 'string' && name.trim()) {
+      const parts = name.trim().split(/\s+/);
+      if (parts.length >= 2 && parts[0] && parts[1]) {
+        return `${parts[0][0]}${parts[1][0]}`.toUpperCase();
+      }
+      return name.trim().substring(0, 2).toUpperCase();
     }
-    if (email) return email.substring(0, 2).toUpperCase();
+    if (email && typeof email === 'string') return email.substring(0, 2).toUpperCase();
     return 'CO';
   };
 

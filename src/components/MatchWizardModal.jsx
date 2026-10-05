@@ -721,7 +721,7 @@ export default function MatchWizardModal({
                       >
                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                           <span style={{ fontSize: '0.68rem', fontWeight: 800, color: '#fca5a5' }}>
-                            Z{zone.num} ({zone.name.split(' ')[0]})
+                            Z{zone.num} ({zone.name ? zone.name.split(' ')[0] : ''})
                           </span>
                           <span style={{ fontSize: '0.6rem', color: '#94a3b8' }}>Front</span>
                         </div>
@@ -733,7 +733,7 @@ export default function MatchWizardModal({
                             </span>
                             <div style={{ minWidth: 0, overflow: 'hidden' }}>
                               <div style={{ fontSize: '0.76rem', fontWeight: 800, color: '#ffffff', whiteSpace: 'nowrap', textOverflow: 'ellipsis', overflow: 'hidden' }}>
-                                {p.name.split(' ')[0]}
+                                {p.name ? p.name.split(' ')[0] : 'Player'}
                               </div>
                               <div style={{ fontSize: '0.64rem', color: '#94a3b8' }}>
                                 {p.position.slice(0, 3)}
@@ -796,7 +796,7 @@ export default function MatchWizardModal({
                             </span>
                             <div style={{ minWidth: 0, overflow: 'hidden' }}>
                               <div style={{ fontSize: '0.76rem', fontWeight: 800, color: '#ffffff', whiteSpace: 'nowrap', textOverflow: 'ellipsis', overflow: 'hidden' }}>
-                                {p.name.split(' ')[0]}
+                                {p.name ? p.name.split(' ')[0] : 'Player'}
                               </div>
                               <div style={{ fontSize: '0.64rem', color: '#94a3b8' }}>
                                 {p.position.slice(0, 3)}
@@ -846,7 +846,7 @@ export default function MatchWizardModal({
                       #{getPlayer(selectedLiberoId)?.number}
                     </span>
                     <span style={{ fontSize: '0.8rem', fontWeight: 800, color: '#ffffff' }}>
-                      {getPlayer(selectedLiberoId)?.name.split(' ')[0]}
+                      {getPlayer(selectedLiberoId)?.name ? getPlayer(selectedLiberoId).name.split(' ')[0] : 'Libero'}
                     </span>
                   </div>
                 ) : (
@@ -890,7 +890,7 @@ export default function MatchWizardModal({
                   <VolleyballIcon size={28} color={servingFirst ? '#34d399' : '#94a3b8'} />
                   <span style={{ fontWeight: 900, fontSize: '0.95rem' }}>We Serve First</span>
                   <span style={{ fontSize: '0.72rem', color: '#6ee7b7', textAlign: 'center' }}>
-                    #{getPlayer(wizardLineup.pos1)?.number || '1'} {getPlayer(wizardLineup.pos1)?.name.split(' ')[0] || 'Player'} Serves in Zone 1
+                    #{getPlayer(wizardLineup.pos1)?.number || '1'} {getPlayer(wizardLineup.pos1)?.name ? getPlayer(wizardLineup.pos1).name.split(' ')[0] : 'Player'} Serves in Zone 1
                   </span>
                 </button>
 

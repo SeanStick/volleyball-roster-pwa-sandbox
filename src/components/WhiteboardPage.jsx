@@ -1131,7 +1131,7 @@ export default function WhiteboardPage({
                     #{player.number}
                   </div>
                   <div style={{ fontSize: '0.62rem', fontWeight: 800, whiteSpace: 'nowrap', maxWidth: '40px', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                    {player.name.split(' ')[0]}
+                    {player.name ? player.name.split(' ')[0] : 'Player'}
                   </div>
 
                   {/* Floating Zone Tag */}

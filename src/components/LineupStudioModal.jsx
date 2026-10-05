@@ -732,13 +732,13 @@ export default function LineupStudioModal({
                     }}
                   >
                     <div style={{ fontSize: '0.68rem', fontWeight: 900, color: pair.badge, marginBottom: '0.2rem' }}>
-                      Zone {ZONE_LABELS[zoneKey]?.num} ({ZONE_LABELS[zoneKey]?.name.split(' ')[0]})
+                      Zone {ZONE_LABELS[zoneKey]?.num} ({ZONE_LABELS[zoneKey]?.name ? ZONE_LABELS[zoneKey].name.split(' ')[0] : ''})
                     </div>
 
                     {player ? (
                       <>
                         <div style={{ fontSize: '0.85rem', fontWeight: 950, color: '#ffffff', lineHeight: 1.15 }}>
-                          #{player.number} {player.name.split(' ')[0]}
+                          #{player.number} {player.name ? player.name.split(' ')[0] : 'Player'}
                         </div>
                         <div style={{ fontSize: '0.68rem', color: '#cbd5e1', marginTop: '0.15rem' }}>
                           {player.position}
@@ -827,13 +827,13 @@ export default function LineupStudioModal({
                     }}
                   >
                     <div style={{ fontSize: '0.68rem', fontWeight: 900, color: pair.badge, marginBottom: '0.2rem' }}>
-                      Zone {ZONE_LABELS[zoneKey]?.num} {zoneKey === 'pos1' ? '★ Server' : `(${ZONE_LABELS[zoneKey]?.name.split(' ')[0]})`}
+                      Zone {ZONE_LABELS[zoneKey]?.num} {zoneKey === 'pos1' ? '★ Server' : `(${ZONE_LABELS[zoneKey]?.name ? ZONE_LABELS[zoneKey].name.split(' ')[0] : ''})`}
                     </div>
 
                     {player ? (
                       <>
                         <div style={{ fontSize: '0.85rem', fontWeight: 950, color: '#ffffff', lineHeight: 1.15 }}>
-                          #{player.number} {player.name.split(' ')[0]}
+                          #{player.number} {player.name ? player.name.split(' ')[0] : 'Player'}
                         </div>
                         <div style={{ fontSize: '0.68rem', color: '#cbd5e1', marginTop: '0.15rem' }}>
                           {player.position}

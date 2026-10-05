@@ -68,9 +68,9 @@ export default function PlayingTimeModal({
     ];
 
     playingStats.forEach(s => {
-      const numStr = `#${s.player.number}`.padEnd(4, ' ');
-      const nameStr = s.player.name.slice(0, 16).padEnd(17, ' ');
-      const posStr = (s.player.position || '--').slice(0, 4).padEnd(5, ' ');
+      const numStr = `#${s.player?.number || ''}`.padEnd(4, ' ');
+      const nameStr = (s.player?.name || 'Player').slice(0, 16).padEnd(17, ' ');
+      const posStr = (s.player?.position || '--').slice(0, 4).padEnd(5, ' ');
       const ptsStr = `${s.ralliesPlayed}`.padStart(3, ' ');
       const pctStr = `${s.percentagePlayed}%`.padStart(5, ' ');
       const setsStr = `${s.setsPlayed}`.padStart(3, ' ');
@@ -219,12 +219,12 @@ export default function PlayingTimeModal({
                   const isNegative = stat.plusMinus < 0;
 
                   return (
-                    <tr key={p.id}>
+                    <tr key={p?.id || stat.playerId || Math.random()}>
                       <td>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '0.45rem' }}>
-                          <strong style={{ color: '#38bdf8', fontSize: '0.9rem' }}>#{p.number}</strong>
-                          <span style={{ fontWeight: 700 }}>{p.name}</span>
-                          {p.isCaptain && (
+                          <strong style={{ color: '#38bdf8', fontSize: '0.9rem' }}>#{p?.number}</strong>
+                          <span style={{ fontWeight: 700 }}>{p?.name || 'Player'}</span>
+                          {p?.isCaptain && (
                             <span style={{ fontSize: '0.62rem', color: '#f59e0b', border: '1px solid #f59e0b', padding: '0 0.3rem', borderRadius: '99px', fontWeight: 800 }}>
                               C
                             </span>
@@ -233,7 +233,7 @@ export default function PlayingTimeModal({
                       </td>
                       <td>
                         <span style={{ fontSize: '0.72rem', color: '#94a3b8', textTransform: 'uppercase', fontWeight: 700 }}>
-                          {p.position}
+                          {p?.position || '—'}
                         </span>
                       </td>
                       <td>

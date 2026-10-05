@@ -64,7 +64,11 @@ export const firebaseService = {
   },
 
   clearConfig() {
-    localStorage.removeItem(FIREBASE_CONFIG_KEY);
+    try {
+      localStorage.removeItem(FIREBASE_CONFIG_KEY);
+    } catch (e) {
+      console.warn('Error clearing Firebase config:', e);
+    }
   },
 
   isConfigured() {
@@ -241,7 +245,9 @@ export const firebaseService = {
     } catch (e) {
       console.error('Logout error:', e);
     }
-    localStorage.removeItem(DEMO_USER_KEY);
+    try {
+      localStorage.removeItem(DEMO_USER_KEY);
+    } catch {}
     return { success: true };
   },
 

@@ -276,7 +276,7 @@ export default function QuickPointModal({
                     <span style={{ fontSize: '1.6rem' }}>🏐</span>
                     <span style={{ fontWeight: 800, fontSize: '0.92rem' }}>Service Ace</span>
                     <span style={{ fontSize: '0.72rem', color: '#6ee7b7' }}>
-                      {currentServer ? `#${currentServer.number} ${currentServer.name.split(' ')[0]}` : 'Server'}
+                      {currentServer ? `#${currentServer.number} ${currentServer.name ? currentServer.name.split(' ')[0] : 'Server'}` : 'Server'}
                     </span>
                   </button>
                 ) : (
@@ -481,7 +481,7 @@ export default function QuickPointModal({
                         }}
                       >
                         <span style={{ fontWeight: 800 }}>#{player.number}</span>
-                        <span>{player.name.split(' ')[0]}</span>
+                        <span>{player.name ? player.name.split(' ')[0] : 'Player'}</span>
                       </button>
                     );
                   })}

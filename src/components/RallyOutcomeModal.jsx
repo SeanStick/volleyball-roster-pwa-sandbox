@@ -282,7 +282,7 @@ export default function RallyOutcomeModal({
                   style={{ padding: '0.2rem 0.45rem', fontSize: '0.72rem' }}
                   title={`Kill by #${h.player.number} ${h.player.name}`}
                 >
-                  #{h.player.number} {h.player.name.split(' ')[0]} ({h.player.position === 'Outside Hitter' ? 'OH' : h.player.position === 'Middle Blocker' ? 'MB' : 'RS'})
+                  #{h.player.number} {h.player.name ? h.player.name.split(' ')[0] : 'Player'} ({h.player.position === 'Outside Hitter' ? 'OH' : h.player.position === 'Middle Blocker' ? 'MB' : 'RS'})
                 </button>
               ))}
             </div>
@@ -408,7 +408,7 @@ export default function RallyOutcomeModal({
                   style={{ padding: '0.2rem 0.45rem', fontSize: '0.72rem' }}
                   title={`Receive error by #${p.player.number} ${p.player.name}`}
                 >
-                  #{p.player.number} {p.player.name.split(' ')[0]} ({p.player.position === 'Libero' ? 'L' : 'Pass'})
+                  #{p.player.number} {p.player.name ? p.player.name.split(' ')[0] : 'Player'} ({p.player.position === 'Libero' ? 'L' : 'Pass'})
                 </button>
               ))}
             </div>

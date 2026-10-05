@@ -494,7 +494,7 @@ export default function LoadSavedLineupModal({
                               {zoneKey === 'pos4' ? 'P4 (FL)' : zoneKey === 'pos3' ? 'P3 (FM)' : 'P2 (FR)'}
                             </div>
                             <div style={{ fontSize: '0.75rem', fontWeight: 900, color: player ? '#ffffff' : '#64748b', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                              {player ? `#${player.jerseyNumber || ''} ${player.name.split(' ')[0]}` : '—'}
+                              {player ? `#${player.jerseyNumber || player.number || ''} ${player.name ? player.name.split(' ')[0] : 'Player'}` : '—'}
                             </div>
                           </div>
                         );
@@ -520,7 +520,7 @@ export default function LoadSavedLineupModal({
                               {zoneKey === 'pos5' ? 'P5 (BL)' : zoneKey === 'pos6' ? 'P6 (BM)' : 'P1 (BR/S)'}
                             </div>
                             <div style={{ fontSize: '0.75rem', fontWeight: 900, color: player ? '#ffffff' : '#64748b', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                              {player ? `#${player.jerseyNumber || ''} ${player.name.split(' ')[0]}` : '—'}
+                              {player ? `#${player.jerseyNumber || player.number || ''} ${player.name ? player.name.split(' ')[0] : 'Player'}` : '—'}
                             </div>
                           </div>
                         );

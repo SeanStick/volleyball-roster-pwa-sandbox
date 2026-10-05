@@ -535,7 +535,7 @@ export default function MatchStatsView({
 
                 {rStat.topError ? (
                   <div style={{ fontSize: '0.72rem', color: '#fca5a5', background: 'rgba(239, 68, 68, 0.1)', padding: '0.25rem 0.4rem', borderRadius: '4px', marginTop: '0.3rem' }}>
-                    Top Error: <strong>{rStat.topError.label.split('(')[0]}</strong> ({rStat.topError.count}x)
+                    Top Error: <strong>{rStat.topError?.label ? rStat.topError.label.split('(')[0] : 'Error'}</strong> ({rStat.topError.count}x)
                   </div>
                 ) : (
                   <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)', marginTop: '0.3rem' }}>
@@ -898,7 +898,7 @@ export default function MatchStatsView({
                     <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
                       {topPlayer && (
                         <span style={{ fontSize: '0.75rem', color: '#fca5a5' }}>
-                          Primary: #{topPlayer.number} {topPlayer.name.split(' ')[0]} ({topPlayerEntry[1]})
+                          Primary: #{topPlayer.number} {topPlayer.name ? topPlayer.name.split(' ')[0] : 'Player'} ({topPlayerEntry[1]})
                         </span>
                       )}
                       <span style={{ fontWeight: 800, color: '#f59e0b', fontSize: '0.95rem' }}>

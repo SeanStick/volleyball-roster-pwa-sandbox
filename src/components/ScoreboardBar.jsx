@@ -288,7 +288,7 @@ export default function ScoreboardBar({
       confetti({ particleCount: 35, spread: 50, origin: { y: 0.25 } });
     } else if (cmd.action === 'ace') {
       const serverId = lineup?.pos1;
-      const serverPlayer = roster.find(p => p.id === serverId);
+      const serverPlayer = Array.isArray(roster) ? roster.find(p => p.id === serverId) : null;
       const player = matchedPlayer || serverPlayer;
 
       onRallyWonByUs({

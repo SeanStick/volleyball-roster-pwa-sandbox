@@ -236,7 +236,7 @@ export default function AutoFillLineupModal({
                       ZONE {ZONE_LABELS[zk]?.num} (FRONT)
                     </div>
                     <div style={{ fontSize: '0.86rem', fontWeight: 800, color: '#f8fafc', marginTop: '0.15rem' }}>
-                      #{p?.number} {p ? p.name.split(' ')[0] : 'Empty'}
+                      #{p?.number} {p ? (p.name ? p.name.split(' ')[0] : 'Player') : 'Empty'}
                     </div>
                     <div style={{ fontSize: '0.72rem', color: isServerSlot ? '#f59e0b' : isLiberoSideoutSlot ? '#c084fc' : '#38bdf8', fontWeight: isServerSlot || isLiberoSideoutSlot ? 800 : 500 }}>
                       {isServerSlot ? '★ 1st Server' : isLiberoSideoutSlot ? '⇄ Libero Serves on Side-Out' : (p?.position || '—')}
@@ -264,7 +264,7 @@ export default function AutoFillLineupModal({
                       ZONE {ZONE_LABELS[zk]?.num} (BACK)
                     </div>
                     <div style={{ fontSize: '0.86rem', fontWeight: 800, color: '#f8fafc', marginTop: '0.15rem' }}>
-                      #{p?.number} {p ? p.name.split(' ')[0] : 'Empty'}
+                      #{p?.number} {p ? (p.name ? p.name.split(' ')[0] : 'Player') : 'Empty'}
                     </div>
                     <div style={{ fontSize: '0.72rem', color: isServerSlot ? '#f59e0b' : isLiberoSlot ? '#c084fc' : '#38bdf8', fontWeight: isServerSlot || isLiberoSlot ? 800 : 500 }}>
                       {isServerSlot ? '★ 1st Server' : isLiberoSlot ? '★ Libero (1st Server)' : (p?.position || '—')}

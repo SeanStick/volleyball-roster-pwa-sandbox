@@ -787,7 +787,11 @@ export const storageService = {
   },
 
   clearCachedUser() {
-    localStorage.removeItem(CACHED_USER_KEY);
+    try {
+      localStorage.removeItem(CACHED_USER_KEY);
+    } catch (e) {
+      console.warn('Error clearing cached user:', e);
+    }
   },
 
   // -------------------------------------------------------------

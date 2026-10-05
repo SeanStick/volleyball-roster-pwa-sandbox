@@ -65,7 +65,7 @@ export default function GymSidelineHUDModal({
     pointHistory = []
   } = matchStats || {};
 
-  const getPlayer = (id) => roster.find(p => p.id === id);
+  const getPlayer = (id) => (Array.isArray(roster) ? roster.find(p => p.id === id) : null);
 
   // Toggle true browser fullscreen
   const toggleBrowserFullscreen = () => {
@@ -88,21 +88,21 @@ export default function GymSidelineHUDModal({
 
   // Server player calculation
   const currentServer = (() => {
-    const teamLibero = roster.find(p => p.position === 'Libero' || p.isLibero);
+    const teamLibero = Array.isArray(roster) ? roster.find(p => p.position === 'Libero' || p.isLibero) : null;
     if (teamLibero && liberoServingRotation === rotation) {
       return teamLibero;
     }
-    return getPlayer(lineup.pos1);
+    return getPlayer(lineup?.pos1);
   })();
 
   // Next Server on Sideout calculation
   const nextRotation = (rotation % 6) + 1;
   const nextServer = (() => {
-    const teamLibero = roster.find(p => p.position === 'Libero' || p.isLibero);
+    const teamLibero = Array.isArray(roster) ? roster.find(p => p.position === 'Libero' || p.isLibero) : null;
     if (teamLibero && liberoServingRotation === nextRotation) {
       return teamLibero;
     }
-    return getPlayer(lineup.pos2);
+    return getPlayer(lineup?.pos2);
   })();
 
   const isReceiving = phase === 'receive';
@@ -362,7 +362,7 @@ export default function GymSidelineHUDModal({
                 >
                   <span className="hud-player-zone-tag">{zone.roman} ({zone.label})</span>
                   <div className="hud-player-num">{p ? `#${p.number}` : '--'}</div>
-                  <div className="hud-player-name">{p ? p.name.split(' ')[0] : 'Empty'}</div>
+                  <div className="hud-player-name">{p ? (p.name ? p.name.split(' ')[0] : `Player #${p.number || ''}`) : 'Empty'}</div>
                   <div className="hud-player-pos">{p ? p.position : ''}</div>
                 </div>
               );

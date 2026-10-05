@@ -205,8 +205,8 @@ export default function NextUpBanner({
             </span>
             <strong style={{ color: '#ffffff', fontWeight: 900 }}>
               {isReceiving
-                ? sideoutServerPlayer ? `#${sideoutServerPlayer.number} ${sideoutServerPlayer.name.split(' ')[0]}` : 'Vacant'
-                : currentServerPlayer ? `#${currentServerPlayer.number} ${currentServerPlayer.name.split(' ')[0]}` : 'Vacant'
+                ? sideoutServerPlayer ? `#${sideoutServerPlayer.number} ${sideoutServerPlayer.name ? sideoutServerPlayer.name.split(' ')[0] : 'Server'}` : 'Vacant'
+                : currentServerPlayer ? `#${currentServerPlayer.number} ${currentServerPlayer.name ? currentServerPlayer.name.split(' ')[0] : 'Server'}` : 'Vacant'
               }
             </strong>
           </div>
@@ -396,7 +396,7 @@ export default function NextUpBanner({
                     {p ? `#${p.number}` : '--'}
                   </strong>
                   <span style={{ fontSize: '0.68rem', color: '#cbd5e1', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: '100%' }}>
-                    {p ? p.name.split(' ')[0] : 'Empty'}
+                    {p ? (p.name ? p.name.split(' ')[0] : `Player #${p.number || ''}`) : 'Empty'}
                   </span>
                   <span style={{ fontSize: '0.6rem', color: '#94a3b8', textTransform: 'uppercase', marginTop: '0.1rem' }}>
                     {p ? p.position : ''}

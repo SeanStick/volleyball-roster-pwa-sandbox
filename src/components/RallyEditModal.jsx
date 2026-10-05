@@ -279,7 +279,7 @@ export default function RallyEditModal({
                         textOverflow: 'ellipsis'
                       }}
                     >
-                      #{p.number} {p.name.split(' ')[0]}
+                      #{p.number} {p.name ? p.name.split(' ')[0] : 'Player'}
                     </button>
                   );
                 })}
@@ -349,7 +349,7 @@ export default function RallyEditModal({
                         textOverflow: 'ellipsis'
                       }}
                     >
-                      #{p.number} {p.name.split(' ')[0]}
+                      #{p.number} {p.name ? p.name.split(' ')[0] : 'Player'}
                     </button>
                   );
                 })}

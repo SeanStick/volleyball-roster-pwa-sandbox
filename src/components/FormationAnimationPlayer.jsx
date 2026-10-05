@@ -140,7 +140,7 @@ export default function FormationAnimationPlayer({
                   title={`Jump to Stage ${idx + 1}: ${stg.name}`}
                 >
                   <div className="stage-num-badge">{idx + 1}</div>
-                  <span className="stage-label-text">{stg.name.split('. ')[1] || stg.name}</span>
+                  <span className="stage-label-text">{stg.name ? (stg.name.split('. ')[1] || stg.name) : `Stage ${idx + 1}`}</span>
                 </button>
               );
             })}

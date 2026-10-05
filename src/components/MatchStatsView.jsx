@@ -23,6 +23,7 @@ import {
   Archive,
   BarChart3,
   Check,
+  Clock,
   Zap,
   Info,
   Settings,
@@ -58,7 +59,8 @@ export default function MatchStatsView({
   onUpdatePoint,
   onDeletePoint,
   onOpenGeminiCoach,
-  isLoggedIn = false
+  isLoggedIn = false,
+  onOpenPlayingTime
 }) {
   const [selectedSetFilter, setSelectedSetFilter] = useState('ALL');
   const [suggestionFilter, setSuggestionFilter] = useState('ALL'); // 'ALL' | 'CRITICAL' | 'TACTICAL' | 'ROTATION' | 'HISTORICAL'
@@ -295,6 +297,18 @@ export default function MatchStatsView({
             >
               <Settings size={15} />
               <span>Match Info</span>
+            </button>
+          )}
+
+          {onOpenPlayingTime && (
+            <button
+              className="btn btn-secondary"
+              onClick={onOpenPlayingTime}
+              title="Open Player Participation, Rotations Played & Plus/Minus Tracker"
+              style={{ borderColor: 'rgba(56, 189, 248, 0.45)', color: '#38bdf8', fontWeight: 700 }}
+            >
+              <Clock size={16} color="#38bdf8" />
+              <span>Playing Time & Rotations</span>
             </button>
           )}
 

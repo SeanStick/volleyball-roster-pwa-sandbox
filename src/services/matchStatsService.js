@@ -923,3 +923,88 @@ export function generateTacticalSuggestions({
   return suggestions;
 }
 
+/**
+ * Computes Playing Time & Rotational Participation for all rostered players.
+ * Tracks:
+ * - ralliesPlayed: Total rallies/points player was on the floor
+ * - percentagePlayed: % of team's match points played
+ * - setsPlayed: count of distinct sets appeared in
+ * - rotationsCount: count of distinct rotations played
+ * - plusMinus: net score point differential while on court (+ for team points, - for opponent points)
+ */
+export function computePlayingTimeStats(pointHistory = [], roster = [], matchStats = {}, currentLineup = {}) {
+  if (!Array.isArray(roster)) return [];
+
+  const totalMatchRallies = pointHistory.length;
+  const currentOnCourtIds = Object.values(currentLineup || {}).filter(Boolean);
+
+  const statsMap = {};
+  roster.forEach(p => {
+    statsMap[p.id] = {
+      player: p,
+      ralliesPlayed: 0,
+      totalMatchRallies,
+      percentagePlayed: 0,
+      setsSet: new Set(),
+      rotationsSet: new Set(),
+      plusMinus: 0,
+      kills: 0,
+      aces: 0,
+      blocks: 0,
+      errors: 0
+    };
+  });
+
+  pointHistory.forEach(pt => {
+    let onCourt = pt.onCourtPlayerIds || (pt.lineup ? Object.values(pt.lineup).filter(Boolean) : null);
+    if (!onCourt || onCourt.length === 0) {
+      onCourt = currentOnCourtIds;
+    }
+
+    const setNum = pt.setNumber || 1;
+    const rot = pt.rotation || 1;
+
+    onCourt.forEach(pId => {
+      if (statsMap[pId]) {
+        statsMap[pId].ralliesPlayed += 1;
+        statsMap[pId].setsSet.add(setNum);
+        statsMap[pId].rotationsSet.add(rot);
+
+        if (pt.pointWonBy === 'us') {
+          statsMap[pId].plusMinus += 1;
+        } else {
+          statsMap[pId].plusMinus -= 1;
+        }
+      }
+    });
+
+    if (pt.earnedPlayerId && statsMap[pt.earnedPlayerId]) {
+      if (pt.earnedType === 'kill') statsMap[pt.earnedPlayerId].kills += 1;
+      if (pt.earnedType === 'ace') statsMap[pt.earnedPlayerId].aces += 1;
+      if (pt.earnedType === 'block') statsMap[pt.earnedPlayerId].blocks += 1;
+    }
+    if (pt.errorPlayerId && statsMap[pt.errorPlayerId]) {
+      statsMap[pt.errorPlayerId].errors += 1;
+    }
+  });
+
+  return roster.map(p => {
+    const s = statsMap[p.id];
+    const pct = totalMatchRallies > 0 ? Math.round((s.ralliesPlayed / totalMatchRallies) * 100) : (currentOnCourtIds.includes(p.id) ? 100 : 0);
+    return {
+      player: p,
+      ralliesPlayed: s.ralliesPlayed,
+      totalMatchRallies,
+      percentagePlayed: pct,
+      setsPlayed: s.setsSet.size,
+      rotationsCount: s.rotationsSet.size,
+      rotationsList: Array.from(s.rotationsSet).sort((a, b) => a - b),
+      plusMinus: s.plusMinus,
+      kills: s.kills,
+      aces: s.aces,
+      blocks: s.blocks,
+      errors: s.errors
+    };
+  }).sort((a, b) => b.ralliesPlayed - a.ralliesPlayed);
+}
+

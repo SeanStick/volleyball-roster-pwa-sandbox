@@ -27,7 +27,8 @@ import {
   Settings,
   X,
   FileText,
-  Eye
+  Eye,
+  Maximize2
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
 import VolleyballIcon from './icons/VolleyballIcon';
@@ -73,7 +74,9 @@ export default function ScoreboardBar({
   onNavigateTab,
   onOpenGeminiCoach,
   isLoggedIn = false,
-  onOpenR2LineupCard
+  onOpenR2LineupCard,
+  onOpenGymHud,
+  onOpenPlayingTime
 }) {
   const [isPointModalOpen, setIsPointModalOpen] = useState(false);
   const [scoringTeam, setScoringTeam] = useState('us'); // 'us' | 'opponent'
@@ -1104,6 +1107,30 @@ export default function ScoreboardBar({
               </span>
             )}
           </button>
+
+          {/* 📱 Gym Sideline HUD Mode Button */}
+          {onOpenGymHud && (
+            <button
+              type="button"
+              className="btn btn-secondary btn-sm"
+              onClick={onOpenGymHud}
+              style={{
+                background: 'linear-gradient(135deg, rgba(16, 185, 129, 0.22), rgba(5, 150, 105, 0.35))',
+                borderColor: 'rgba(16, 185, 129, 0.55)',
+                color: '#6ee7b7',
+                fontSize: '0.78rem',
+                fontWeight: 800,
+                padding: '0.4rem 0.65rem',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '0.35rem'
+              }}
+              title="Full-Screen High-Contrast Gym Sideline Display (15-20ft visibility)"
+            >
+              <Maximize2 size={13} color="#34d399" />
+              <span>Gym HUD</span>
+            </button>
+          )}
         </div>
       </div>
 
@@ -1487,6 +1514,60 @@ export default function ScoreboardBar({
                       <FileText size={18} color="#38bdf8" />
                       <div style={{ fontWeight: 800, fontSize: '0.85rem' }}>Official R2 Card</div>
                       <div style={{ fontSize: '0.7rem', color: '#bae6fd' }}>6-Box Ref Sheet</div>
+                    </button>
+                  )}
+
+                  {onOpenGymHud && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setIsMatchToolsOpen(false);
+                        onOpenGymHud();
+                      }}
+                      style={{
+                        background: 'linear-gradient(135deg, rgba(16, 185, 129, 0.2), rgba(5, 150, 105, 0.35))',
+                        border: '1.5px solid rgba(16, 185, 129, 0.5)',
+                        borderRadius: 'var(--radius-md)',
+                        padding: '0.75rem',
+                        display: 'flex',
+                        flexDirection: 'column',
+                        alignItems: 'flex-start',
+                        gap: '0.4rem',
+                        cursor: 'pointer',
+                        color: '#fff',
+                        textAlign: 'left'
+                      }}
+                    >
+                      <Maximize2 size={18} color="#34d399" />
+                      <div style={{ fontWeight: 800, fontSize: '0.85rem' }}>Gym Sideline HUD</div>
+                      <div style={{ fontSize: '0.7rem', color: '#a7f3d0' }}>Giant 15-20ft Display</div>
+                    </button>
+                  )}
+
+                  {onOpenPlayingTime && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setIsMatchToolsOpen(false);
+                        onOpenPlayingTime();
+                      }}
+                      style={{
+                        background: 'linear-gradient(135deg, rgba(245, 158, 11, 0.2), rgba(217, 119, 6, 0.35))',
+                        border: '1.5px solid rgba(245, 158, 11, 0.5)',
+                        borderRadius: 'var(--radius-md)',
+                        padding: '0.75rem',
+                        display: 'flex',
+                        flexDirection: 'column',
+                        alignItems: 'flex-start',
+                        gap: '0.4rem',
+                        cursor: 'pointer',
+                        color: '#fff',
+                        textAlign: 'left'
+                      }}
+                    >
+                      <Clock size={18} color="#f59e0b" />
+                      <div style={{ fontWeight: 800, fontSize: '0.85rem' }}>Playing Time Tracker</div>
+                      <div style={{ fontSize: '0.7rem', color: '#fde68a' }}>Rotations & +/- Rating</div>
                     </button>
                   )}
 

@@ -45,6 +45,8 @@ import SetBreakModal from './components/SetBreakModal';
 import MatchRecapModal from './components/MatchRecapModal';
 import LineupStudioModal from './components/LineupStudioModal';
 import OfficialLineupCardModal from './components/OfficialLineupCardModal';
+import GymSidelineHUDModal from './components/GymSidelineHUDModal';
+import PlayingTimeModal from './components/PlayingTimeModal';
 import NotificationSettingsModal from './components/NotificationSettingsModal';
 import AutoSubConfirmModal from './components/AutoSubConfirmModal';
 import GeminiCoachModal from './components/GeminiCoachModal';
@@ -94,6 +96,8 @@ export default function App() {
   const [daySchedule, setDaySchedule] = useState(() => storageService.getDaySchedule());
   const [isLineupStudioOpen, setIsLineupStudioOpen] = useState(false);
   const [isR2LineupCardOpen, setIsR2LineupCardOpen] = useState(false);
+  const [isGymHudOpen, setIsGymHudOpen] = useState(false);
+  const [isPlayingTimeOpen, setIsPlayingTimeOpen] = useState(false);
   const [savedLineupPresets, setSavedLineupPresets] = useState(() => storageService.getSavedLineups());
   const [isFirebaseSettingsModalOpen, setIsFirebaseSettingsModalOpen] = useState(false);
   const [isPlayerModalOpen, setIsPlayerModalOpen] = useState(false);
@@ -1300,6 +1304,8 @@ export default function App() {
       rotation,
       phase,
       setNumber: matchStats?.setNumber || 1,
+      lineup: { ...lineup },
+      onCourtPlayerIds: Object.values(lineup || {}).filter(Boolean),
       ...pointDetails
     };
 
@@ -1417,6 +1423,8 @@ export default function App() {
       rotation,
       phase,
       setNumber: matchStats?.setNumber || 1,
+      lineup: { ...lineup },
+      onCourtPlayerIds: Object.values(lineup || {}).filter(Boolean),
       ...pointDetails
     };
 
@@ -2247,6 +2255,8 @@ export default function App() {
           onOpenSubModal={() => setActiveTab('court')}
           onOpenLineupStudio={() => setIsLineupStudioOpen(true)}
           onOpenR2LineupCard={() => setIsR2LineupCardOpen(true)}
+          onOpenGymHud={() => setIsGymHudOpen(true)}
+          onOpenPlayingTime={() => setIsPlayingTimeOpen(true)}
           subHistory={subHistory}
           maxSubs={maxSubs}
           lineup={lineup}
@@ -2582,6 +2592,7 @@ export default function App() {
           onArchiveMatch={handleArchiveMatch}
           onDeleteMatchHistory={handleDeleteMatchHistory}
           onOpenMatchSetup={() => setIsMatchSetupModalOpen(true)}
+          onOpenPlayingTime={() => setIsPlayingTimeOpen(true)}
           onUpdatePoint={handleUpdatePoint}
           onDeletePoint={handleDeletePointById}
           onOpenGeminiCoach={handleOpenGeminiCoach}
@@ -2860,6 +2871,41 @@ export default function App() {
           opponentName={matchStats?.opponentName || 'Opponent'}
           teamSettings={teamSettings}
           initialQuestion={geminiCoachQuestion}
+        />
+      )}
+
+      {/* 📱 Gym Sideline HUD Mode (15-20ft High-Contrast Sideline Display) */}
+      {isGymHudOpen && (
+        <GymSidelineHUDModal
+          isOpen={isGymHudOpen}
+          onClose={() => setIsGymHudOpen(false)}
+          matchStats={matchStats}
+          lineup={lineup}
+          roster={roster}
+          rotation={rotation}
+          phase={phase}
+          liberoServingRotation={liberoServingRotation}
+          liberoExchanges={liberoExchanges}
+          onPlusUs={handleRallyWonByUs}
+          onPlusOpponent={handleRallyWonByOpponent}
+          onUndoLastPoint={handleUndoLastPoint}
+          onCallTimeout={handleCallTimeout}
+          onOpenR2LineupCard={() => setIsR2LineupCardOpen(true)}
+          onOpenGeminiCoach={handleOpenGeminiCoach}
+          teamName={teams.find(t => t.id === activeTeamId)?.name || teamSettings?.name || 'Our Team'}
+        />
+      )}
+
+      {/* ⏱️ Playing Time & Rotations Tracker Modal */}
+      {isPlayingTimeOpen && (
+        <PlayingTimeModal
+          isOpen={isPlayingTimeOpen}
+          onClose={() => setIsPlayingTimeOpen(false)}
+          roster={roster}
+          pointHistory={matchStats?.pointHistory || []}
+          matchStats={matchStats}
+          currentLineup={lineup}
+          teamName={teams.find(t => t.id === activeTeamId)?.name || teamSettings?.name || 'Our Team'}
         />
       )}
     </div>

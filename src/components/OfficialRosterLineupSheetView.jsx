@@ -656,25 +656,33 @@ export default function OfficialRosterLineupSheetView({
             <span>Official Lineup Sheet</span>
           </div>
 
-          {/* View Mode Switcher: Mobile Cards vs Print Sheet */}
-          <div className="sheet-view-mode-toggle">
+          {/* View Mode Switcher: Mobile View vs Full Sheet */}
+          <div className="sheet-view-mode-toggle" role="group" aria-label="View Mode">
             <button
               type="button"
               className={`sheet-view-btn ${viewMode === 'cards' ? 'active' : ''}`}
-              onClick={() => setViewMode('cards')}
-              title="Switch to Mobile Coach Cards view"
+              onClick={() => {
+                setViewMode('cards');
+                showToast('Switched to Mobile View');
+              }}
+              title="Switch to Mobile View"
+              id="btn-view-mode-cards"
             >
               <Smartphone size={14} />
-              <span>Mobile Cards</span>
+              <span>Mobile View</span>
             </button>
             <button
               type="button"
               className={`sheet-view-btn ${viewMode === 'paper' ? 'active' : ''}`}
-              onClick={() => setViewMode('paper')}
-              title="Switch to Official 8.5x11 Scoresheet view"
+              onClick={() => {
+                setViewMode('paper');
+                showToast('Switched to Full Sheet View');
+              }}
+              title="Switch to Full 8.5x11 Scoresheet view"
+              id="btn-view-mode-paper"
             >
               <FileText size={14} />
-              <span>Print Sheet</span>
+              <span>Full Sheet</span>
             </button>
           </div>
 
@@ -684,9 +692,10 @@ export default function OfficialRosterLineupSheetView({
             className="sheet-btn sheet-btn-primary"
             onClick={handlePrint}
             title="Print standard 8.5x11 official sheet"
+            id="btn-action-print"
           >
             <Printer size={15} />
-            <span>Print Sheet</span>
+            <span>Print</span>
           </button>
         </div>
 
@@ -1103,6 +1112,31 @@ export default function OfficialRosterLineupSheetView({
       )}
 
       {/* -------------------------------------------------------------
+          FULL PAPER SCORESHEET MOBILE BANNER
+          ------------------------------------------------------------- */}
+      {viewMode === 'paper' && (
+        <div className="sheet-paper-mobile-banner no-print">
+          <div className="sheet-paper-banner-content">
+            <FileText size={16} color="#ff6b35" />
+            <span>Full 8.5" × 11" Scoresheet</span>
+          </div>
+          <button
+            type="button"
+            className="sheet-back-to-cards-btn"
+            onClick={() => {
+              setViewMode('cards');
+              showToast('Switched to Mobile View');
+            }}
+            title="Return to Mobile View"
+            id="btn-banner-return-mobile-view"
+          >
+            <Smartphone size={14} />
+            <span>Back to Mobile View</span>
+          </button>
+        </div>
+      )}
+
+      {/* -------------------------------------------------------------
           VIEWPORT & AUTHENTIC 8.5" x 11" PAPER DOCUMENT CANVAS
           (Hidden on screen when in Mobile Cards view, but ALWAYS prints)
           ------------------------------------------------------------- */}
@@ -1437,6 +1471,23 @@ export default function OfficialRosterLineupSheetView({
             </div>
           </div>
         </div>
+      )}
+
+      {/* Floating Thumb Button: Return to Mobile View (Visible on Mobile/Tablet when in Paper View) */}
+      {viewMode === 'paper' && (
+        <button
+          type="button"
+          className="mobile-back-to-cards-float no-print"
+          onClick={() => {
+            setViewMode('cards');
+            showToast('Switched to Mobile View');
+          }}
+          title="Return to Mobile View"
+          id="btn-return-mobile-view-float"
+        >
+          <Smartphone size={17} />
+          <span>← Back to Mobile View</span>
+        </button>
       )}
     </div>
   );

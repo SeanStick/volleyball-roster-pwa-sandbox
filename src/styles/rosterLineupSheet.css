@@ -595,6 +595,155 @@
     -webkit-print-color-adjust: exact;
     print-color-adjust: exact;
   }
+
+  .roster-court-guide {
+    border: 1.5px solid #000000 !important;
+    background: #ffffff !important;
+    page-break-inside: avoid !important;
+  }
+
+  .court-guide-title {
+    color: #000000 !important;
+  }
+
+  .court-guide-footer {
+    color: #000000 !important;
+    border-top: 1px solid #000000 !important;
+  }
+
+  .court-game-pill,
+  .court-guide-game-selector {
+    display: none !important;
+  }
+
+  .serve-player-lastname {
+    color: #000000 !important;
+    font-weight: 800 !important;
+  }
+}
+
+/* -------------------------------------------------------------
+   COURT ZONES DIAGRAM ON SHEET
+   ------------------------------------------------------------- */
+.roster-court-guide {
+  margin-top: 0.14in;
+  border: 1.5px solid #000000;
+  background: #ffffff;
+  padding: 0.08in 0.1in 0.06in 0.1in;
+  display: flex;
+  flex-direction: column;
+}
+
+.court-guide-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.06in;
+  padding-bottom: 0.04in;
+  border-bottom: 1.2px solid #000000;
+}
+
+.court-guide-title {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-weight: 900;
+  font-size: 0.74rem;
+  letter-spacing: 0.03em;
+  color: #000000;
+  text-transform: uppercase;
+}
+
+.court-guide-game-selector {
+  display: flex;
+  align-items: center;
+  gap: 0.2rem;
+}
+
+.court-game-pill {
+  background: #f1f5f9;
+  border: 1px solid #cbd5e1;
+  border-radius: 4px;
+  font-size: 0.65rem;
+  font-weight: 800;
+  padding: 1px 5px;
+  cursor: pointer;
+  color: #334155;
+  transition: all 0.12s ease;
+}
+
+.court-game-pill:hover {
+  background: #e2e8f0;
+  color: #0f172a;
+}
+
+.court-game-pill.active {
+  background: #ff6b35;
+  border-color: #ea580c;
+  color: #ffffff;
+}
+
+.court-diagram-canvas-wrap {
+  width: 100%;
+  display: flex;
+  justify-content: center;
+}
+
+.court-diagram-canvas-wrap svg {
+  width: 100%;
+  height: auto;
+  max-height: 2.3in;
+  display: block;
+}
+
+.court-guide-footer {
+  margin-top: 0.05in;
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.64rem;
+  color: #334155;
+  border-top: 1px dotted #94a3b8;
+  padding-top: 0.03in;
+}
+
+.court-legend-item strong {
+  color: #000000;
+}
+
+/* -------------------------------------------------------------
+   SERVE ORDER PLAYER NO. & LAST NAME
+   ------------------------------------------------------------- */
+.game-table.with-names .game-col-order {
+  width: 38%;
+}
+
+.game-table.with-names .game-col-player {
+  width: 62%;
+}
+
+.serve-player-cell {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.35rem;
+  width: 100%;
+  white-space: nowrap;
+}
+
+.serve-player-num {
+  font-weight: 900;
+  font-size: 0.92rem;
+  letter-spacing: 0.02em;
+}
+
+.serve-player-lastname {
+  font-weight: 700;
+  font-size: 0.8rem;
+  text-transform: capitalize;
+  color: #0f172a;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 105px;
 }
 
 /* -------------------------------------------------------------

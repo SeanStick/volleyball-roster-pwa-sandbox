@@ -16,8 +16,11 @@ import {
   Info,
   CheckSquare,
   Square,
-  Share2
+  Share2,
+  LayoutGrid,
+  UserCheck
 } from 'lucide-react';
+import VolleyballIcon from './icons/VolleyballIcon';
 import '../styles/rosterLineupSheet.css';
 
 /**
@@ -102,6 +105,243 @@ function HighSchoolAthleticUnionSeal({ size = 56 }) {
 }
 
 /**
+ * Volleyball Court Zones & Starting Positions Diagram (SVG)
+ * Shows official court zones (Front Row: 4, 3, 2; Back Row: 5, 6, 1),
+ * Net, 10-ft Attack Line, Service Zone, clockwise rotation flow, and player starting assignments.
+ */
+function VolleyballCourtZonesDiagram({
+  gameLineup = {},
+  getPlayer,
+  showPlayers = true
+}) {
+  const zones = [
+    // Front Row (left to right: Z4, Z3, Z2)
+    {
+      num: 4,
+      name: 'Left Front',
+      abbr: 'LF',
+      key: 'pos4',
+      x: 15,
+      y: 26,
+      w: 101,
+      h: 52,
+      isFront: true
+    },
+    {
+      num: 3,
+      name: 'Middle Front',
+      abbr: 'MF',
+      key: 'pos3',
+      x: 119,
+      y: 26,
+      w: 102,
+      h: 52,
+      isFront: true
+    },
+    {
+      num: 2,
+      name: 'Right Front',
+      abbr: 'RF',
+      key: 'pos2',
+      x: 224,
+      y: 26,
+      w: 101,
+      h: 52,
+      isFront: true
+    },
+    // Back Row (left to right: Z5, Z6, Z1)
+    {
+      num: 5,
+      name: 'Left Back',
+      abbr: 'LB',
+      key: 'pos5',
+      x: 15,
+      y: 81,
+      w: 101,
+      h: 84,
+      isFront: false
+    },
+    {
+      num: 6,
+      name: 'Middle Back',
+      abbr: 'MB',
+      key: 'pos6',
+      x: 119,
+      y: 81,
+      w: 102,
+      h: 84,
+      isFront: false
+    },
+    {
+      num: 1,
+      name: 'Right Back',
+      abbr: 'RB (Server)',
+      key: 'pos1',
+      x: 224,
+      y: 81,
+      w: 101,
+      h: 84,
+      isFront: false,
+      isServer: true
+    }
+  ];
+
+  return (
+    <svg viewBox="0 0 340 206" width="100%" height="auto" xmlns="http://www.w3.org/2000/svg">
+      <defs>
+        {/* Striped Antenna Pattern */}
+        <pattern id="antennaStripes" width="4" height="4" patternUnits="userSpaceOnUse" patternTransform="rotate(45)">
+          <rect width="2" height="4" fill="#ef4444" />
+          <rect x="2" width="2" height="4" fill="#ffffff" />
+        </pattern>
+      </defs>
+
+      {/* Net & Opponent indicator at top */}
+      <text x="170" y="14" textAnchor="middle" fontSize="7.8" fontWeight="900" fill="#0f172a" letterSpacing="0.08em">
+        ▲ NET (CENTER LINE) / OPPONENT SIDE ▲
+      </text>
+
+      {/* Net Bar */}
+      <rect x="11" y="19" width="318" height="6" fill="#1e293b" stroke="#000000" strokeWidth="1" />
+      {/* Antennas */}
+      <rect x="13" y="5" width="3" height="20" fill="url(#antennaStripes)" stroke="#000000" strokeWidth="0.5" />
+      <rect x="324" y="5" width="3" height="20" fill="url(#antennaStripes)" stroke="#000000" strokeWidth="0.5" />
+
+      {/* Court Boundary Rectangle (Half Court) */}
+      <rect x="15" y="25" width="310" height="140" fill="#ffffff" stroke="#000000" strokeWidth="1.8" />
+
+      {/* 10-ft (3M) Attack Line dividing Front Row & Back Row */}
+      <line x1="15" y1="78" x2="325" y2="78" stroke="#000000" strokeWidth="1.8" strokeDasharray="5,2" />
+      <rect x="106" y="72" width="128" height="12" rx="2" fill="#ffffff" stroke="#000000" strokeWidth="0.8" />
+      <text x="170" y="81" textAnchor="middle" fontSize="6.4" fontWeight="900" fill="#000000" letterSpacing="0.04em">
+        10-FT (3M) ATTACK LINE
+      </text>
+
+      {/* Vertical Zone Dividers */}
+      <line x1="117" y1="25" x2="117" y2="165" stroke="#000000" strokeWidth="1" strokeDasharray="3,2" />
+      <line x1="222" y1="25" x2="222" y2="165" stroke="#000000" strokeWidth="1" strokeDasharray="3,2" />
+
+      {/* Render 6 Zones */}
+      {zones.map(z => {
+        const playerId = gameLineup[z.key];
+        const player = getPlayer ? getPlayer(playerId) : null;
+        const { lastName } = parsePlayerName(player?.name || '');
+        const isCap = player?.isCaptain;
+        const isLib = player?.position === 'Libero' || player?.isLibero;
+        let numStr = player?.number !== undefined && player?.number !== null ? String(player.number) : '';
+        if (isCap) numStr += ' C';
+        const playerLabel = player ? `#${numStr} ${lastName || player.name}${isLib ? ' (L)' : ''}` : null;
+
+        const centerX = z.x + z.w / 2;
+
+        return (
+          <g key={z.num}>
+            {/* Zone background area */}
+            <rect
+              x={z.x + 1}
+              y={z.y + 1}
+              width={z.w - 2}
+              height={z.h - 2}
+              fill={z.isFront ? 'rgba(248, 250, 252, 0.7)' : '#ffffff'}
+            />
+
+            {/* Zone Number Badge */}
+            <text
+              x={centerX}
+              y={z.isFront ? z.y + 16 : z.y + 17}
+              textAnchor="middle"
+              fontSize="10"
+              fontWeight="900"
+              fill="#0f172a"
+              letterSpacing="0.04em"
+            >
+              ZONE {z.num}
+            </text>
+
+            {/* Zone Position Subtitle */}
+            <text
+              x={centerX}
+              y={z.isFront ? z.y + 26 : z.y + 28}
+              textAnchor="middle"
+              fontSize="7"
+              fontWeight="700"
+              fill="#475569"
+            >
+              {z.name} ({z.abbr})
+            </text>
+
+            {/* Server Badge for Zone 1 */}
+            {z.isServer && (
+              <g>
+                <rect
+                  x={centerX - 35}
+                  y={z.y + 32}
+                  width="70"
+                  height="12"
+                  rx="2"
+                  fill="#fff7ed"
+                  stroke="#ea580c"
+                  strokeWidth="0.8"
+                />
+                <text
+                  x={centerX}
+                  y={z.y + 40.5}
+                  textAnchor="middle"
+                  fontSize="6.2"
+                  fontWeight="900"
+                  fill="#ea580c"
+                  letterSpacing="0.03em"
+                >
+                  ★ SERVING POS
+                </text>
+              </g>
+            )}
+
+            {/* Player Info Badge (if selected) */}
+            {showPlayers && playerLabel && (
+              <g>
+                <rect
+                  x={centerX - 44}
+                  y={z.isFront ? z.y + 31 : (z.isServer ? z.y + 49 : z.y + 37)}
+                  width="88"
+                  height="16"
+                  rx="3"
+                  fill="#ffffff"
+                  stroke="#000000"
+                  strokeWidth="1.1"
+                />
+                <text
+                  x={centerX}
+                  y={z.isFront ? z.y + 42.5 : (z.isServer ? z.y + 60.5 : z.y + 48.5)}
+                  textAnchor="middle"
+                  fontSize="7.5"
+                  fontWeight="800"
+                  fill="#000000"
+                >
+                  {playerLabel}
+                </text>
+              </g>
+            )}
+          </g>
+        );
+      })}
+
+      {/* Serving Zone Outside Baseline */}
+      <line x1="224" y1="165" x2="224" y2="173" stroke="#000000" strokeWidth="1.5" />
+      <line x1="325" y1="165" x2="325" y2="173" stroke="#000000" strokeWidth="1.5" />
+      <text x="274" y="179" textAnchor="middle" fontSize="7.2" fontWeight="900" fill="#000000">
+        ▲ SERVE AREA (Behind Zone 1) ▲
+      </text>
+
+      {/* Rotation Flow Legend */}
+      <text x="170" y="198" textAnchor="middle" fontSize="7.2" fontWeight="900" fill="#0f172a" letterSpacing="0.02em">
+        ⟳ CLOCKWISE ROTATION: Z1 ➜ Z6 ➜ Z5 ➜ Z4 ➜ Z3 ➜ Z2 ➜ Z1
+      </text>
+    </svg>
+  );
+}
+
+/**
  * OfficialRosterLineupSheetView
  * 
  * Exact 1:1 recreation of the official NFHS / IGHSAU State High School Athletic Union
@@ -124,6 +364,13 @@ export default function OfficialRosterLineupSheetView({
   const [toastMessage, setToastMessage] = useState('');
   const [isInstructionsOpen, setIsInstructionsOpen] = useState(false);
   const [zoomLevel, setZoomLevel] = useState(1); // 1 = 100%
+
+  // Toggle to show number & last name in serve order
+  const [showLastNameInServeOrder, setShowLastNameInServeOrder] = useState(false);
+  // Toggle to show court zones diagram on sheet
+  const [showCourtDiagram, setShowCourtDiagram] = useState(true);
+  // Selected game for court diagram (1..5 or 'zones')
+  const [courtDiagramGame, setCourtDiagramGame] = useState(1);
 
   // Serving Order Order Mode: 'nfhs_smart' (Zone 1 for serve, Zone 2 for receive sideout) vs 'zone_order' (always Z1=I)
   const [serveOrderMode, setServeOrderMode] = useState('nfhs_smart');
@@ -324,10 +571,12 @@ export default function OfficialRosterLineupSheetView({
     });
   };
 
-  // Generate 22 rows for the official roster table
+  // Generate rows for the official roster table
   const rosterRows = useMemo(() => {
     const rows = [];
-    const totalRowsCount = 22; // NFHS standard sheet height
+    // If court diagram is enabled on sheet, keep roster table compact (minimum 12 or roster length)
+    // If court diagram is off, show the full 22 standard ruled lines
+    const totalRowsCount = showCourtDiagram ? Math.max(12, Math.min(22, roster.length)) : 22;
 
     for (let i = 0; i < totalRowsCount; i++) {
       if (i < roster.length) {
@@ -361,7 +610,7 @@ export default function OfficialRosterLineupSheetView({
       }
     }
     return rows;
-  }, [roster]);
+  }, [roster, showCourtDiagram]);
 
   return (
     <div className="roster-lineup-sheet-container">
@@ -449,6 +698,40 @@ export default function OfficialRosterLineupSheetView({
           >
             <Layers size={14} />
             <span>Copy to Games 2-5</span>
+          </button>
+
+          {/* Toggle: Number and Last Name in Serve Order */}
+          <button
+            type="button"
+            className={`sheet-btn ${showLastNameInServeOrder ? 'sheet-btn-primary' : 'sheet-btn-secondary'}`}
+            onClick={() => {
+              setShowLastNameInServeOrder(prev => {
+                const next = !prev;
+                showToast(next ? 'Showing Number & Last Name in Lineup' : 'Showing Number Only in Lineup');
+                return next;
+              });
+            }}
+            title="Toggle showing player uniform number and last name in serving order"
+          >
+            <UserCheck size={14} />
+            <span>{showLastNameInServeOrder ? 'Names in Lineup: ON' : 'Names in Lineup: OFF'}</span>
+          </button>
+
+          {/* Toggle: Court Zones Diagram on Sheet */}
+          <button
+            type="button"
+            className={`sheet-btn ${showCourtDiagram ? 'sheet-btn-accent' : 'sheet-btn-secondary'}`}
+            onClick={() => {
+              setShowCourtDiagram(prev => {
+                const next = !prev;
+                showToast(next ? 'Court Zones Diagram displayed on sheet' : 'Full 22 ruled lines displayed');
+                return next;
+              });
+            }}
+            title="Toggle Court Zones starting diagram on the sheet"
+          >
+            <LayoutGrid size={14} />
+            <span>{showCourtDiagram ? 'Court Zones: ON' : 'Court Zones: OFF'}</span>
           </button>
 
           {/* Official Instructions / Rules Button */}
@@ -620,6 +903,52 @@ export default function OfficialRosterLineupSheetView({
                     ))}
                   </tbody>
                 </table>
+
+                {/* Court Zones & Starting Positions Diagram (Image / Visual on Sheet) */}
+                {showCourtDiagram && (
+                  <div className="roster-court-guide">
+                    <div className="court-guide-header">
+                      <div className="court-guide-title">
+                        <VolleyballIcon size={14} />
+                        <span>COURT ZONES & STARTING POSITIONS</span>
+                      </div>
+                      <div className="court-guide-game-selector no-print">
+                        {[1, 2, 3, 4, 5].map(g => (
+                          <button
+                            key={g}
+                            type="button"
+                            className={`court-game-pill ${courtDiagramGame === g ? 'active' : ''}`}
+                            onClick={() => setCourtDiagramGame(g)}
+                            title={`Show Game ${g} positions on court`}
+                          >
+                            G{g}
+                          </button>
+                        ))}
+                        <button
+                          type="button"
+                          className={`court-game-pill ${courtDiagramGame === 'zones' ? 'active' : ''}`}
+                          onClick={() => setCourtDiagramGame('zones')}
+                          title="Show Zone Numbers Only"
+                        >
+                          Zones
+                        </button>
+                      </div>
+                    </div>
+
+                    <div className="court-diagram-canvas-wrap">
+                      <VolleyballCourtZonesDiagram
+                        gameLineup={gamesData[courtDiagramGame]?.lineup || gamesData[1]?.lineup || {}}
+                        getPlayer={getPlayer}
+                        showPlayers={courtDiagramGame !== 'zones'}
+                      />
+                    </div>
+
+                    <div className="court-guide-footer">
+                      <span className="court-legend-item"><strong>Front Row:</strong> Z4, Z3, Z2 (Attack & Block)</span>
+                      <span className="court-legend-item"><strong>Back Row:</strong> Z5, Z6, Z1 (Defense & Receive)</span>
+                    </div>
+                  </div>
+                )}
               </div>
 
               {/* =========================================================
@@ -678,34 +1007,42 @@ export default function OfficialRosterLineupSheetView({
                       </div>
 
                       {/* Serve Order Table (I to VI) */}
-                      <table className="game-table">
+                      <table className={`game-table ${showLastNameInServeOrder ? 'with-names' : ''}`}>
                         <thead>
                           <tr>
                             <th className="game-col-order">SERVE ORDER</th>
-                            <th className="game-col-player">PLAYER NO.</th>
+                            <th className="game-col-player">
+                              {showLastNameInServeOrder ? 'PLAYER NO. & LAST NAME' : 'PLAYER NO.'}
+                            </th>
                           </tr>
                         </thead>
                         <tbody>
-                          {serveOrders.map((order) => (
-                            <tr key={order.orderRoman}>
-                              <td className="game-col-order">
-                                <span>{order.orderRoman}</span>
-                                {/* Subtle zone indicator pill (hidden in print) */}
-                                <span className="zone-hint-chip no-print" title={`Starts in Zone ${order.zoneNum}`}>
-                                  Z{order.zoneNum}
-                                </span>
-                              </td>
-                              <td className="game-col-player">
-                                {order.displayNo ? (
-                                  <span>
-                                    <strong>{order.displayNo}</strong>
+                          {serveOrders.map((order) => {
+                            const { lastName } = parsePlayerName(order.player?.name || '');
+                            return (
+                              <tr key={order.orderRoman}>
+                                <td className="game-col-order">
+                                  <span>{order.orderRoman}</span>
+                                  {/* Subtle zone indicator pill (hidden in print) */}
+                                  <span className="zone-hint-chip no-print" title={`Starts in Zone ${order.zoneNum}`}>
+                                    Z{order.zoneNum}
                                   </span>
-                                ) : (
-                                  <span style={{ color: '#94a3b8' }}>—</span>
-                                )}
-                              </td>
-                            </tr>
-                          ))}
+                                </td>
+                                <td className="game-col-player">
+                                  {order.displayNo ? (
+                                    <div className="serve-player-cell">
+                                      <span className="serve-player-num">{order.displayNo}</span>
+                                      {showLastNameInServeOrder && lastName && (
+                                        <span className="serve-player-lastname">{lastName}</span>
+                                      )}
+                                    </div>
+                                  ) : (
+                                    <span style={{ color: '#94a3b8' }}>—</span>
+                                  )}
+                                </td>
+                              </tr>
+                            );
+                          })}
                         </tbody>
                       </table>
                     </div>

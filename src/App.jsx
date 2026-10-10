@@ -2128,6 +2128,9 @@ export default function App() {
         onOpenDrillsModal={() => setActiveTab('drills')}
         onOpenWhiteboard={() => setActiveTab('whiteboard')}
         onOpenNotificationSettings={() => setIsNotificationModalOpen(true)}
+        onOpenMatchStats={() => setActiveTab('stats')}
+        onOpenOfficialSheet={() => setActiveTab('official-sheet')}
+        onOpenR2LineupCard={() => setIsR2LineupCardOpen(true)}
         user={user}
         syncStatus={syncStatus}
         lastSyncTime={lastSyncTime}
@@ -2158,7 +2161,7 @@ export default function App() {
         autoDismissSeconds={15}
       />
 
-      {/* Navigation Tabs: Roster vs Lineup vs 6-2 vs Match Stats */}
+      {/* Navigation Tabs: Core Sideline & Tactical Navigation */}
       <div className="tabs-bar" role="tablist" aria-label="Main Navigation">
         <button
           id="tab-roster"
@@ -2179,7 +2182,7 @@ export default function App() {
           aria-selected={activeTab === 'court'}
           className={`tab-button ${activeTab === 'court' ? 'active' : ''}`}
           onClick={() => setActiveTab('court')}
-          title="6-Position Lineup"
+          title="6-Position Court Lineup & Rotations"
         >
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
             <LayoutGrid size={18} className="tab-icon" />
@@ -2198,8 +2201,8 @@ export default function App() {
               {phase === 'serve' ? 'SERVE' : 'RECV'}
             </span>
           </div>
-          <span className="tab-label-desktop">6-Position Lineup</span>
-          <span className="tab-label-mobile">Lineup</span>
+          <span className="tab-label-desktop">Court & Rotations</span>
+          <span className="tab-label-mobile">Court</span>
         </button>
 
         <button
@@ -2229,32 +2232,6 @@ export default function App() {
           </div>
           <span className="tab-label-desktop">6-2 Formations & Tactics</span>
           <span className="tab-label-mobile">6-2 Tactics</span>
-        </button>
-
-        <button
-          id="tab-stats"
-          role="tab"
-          aria-selected={activeTab === 'stats'}
-          className={`tab-button ${activeTab === 'stats' ? 'active' : ''}`}
-          onClick={() => setActiveTab('stats')}
-          title="Match Stats & PDF"
-        >
-          <BarChart3 size={18} className="tab-icon" />
-          <span className="tab-label-desktop">Match Stats & PDF</span>
-          <span className="tab-label-mobile">Stats & PDF</span>
-        </button>
-
-        <button
-          id="tab-official-sheet"
-          role="tab"
-          aria-selected={activeTab === 'official-sheet'}
-          className={`tab-button ${activeTab === 'official-sheet' ? 'active' : ''}`}
-          onClick={() => setActiveTab('official-sheet')}
-          title="Official NFHS Team Roster & Lineup Sheet"
-        >
-          <FileText size={18} className="tab-icon" />
-          <span className="tab-label-desktop">Official Sheet</span>
-          <span className="tab-label-mobile">Sheet</span>
         </button>
       </div>
 

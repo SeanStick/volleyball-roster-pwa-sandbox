@@ -19,7 +19,8 @@ import {
   Share2,
   LayoutGrid,
   UserCheck,
-  Smartphone
+  Smartphone,
+  ArrowLeft
 } from 'lucide-react';
 import VolleyballIcon from './icons/VolleyballIcon';
 import '../styles/rosterLineupSheet.css';
@@ -651,9 +652,25 @@ export default function OfficialRosterLineupSheetView({
       <div className="sheet-controls-bar no-print">
         {/* Top Row: Brand + View Switcher + Print Button */}
         <div className="sheet-toolbar-top">
-          <div className="sheet-toolbar-brand">
-            <FileText size={20} color="#ff6b35" />
-            <span>Official Lineup Sheet</span>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+            {onNavigateTab && (
+              <button
+                type="button"
+                className="sheet-btn sheet-btn-secondary no-print"
+                onClick={() => onNavigateTab('court')}
+                title="Return to Court & Rotations"
+                style={{ padding: '0.35rem 0.65rem', fontSize: '0.78rem', minHeight: '36px' }}
+                id="btn-sheet-back-to-court"
+              >
+                <ArrowLeft size={14} />
+                <span>Court</span>
+              </button>
+            )}
+
+            <div className="sheet-toolbar-brand">
+              <FileText size={20} color="#ff6b35" />
+              <span>Official Lineup Sheet</span>
+            </div>
           </div>
 
           {/* View Mode Switcher: Mobile View vs Full Sheet */}

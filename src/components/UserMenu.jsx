@@ -18,7 +18,9 @@ import {
   Dumbbell,
   BellRing,
   ShieldCheck,
-  Crown
+  Crown,
+  BarChart3,
+  FileText
 } from 'lucide-react';
 import VolleyballIcon from './icons/VolleyballIcon';
 
@@ -39,6 +41,9 @@ export default function UserMenu({
   onOpenWhiteboard,
   onOpenDrills,
   onOpenNotificationSettings,
+  onOpenMatchStats,
+  onOpenOfficialSheet,
+  onOpenR2LineupCard,
   onManualSync,
   onLogout
 }) {
@@ -170,38 +175,11 @@ export default function UserMenu({
     }
   };
 
-  if (!user) {
-    return (
-      <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem', flexShrink: 0 }}>
-        <button
-          type="button"
-          onClick={() => onOpenAuthModal('login')}
-          className="btn btn-primary btn-sm"
-          style={{
-            display: 'inline-flex',
-            alignItems: 'center',
-            gap: '0.35rem',
-            padding: '0.32rem 0.7rem',
-            fontSize: '0.78rem',
-            borderRadius: '999px',
-            fontWeight: 800,
-            whiteSpace: 'nowrap',
-            boxShadow: '0 2px 10px rgba(255, 107, 53, 0.35)',
-            flexShrink: 0
-          }}
-          title="Sign In with Google or Email"
-        >
-          <User size={13} />
-          <span>Sign In</span>
-        </button>
-      </div>
-    );
-  }
-
-  const displayName = user.displayName || user.email?.split('@')[0] || 'Coach';
+  const displayName = user ? (user.displayName || user.email?.split('@')[0] || 'Coach') : 'Coach';
 
   // Helper for dot indicator on avatar
   const getSyncDotColor = () => {
+    if (!user) return '#64748b';
     switch (syncStatus) {
       case 'syncing':
         return '#3b82f6';
@@ -222,10 +200,12 @@ export default function UserMenu({
         onClick={() => setIsOpen(!isOpen)}
         aria-expanded={isOpen}
         aria-haspopup="true"
+        title="Open Coach Profile, Stats & Team Tools"
+        id="btn-top-profile-menu"
       >
         {/* User Avatar with Sync Dot */}
         <div style={{ position: 'relative', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-          {user.photoURL ? (
+          {user?.photoURL ? (
             <img
               src={user.photoURL}
               alt={displayName}
@@ -254,7 +234,7 @@ export default function UserMenu({
                 boxShadow: '0 2px 8px rgba(255, 107, 53, 0.3)'
               }}
             >
-              {getInitials(user.displayName, user.email)}
+              {user ? getInitials(user.displayName, user.email) : <User size={15} />}
             </div>
           )}
 
@@ -277,10 +257,23 @@ export default function UserMenu({
         {/* Name and Sync Pill (Desktop Only) */}
         <div className="user-menu-desktop-info">
           <span style={{ fontSize: '0.8rem', fontWeight: 700, color: '#f8fafc', maxWidth: '110px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-            {displayName}
+            {user ? displayName : 'Coach Profile'}
           </span>
           <div style={{ transform: 'scale(0.85)', transformOrigin: 'left center', marginTop: '1px' }}>
-            {getSyncStatusBadge()}
+            {user ? getSyncStatusBadge() : (
+              <span
+                style={{
+                  fontSize: '0.68rem',
+                  fontWeight: 700,
+                  color: '#94a3b8',
+                  padding: '1px 6px',
+                  borderRadius: '999px',
+                  background: 'rgba(255, 255, 255, 0.08)'
+                }}
+              >
+                Tools & Stats
+              </span>
+            )}
           </div>
         </div>
 
@@ -313,28 +306,68 @@ export default function UserMenu({
             animation: 'fadeIn 0.15s ease-out'
           }}
         >
-          {/* User Profile Card */}
-          <div
-            style={{
-              padding: '0.6rem 0.75rem',
-              background: 'rgba(255, 255, 255, 0.04)',
-              borderRadius: 'var(--radius-sm)',
-              marginBottom: '0.5rem'
-            }}
-          >
-            <div style={{ fontWeight: 800, fontSize: '0.88rem', color: '#ffffff' }}>
-              {displayName}
+          {/* User Profile Card (Authenticated or Guest) */}
+          {user ? (
+            <div
+              style={{
+                padding: '0.6rem 0.75rem',
+                background: 'rgba(255, 255, 255, 0.04)',
+                borderRadius: 'var(--radius-sm)',
+                marginBottom: '0.5rem'
+              }}
+            >
+              <div style={{ fontWeight: 800, fontSize: '0.88rem', color: '#ffffff' }}>
+                {displayName}
+              </div>
+              <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                {user.email}
+              </div>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: '0.4rem' }}>
+                <span style={{ fontSize: '0.7rem', color: 'var(--text-secondary)' }}>
+                  {user.providerId === 'google.com' ? 'Google Account' : 'Coach Account'}
+                </span>
+                {getSyncStatusBadge()}
+              </div>
             </div>
-            <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-              {user.email}
+          ) : (
+            <div
+              style={{
+                padding: '0.6rem 0.75rem',
+                background: 'rgba(255, 107, 53, 0.1)',
+                border: '1px solid rgba(255, 107, 53, 0.25)',
+                borderRadius: 'var(--radius-sm)',
+                marginBottom: '0.5rem',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                gap: '0.5rem'
+              }}
+            >
+              <div>
+                <div style={{ fontWeight: 800, fontSize: '0.85rem', color: '#ffffff' }}>Coach Profile (Guest)</div>
+                <div style={{ fontSize: '0.72rem', color: 'var(--text-secondary)' }}>Local device storage</div>
+              </div>
+              {onOpenAuthModal && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setIsOpen(false);
+                    onOpenAuthModal('login');
+                  }}
+                  className="btn btn-primary btn-sm"
+                  style={{
+                    padding: '0.3rem 0.65rem',
+                    fontSize: '0.74rem',
+                    borderRadius: '999px',
+                    fontWeight: 800,
+                    whiteSpace: 'nowrap'
+                  }}
+                >
+                  Sign In
+                </button>
+              )}
             </div>
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: '0.4rem' }}>
-              <span style={{ fontSize: '0.7rem', color: 'var(--text-secondary)' }}>
-                {user.providerId === 'google.com' ? 'Google Account' : 'Coach Account'}
-              </span>
-              {getSyncStatusBadge()}
-            </div>
-          </div>
+          )}
 
           {/* Active Team Badge */}
           {activeTeam && (
@@ -747,12 +780,126 @@ export default function UserMenu({
                   boxShadow: '0 2px 8px rgba(139, 92, 246, 0.2)',
                   marginBottom: '3px'
                 }}
+                id="user-menu-item-lineup-studio"
               >
                 <Layers size={16} color="#a78bfa" />
                 <div style={{ display: 'flex', flexDirection: 'column' }}>
                   <span>6-2 Lineup Studio</span>
                   <span style={{ fontSize: '0.66rem', color: '#ddd6fe', fontWeight: 500 }}>
                     AI stats, presets & injury sub
+                  </span>
+                </div>
+              </button>
+            )}
+
+            {/* 📊 Match Stats & PDF Report */}
+            {onOpenMatchStats && (
+              <button
+                type="button"
+                onClick={() => {
+                  setIsOpen(false);
+                  onOpenMatchStats();
+                }}
+                style={{
+                  width: '100%',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '0.6rem',
+                  padding: '0.6rem 0.75rem',
+                  background: 'linear-gradient(135deg, rgba(59, 130, 246, 0.2), rgba(37, 99, 235, 0.3))',
+                  border: '1px solid rgba(59, 130, 246, 0.45)',
+                  borderRadius: 'var(--radius-sm)',
+                  color: '#93c5fd',
+                  fontSize: '0.84rem',
+                  fontWeight: 800,
+                  cursor: 'pointer',
+                  textAlign: 'left',
+                  boxShadow: '0 2px 8px rgba(59, 130, 246, 0.2)',
+                  marginBottom: '3px'
+                }}
+                id="user-menu-item-stats"
+              >
+                <BarChart3 size={16} color="#60a5fa" />
+                <div style={{ display: 'flex', flexDirection: 'column' }}>
+                  <span>Match Stats & PDF</span>
+                  <span style={{ fontSize: '0.66rem', color: '#bfdbfe', fontWeight: 500 }}>
+                    Live error breakdown, box score & PDF export
+                  </span>
+                </div>
+              </button>
+            )}
+
+            {/* 📄 Official Roster & Lineup Sheet (NFHS 8.5x11) */}
+            {onOpenOfficialSheet && (
+              <button
+                type="button"
+                onClick={() => {
+                  setIsOpen(false);
+                  onOpenOfficialSheet();
+                }}
+                style={{
+                  width: '100%',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '0.6rem',
+                  padding: '0.6rem 0.75rem',
+                  background: 'linear-gradient(135deg, rgba(255, 107, 53, 0.2), rgba(234, 88, 12, 0.3))',
+                  border: '1px solid rgba(255, 107, 53, 0.45)',
+                  borderRadius: 'var(--radius-sm)',
+                  color: '#ffedd5',
+                  fontSize: '0.84rem',
+                  fontWeight: 800,
+                  cursor: 'pointer',
+                  textAlign: 'left',
+                  boxShadow: '0 2px 8px rgba(255, 107, 53, 0.2)',
+                  marginBottom: '3px'
+                }}
+                id="user-menu-item-official-sheet"
+              >
+                <FileText size={16} color="#ff6b35" />
+                <div style={{ display: 'flex', flexDirection: 'column' }}>
+                  <span>Official Roster & Lineup Sheet</span>
+                  <span style={{ fontSize: '0.66rem', color: '#fed7aa', fontWeight: 500 }}>
+                    NFHS 8.5" × 11" scoresheet & mobile cards
+                  </span>
+                </div>
+              </button>
+            )}
+
+            {/* 🗂️ Official R2 Lineup Card Modal */}
+            {onOpenR2LineupCard && (
+              <button
+                type="button"
+                onClick={() => {
+                  setIsOpen(false);
+                  onOpenR2LineupCard();
+                }}
+                style={{
+                  width: '100%',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '0.6rem',
+                  padding: '0.55rem 0.75rem',
+                  background: 'rgba(255, 255, 255, 0.04)',
+                  border: '1px solid rgba(255, 255, 255, 0.1)',
+                  borderRadius: 'var(--radius-sm)',
+                  color: '#e2e8f0',
+                  fontSize: '0.82rem',
+                  fontWeight: 700,
+                  cursor: 'pointer',
+                  textAlign: 'left',
+                  marginBottom: '3px',
+                  transition: 'background 0.15s'
+                }}
+                onMouseEnter={(e) => (e.currentTarget.style.background = 'rgba(255, 255, 255, 0.08)')}
+                onMouseLeave={(e) => (e.currentTarget.style.background = 'rgba(255, 255, 255, 0.04)')}
+                id="user-menu-item-r2-card"
+              >
+                <Shield size={15} color="#94a3b8" />
+                <div style={{ display: 'flex', flexDirection: 'column' }}>
+                  <span>Official R2 Lineup Card</span>
+                  <span style={{ fontSize: '0.65rem', color: '#94a3b8', fontWeight: 500 }}>
+                    Referee tracking card & rotational checklist
                   </span>
                 </div>
               </button>

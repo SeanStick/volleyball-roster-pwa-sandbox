@@ -11,6 +11,9 @@ export default function Navbar({
   onOpenDrillsModal,
   onOpenWhiteboard,
   onOpenNotificationSettings,
+  onOpenMatchStats,
+  onOpenOfficialSheet,
+  onOpenR2LineupCard,
   user,
   syncStatus,
   lastSyncTime,
@@ -192,6 +195,9 @@ export default function Navbar({
           onOpenWhiteboard={onOpenWhiteboard}
           onOpenDrills={onOpenDrillsModal}
           onOpenNotificationSettings={onOpenNotificationSettings}
+          onOpenMatchStats={onOpenMatchStats}
+          onOpenOfficialSheet={onOpenOfficialSheet}
+          onOpenR2LineupCard={onOpenR2LineupCard}
           onManualSync={onManualSync}
           onLogout={onLogout}
         />

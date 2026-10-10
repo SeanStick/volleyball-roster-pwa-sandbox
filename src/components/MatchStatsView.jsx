@@ -19,6 +19,7 @@ import {
   Lightbulb,
   ShieldAlert,
   ArrowRight,
+  ArrowLeft,
   Compass,
   Archive,
   BarChart3,
@@ -269,8 +270,27 @@ export default function MatchStatsView({
           </p>
         </div>
 
-        {/* Action Buttons: Gemini Coach, Print PDF, Save to Archive & New Set */}
+        {/* Action Buttons: Return to Court, Gemini Coach, Print PDF, Save to Archive & New Set */}
         <div className="no-print stats-actions-bar">
+          {onNavigateTab && (
+            <button
+              type="button"
+              className="btn btn-secondary"
+              onClick={() => onNavigateTab('court')}
+              title="Return to Court & Lineup"
+              style={{
+                borderColor: 'rgba(59, 130, 246, 0.55)',
+                background: 'rgba(59, 130, 246, 0.2)',
+                color: '#93c5fd',
+                fontWeight: 800
+              }}
+              id="btn-stats-back-to-court"
+            >
+              <ArrowLeft size={15} />
+              <span>← Back to Court</span>
+            </button>
+          )}
+
           {onOpenGeminiCoach && (
             <button
               className="btn btn-secondary"

@@ -38,7 +38,7 @@ export default function Navbar({
         <div style={{ display: 'flex', flexDirection: 'column', minWidth: 0, overflow: 'hidden' }}>
           {/* App Title */}
           <div className="brand-title">
-            Go Stand Over There
+            Where Do I Go?
           </div>
           
           {/* Team Name Subtitle / Switcher */}

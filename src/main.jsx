@@ -86,7 +86,7 @@ class AppErrorBoundary extends React.Component {
         }}>
           <div style={{ fontSize: '3.5rem', marginBottom: '1rem' }}>🏐</div>
           <h2 style={{ fontSize: '1.4rem', fontWeight: 800, marginBottom: '0.5rem', color: '#ff6b35' }}>
-            Go Stand Over There
+            Where Do I Go?
           </h2>
           <p style={{ color: '#94a3b8', fontSize: '0.9rem', maxWidth: '380px', marginBottom: '1rem', lineHeight: 1.5 }}>
             An update was loaded. Tap below to refresh your app and get the latest version.

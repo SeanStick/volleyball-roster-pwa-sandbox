@@ -1,6 +1,6 @@
 {
-  "name": "Go Stand Over There - Volleyball Roster & Rotation Manager",
-  "short_name": "Go Stand Over There",
+  "name": "Where Do I Go? - Volleyball Roster & Rotation Manager",
+  "short_name": "Where Do I Go?",
   "description": "Professional Progressive Web App to manage volleyball rosters, jersey numbers, positions, and 6-player court rotations offline & online.",
   "start_url": "/",
   "display": "standalone",

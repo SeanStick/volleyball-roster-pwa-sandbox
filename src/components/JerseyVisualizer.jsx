@@ -139,7 +139,7 @@ export default function JerseyVisualizer({
           textAnchor="middle"
           letterSpacing="0.5"
         >
-          {isLibero ? 'LIBERO • FIVB' : 'GO STAND OVER THERE'}
+          {isLibero ? 'LIBERO • FIVB' : 'WHERE DO I GO?'}
         </text>
       </svg>
     </div>

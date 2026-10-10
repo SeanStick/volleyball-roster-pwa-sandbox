@@ -56,7 +56,7 @@ export default function InstallPrompt() {
         </div>
         <div>
           <h4 style={{ fontSize: '0.95rem', fontWeight: 800, color: '#ffffff', marginBottom: '0.15rem' }}>
-            Install Go Stand Over There PWA
+            Install Where Do I Go? PWA
           </h4>
           <p style={{ fontSize: '0.78rem', color: 'var(--text-secondary)' }}>
             Add to home screen for instant offline court access & full-screen mode.

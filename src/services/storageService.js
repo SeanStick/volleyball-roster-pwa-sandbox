@@ -629,7 +629,7 @@ export const storageService = {
       roster: this.getRoster(),
       teamSettings: this.getTeamSettings(),
       exportedAt: new Date().toISOString(),
-      app: 'Go Stand Over There PWA'
+      app: 'Where Do I Go? PWA'
     };
     const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
     const url = URL.createObjectURL(blob);

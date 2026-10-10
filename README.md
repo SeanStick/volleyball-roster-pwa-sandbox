@@ -1,8 +1,8 @@
-# Go Stand Over There — Volleyball Roster PWA
+# Where Do I Go? — Volleyball Roster & Court Rotation Manager
 
 A Progressive Web App (PWA) built with **Node.js** and **React** for collecting, managing, and visualizing volleyball player names, numbers, positions, and 6-player court rotations. Ready for 1-click deployment to **Google Cloud Firebase Hosting**.
 
-![Go Stand Over There Preview](/icon.svg)
+![Where Do I Go? Preview](/icon.svg)
 
 ---
 
@@ -103,4 +103,4 @@ volleyball-roster-pwa/
 
 1. Open the deployed Firebase URL or local server in Chrome, Edge, or Safari.
 2. Click the in-app **"Install"** button, or tap **Share > Add to Home Screen** on iOS Safari.
-3. Go Stand Over There can now be launched directly like a native app and works seamlessly on the volleyball court sideline without Wi-Fi or cellular service!
+3. **Where Do I Go?** can now be launched directly like a native app and works seamlessly on the volleyball court sideline without Wi-Fi or cellular service!

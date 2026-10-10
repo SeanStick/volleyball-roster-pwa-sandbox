@@ -1,4 +1,4 @@
-// Go Stand Over There — Volleyball PWA Notification Service Worker
+// Where Do I Go? — Volleyball PWA Notification Service Worker
 // Dedicated to Lock Screen Notifications, Background Sync, and App Focus
 
 self.addEventListener('install', () => {

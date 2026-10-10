@@ -18,7 +18,8 @@ import {
   Square,
   Share2,
   LayoutGrid,
-  UserCheck
+  UserCheck,
+  Smartphone
 } from 'lucide-react';
 import VolleyballIcon from './icons/VolleyballIcon';
 import '../styles/rosterLineupSheet.css';
@@ -372,6 +373,36 @@ export default function OfficialRosterLineupSheetView({
   // Selected game for court diagram (1..5 or 'zones')
   const [courtDiagramGame, setCourtDiagramGame] = useState(1);
 
+  // View Mode: 'cards' (responsive mobile coaching layout) vs 'paper' (authentic 8.5x11 scoresheet)
+  const [viewMode, setViewMode] = useState(() => {
+    if (typeof window !== 'undefined' && window.innerWidth <= 820) {
+      return 'cards';
+    }
+    return 'paper';
+  });
+  // Active game in mobile cards view (1..5)
+  const [activeMobileGame, setActiveMobileGame] = useState(1);
+
+  // Auto-fit function for paper view
+  const handleAutoFit = useCallback(() => {
+    if (typeof window === 'undefined') return;
+    const availableWidth = window.innerWidth - (window.innerWidth < 640 ? 16 : 48);
+    const paperWidthPx = 816; // 8.5in * 96dpi
+    const fitScale = Math.min(1.2, Math.max(0.35, availableWidth / paperWidthPx));
+    setZoomLevel(Number(fitScale.toFixed(2)));
+    showToast(`Fitted to screen (${Math.round(fitScale * 100)}%)`);
+  }, []);
+
+  // When switching to paper view on mobile/tablet, automatically fit to screen
+  useEffect(() => {
+    if (typeof window !== 'undefined' && window.innerWidth <= 820 && viewMode === 'paper') {
+      const availableWidth = window.innerWidth - 16;
+      const paperWidthPx = 816;
+      const fitScale = Math.min(1.0, Math.max(0.35, availableWidth / paperWidthPx));
+      setZoomLevel(Number(fitScale.toFixed(2)));
+    }
+  }, [viewMode]);
+
   // Serving Order Order Mode: 'nfhs_smart' (Zone 1 for serve, Zone 2 for receive sideout) vs 'zone_order' (always Z1=I)
   const [serveOrderMode, setServeOrderMode] = useState('nfhs_smart');
 
@@ -618,88 +649,49 @@ export default function OfficialRosterLineupSheetView({
           TOP STICKY CONTROLS TOOLBAR (Hidden in Print)
           ------------------------------------------------------------- */}
       <div className="sheet-controls-bar no-print">
-        <div className="sheet-toolbar-left">
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+        {/* Top Row: Brand + View Switcher + Print Button */}
+        <div className="sheet-toolbar-top">
+          <div className="sheet-toolbar-brand">
             <FileText size={20} color="#ff6b35" />
-            <span style={{ fontWeight: 900, fontSize: '0.95rem', color: '#f8fafc' }}>
-              NFHS Official Lineup Sheet
-            </span>
+            <span>Official Lineup Sheet</span>
           </div>
 
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
+          {/* View Mode Switcher: Mobile Cards vs Print Sheet */}
+          <div className="sheet-view-mode-toggle">
             <button
               type="button"
-              className="sheet-btn sheet-btn-primary"
-              onClick={handlePrint}
-              title="Print standard 8.5x11 official sheet"
+              className={`sheet-view-btn ${viewMode === 'cards' ? 'active' : ''}`}
+              onClick={() => setViewMode('cards')}
+              title="Switch to Mobile Coach Cards view"
             >
-              <Printer size={15} />
-              <span>Print Official Sheet</span>
+              <Smartphone size={14} />
+              <span>Mobile Cards</span>
             </button>
-
             <button
               type="button"
-              className="sheet-btn sheet-btn-secondary"
-              onClick={handleCopyTextSummary}
-              title="Copy official lineup text for text message or scorer"
+              className={`sheet-view-btn ${viewMode === 'paper' ? 'active' : ''}`}
+              onClick={() => setViewMode('paper')}
+              title="Switch to Official 8.5x11 Scoresheet view"
             >
-              <Copy size={15} />
-              <span>Copy Text</span>
-            </button>
-
-            <button
-              type="button"
-              className="sheet-btn sheet-btn-accent"
-              onClick={handleSyncFromActiveLineup}
-              title="Refresh Game 1 from currently active starting lineup"
-            >
-              <RefreshCw size={14} />
-              <span>Sync Active Lineup</span>
+              <FileText size={14} />
+              <span>Print Sheet</span>
             </button>
           </div>
-        </div>
 
-        <div className="sheet-toolbar-right">
-          {/* Preset Selector */}
-          {savedLineupPresets && savedLineupPresets.length > 0 && (
-            <div style={{ display: 'flex', alignItems: 'center', gap: '0.3rem' }}>
-              <select
-                onChange={(e) => {
-                  const sel = savedLineupPresets.find(p => p.id === e.target.value);
-                  if (sel) handleLoadPresetIntoGame(1, sel);
-                  e.target.value = '';
-                }}
-                defaultValue=""
-                style={{
-                  background: 'rgba(255, 255, 255, 0.08)',
-                  color: '#e2e8f0',
-                  border: '1px solid rgba(255, 255, 255, 0.15)',
-                  borderRadius: '8px',
-                  padding: '0.4rem 0.6rem',
-                  fontSize: '0.8rem',
-                  fontWeight: 700,
-                  cursor: 'pointer'
-                }}
-              >
-                <option value="" disabled>Load Saved Preset...</option>
-                {savedLineupPresets.map(preset => (
-                  <option key={preset.id} value={preset.id}>{preset.name}</option>
-                ))}
-              </select>
-            </div>
-          )}
-
-          {/* Copy Game 1 to Games 2-5 */}
+          {/* Primary Print Button */}
           <button
             type="button"
-            className="sheet-btn sheet-btn-secondary"
-            onClick={handleCopyGame1ToAll}
-            title="Copy Game 1's starting 6 to Games 2 through 5"
+            className="sheet-btn sheet-btn-primary"
+            onClick={handlePrint}
+            title="Print standard 8.5x11 official sheet"
           >
-            <Layers size={14} />
-            <span>Copy to Games 2-5</span>
+            <Printer size={15} />
+            <span>Print Sheet</span>
           </button>
+        </div>
 
+        {/* Bottom Row: Horizontal Swipeable Action Chips */}
+        <div className="sheet-toolbar-bottom">
           {/* Toggle: Number and Last Name in Serve Order */}
           <button
             type="button"
@@ -714,7 +706,7 @@ export default function OfficialRosterLineupSheetView({
             title="Toggle showing player uniform number and last name in serving order"
           >
             <UserCheck size={14} />
-            <span>{showLastNameInServeOrder ? 'Names in Lineup: ON' : 'Names in Lineup: OFF'}</span>
+            <span>{showLastNameInServeOrder ? 'Names: ON' : 'Names: OFF'}</span>
           </button>
 
           {/* Toggle: Court Zones Diagram on Sheet */}
@@ -731,7 +723,40 @@ export default function OfficialRosterLineupSheetView({
             title="Toggle Court Zones starting diagram on the sheet"
           >
             <LayoutGrid size={14} />
-            <span>{showCourtDiagram ? 'Court Zones: ON' : 'Court Zones: OFF'}</span>
+            <span>{showCourtDiagram ? 'Court: ON' : 'Court: OFF'}</span>
+          </button>
+
+          {/* Sync Active Lineup */}
+          <button
+            type="button"
+            className="sheet-btn sheet-btn-accent"
+            onClick={handleSyncFromActiveLineup}
+            title="Refresh Game 1 from currently active starting lineup"
+          >
+            <RefreshCw size={14} />
+            <span>Sync Lineup</span>
+          </button>
+
+          {/* Copy Game 1 to Games 2-5 */}
+          <button
+            type="button"
+            className="sheet-btn sheet-btn-secondary"
+            onClick={handleCopyGame1ToAll}
+            title="Copy Game 1's starting 6 to Games 2 through 5"
+          >
+            <Layers size={14} />
+            <span>Copy to 2-5</span>
+          </button>
+
+          {/* Copy Text Summary */}
+          <button
+            type="button"
+            className="sheet-btn sheet-btn-secondary"
+            onClick={handleCopyTextSummary}
+            title="Copy official lineup text for text message or scorer"
+          >
+            <Copy size={14} />
+            <span>Copy Text</span>
           </button>
 
           {/* Official Instructions / Rules Button */}
@@ -742,38 +767,77 @@ export default function OfficialRosterLineupSheetView({
             title="View Official High School Lineup Submission Rules (Page 2)"
           >
             <BookOpen size={14} color="#38bdf8" />
-            <span>Official Rules</span>
+            <span>Rules</span>
           </button>
 
-          {/* Zoom Controls */}
-          <div className="sheet-scale-pill">
-            <button
-              type="button"
-              className="sheet-scale-btn"
-              onClick={() => setZoomLevel(prev => Math.max(0.65, Number((prev - 0.1).toFixed(1))))}
-              title="Zoom Out"
+          {/* Preset Selector */}
+          {savedLineupPresets && savedLineupPresets.length > 0 && (
+            <select
+              onChange={(e) => {
+                const sel = savedLineupPresets.find(p => p.id === e.target.value);
+                if (sel) handleLoadPresetIntoGame(1, sel);
+                e.target.value = '';
+              }}
+              defaultValue=""
+              style={{
+                background: 'rgba(255, 255, 255, 0.08)',
+                color: '#e2e8f0',
+                border: '1px solid rgba(255, 255, 255, 0.15)',
+                borderRadius: '8px',
+                padding: '0.38rem 0.6rem',
+                fontSize: '0.78rem',
+                fontWeight: 700,
+                cursor: 'pointer',
+                flexShrink: 0
+              }}
             >
-              <ZoomOut size={14} />
-            </button>
-            <span className="sheet-scale-text">{Math.round(zoomLevel * 100)}%</span>
-            <button
-              type="button"
-              className="sheet-scale-btn"
-              onClick={() => setZoomLevel(prev => Math.min(1.4, Number((prev + 0.1).toFixed(1))))}
-              title="Zoom In"
-            >
-              <ZoomIn size={14} />
-            </button>
-            <button
-              type="button"
-              className="sheet-scale-btn"
-              onClick={() => setZoomLevel(1)}
-              title="Reset to 100%"
-              style={{ fontSize: '0.72rem', borderLeft: '1px solid rgba(255,255,255,0.1)' }}
-            >
-              100%
-            </button>
-          </div>
+              <option value="" disabled>Presets...</option>
+              {savedLineupPresets.map(preset => (
+                <option key={preset.id} value={preset.id}>{preset.name}</option>
+              ))}
+            </select>
+          )}
+
+          {/* Zoom Controls (when in Paper View) */}
+          {viewMode === 'paper' && (
+            <div className="sheet-scale-pill">
+              <button
+                type="button"
+                className="sheet-scale-btn"
+                onClick={handleAutoFit}
+                title="Fit sheet width to screen"
+                style={{ fontSize: '0.72rem', padding: '0.35rem 0.55rem' }}
+              >
+                Fit
+              </button>
+              <button
+                type="button"
+                className="sheet-scale-btn"
+                onClick={() => setZoomLevel(prev => Math.max(0.35, Number((prev - 0.1).toFixed(2))))}
+                title="Zoom Out"
+              >
+                <ZoomOut size={13} />
+              </button>
+              <span className="sheet-scale-text">{Math.round(zoomLevel * 100)}%</span>
+              <button
+                type="button"
+                className="sheet-scale-btn"
+                onClick={() => setZoomLevel(prev => Math.min(1.4, Number((prev + 0.1).toFixed(2))))}
+                title="Zoom In"
+              >
+                <ZoomIn size={13} />
+              </button>
+              <button
+                type="button"
+                className="sheet-scale-btn"
+                onClick={() => setZoomLevel(1)}
+                title="Reset to 100%"
+                style={{ fontSize: '0.72rem', borderLeft: '1px solid rgba(255,255,255,0.1)' }}
+              >
+                100%
+              </button>
+            </div>
+          )}
         </div>
       </div>
 
@@ -803,9 +867,246 @@ export default function OfficialRosterLineupSheetView({
       )}
 
       {/* -------------------------------------------------------------
-          VIEWPORT & AUTHENTIC 8.5" x 11" PAPER DOCUMENT CANVAS
+          MOBILE COACH CARDS VIEW (Clean, Touch-Friendly on Phones)
           ------------------------------------------------------------- */}
-      <div className="sheet-viewport">
+      {viewMode === 'cards' && (
+        <div className="mobile-sheet-layout no-print">
+          {/* 1. Mobile Team Header Card */}
+          <div className="mobile-card mobile-team-card">
+            <div className="mobile-card-header">
+              <div className="mobile-team-info">
+                <span className="mobile-card-badge">TEAM DESIGNATION</span>
+                <div className="mobile-team-name-input-wrap">
+                  <span style={{ fontWeight: 800, fontSize: '0.82rem', color: '#94a3b8' }}>TEAM:</span>
+                  <input
+                    type="text"
+                    value={teamName}
+                    onChange={(e) => setTeamName(e.target.value)}
+                    className="mobile-team-input"
+                    placeholder="Team Name"
+                  />
+                </div>
+              </div>
+
+              {/* Home / Visitor Toggle */}
+              <div className="mobile-home-visitor-toggle">
+                <button
+                  type="button"
+                  className={`mobile-hv-btn ${isHome ? 'active' : ''}`}
+                  onClick={() => setIsHome(true)}
+                >
+                  HOME
+                </button>
+                <button
+                  type="button"
+                  className={`mobile-hv-btn ${!isHome ? 'active' : ''}`}
+                  onClick={() => setIsHome(false)}
+                >
+                  VISITOR
+                </button>
+              </div>
+            </div>
+
+            <div className="mobile-meta-pills">
+              <div className="mobile-meta-pill">
+                <span className="mobile-meta-label">LIBERO (L1/L2):</span>
+                <span className="mobile-meta-val">#{formattedLiberoNumber || 'None'}</span>
+              </div>
+              <div className="mobile-meta-pill">
+                <span className="mobile-meta-label">FLOOR CAPTAIN:</span>
+                <span className="mobile-meta-val">
+                  #{captain?.number || '--'} {captain ? parsePlayerName(captain.name).lastName : 'None'} (C)
+                </span>
+              </div>
+            </div>
+          </div>
+
+          {/* 2. Court Zones & Starting Positions Card */}
+          {showCourtDiagram && (
+            <div className="mobile-card mobile-court-card">
+              <div className="mobile-card-header">
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                  <VolleyballIcon size={16} />
+                  <h3 className="mobile-card-title">Court Zones & Starting Positions</h3>
+                </div>
+                <div className="mobile-court-game-selector">
+                  {[1, 2, 3, 4, 5].map(g => (
+                    <button
+                      key={g}
+                      type="button"
+                      className={`court-game-pill ${courtDiagramGame === g ? 'active' : ''}`}
+                      onClick={() => {
+                        setCourtDiagramGame(g);
+                        setActiveMobileGame(g);
+                      }}
+                    >
+                      G{g}
+                    </button>
+                  ))}
+                  <button
+                    key="zones"
+                    type="button"
+                    className={`court-game-pill ${courtDiagramGame === 'zones' ? 'active' : ''}`}
+                    onClick={() => setCourtDiagramGame('zones')}
+                  >
+                    Zones
+                  </button>
+                </div>
+              </div>
+
+              <div className="mobile-court-diagram-wrap">
+                <VolleyballCourtZonesDiagram
+                  gameLineup={gamesData[courtDiagramGame]?.lineup || gamesData[activeMobileGame]?.lineup || {}}
+                  getPlayer={getPlayer}
+                  showPlayers={courtDiagramGame !== 'zones'}
+                />
+              </div>
+
+              <div className="court-guide-footer">
+                <span className="court-legend-item"><strong>Front Row:</strong> Z4, Z3, Z2</span>
+                <span className="court-legend-item"><strong>Back Row:</strong> Z5, Z6, Z1</span>
+                <span className="court-legend-item"><strong>Server:</strong> Z1</span>
+              </div>
+            </div>
+          )}
+
+          {/* 3. Game Lineups Selector & Card */}
+          <div className="mobile-card mobile-lineup-card">
+            <div className="mobile-game-tabs">
+              {[1, 2, 3, 4, 5].map(g => (
+                <button
+                  key={g}
+                  type="button"
+                  className={`mobile-game-tab ${activeMobileGame === g ? 'active' : ''}`}
+                  onClick={() => {
+                    setActiveMobileGame(g);
+                    setCourtDiagramGame(g);
+                  }}
+                >
+                  Game {g}
+                </button>
+              ))}
+            </div>
+
+            {/* Selected Game Details */}
+            {(() => {
+              const game = gamesData[activeMobileGame];
+              const isServing = game.serveOrReceive === 'serve';
+              const serveOrders = getGameServeOrder(activeMobileGame);
+
+              return (
+                <div className="mobile-game-body">
+                  <div className="mobile-game-subhead">
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.45rem' }}>
+                      <span className="mobile-game-title">Game {activeMobileGame} Starting Lineup</span>
+                      <span className="mobile-badge-libero">L: #{formattedLiberoNumber || '—'}</span>
+                    </div>
+
+                    {/* Serve vs Receive toggle */}
+                    <div className="mobile-serve-toggle">
+                      <button
+                        type="button"
+                        className={`mobile-serve-btn ${isServing ? 'active-serve' : ''}`}
+                        onClick={() => handleToggleGameServe(activeMobileGame, 'serve')}
+                      >
+                        Serve
+                      </button>
+                      <button
+                        type="button"
+                        className={`mobile-serve-btn ${!isServing ? 'active-recv' : ''}`}
+                        onClick={() => handleToggleGameServe(activeMobileGame, 'receive')}
+                      >
+                        Receive
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Serving Order Cards (I to VI) */}
+                  <div className="mobile-serve-order-list">
+                    {serveOrders.map(order => {
+                      const { lastName } = parsePlayerName(order.player?.name || '');
+                      return (
+                        <div key={order.orderRoman} className="mobile-serve-order-item">
+                          <div className="mobile-order-badge">
+                            <span className="mobile-order-roman">{order.orderRoman}</span>
+                            <span className="mobile-order-zone">Zone {order.zoneNum}</span>
+                          </div>
+
+                          <div className="mobile-order-player">
+                            {order.player ? (
+                              <>
+                                <div className="mobile-jersey-circle">
+                                  #{order.player.number}
+                                  {order.isFloorCaptain && <span className="mobile-cap-star">C</span>}
+                                </div>
+                                <div className="mobile-player-details">
+                                  <span className="mobile-player-name">
+                                    {showLastNameInServeOrder ? lastName : order.player.name}
+                                  </span>
+                                  <span className="mobile-player-pos">
+                                    {order.player.position || 'Player'}
+                                    {order.isFloorCaptain && ' • Captain'}
+                                  </span>
+                                </div>
+                              </>
+                            ) : (
+                              <span className="mobile-order-empty">Empty Slot</span>
+                            )}
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              );
+            })()}
+          </div>
+
+          {/* 4. Team Roster Section (Mobile Table) */}
+          <div className="mobile-card mobile-roster-card">
+            <div className="mobile-card-header">
+              <h3 className="mobile-card-title">Team Roster ({roster.length} Players)</h3>
+              <span className="mobile-card-subtitle">Official Roster Pool</span>
+            </div>
+
+            <div className="mobile-roster-table-wrap">
+              <table className="mobile-roster-table">
+                <thead>
+                  <tr>
+                    <th style={{ width: '22%' }}>No.</th>
+                    <th style={{ width: '40%' }}>Last Name</th>
+                    <th style={{ width: '38%' }}>First Name</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {roster.map(p => {
+                    const { lastName, firstName } = parsePlayerName(p.name);
+                    const isCap = p.isCaptain;
+                    const isLib = p.position === 'Libero' || p.isLibero;
+                    return (
+                      <tr key={p.id || p.number}>
+                        <td className="mobile-roster-num">
+                          <strong>#{p.number}</strong>
+                          {isCap && <span className="mobile-c-pill">C</span>}
+                          {isLib && <span className="mobile-l-pill">L</span>}
+                        </td>
+                        <td className="mobile-roster-last">{lastName}</td>
+                        <td className="mobile-roster-first">{firstName}</td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* -------------------------------------------------------------
+          VIEWPORT & AUTHENTIC 8.5" x 11" PAPER DOCUMENT CANVAS
+          (Hidden on screen when in Mobile Cards view, but ALWAYS prints)
+          ------------------------------------------------------------- */}
+      <div className={`sheet-viewport ${viewMode === 'cards' ? 'hide-on-screen-in-cards' : ''}`}>
         <div
           className="sheet-scale-wrapper"
           style={{ transform: `scale(${zoomLevel})` }}

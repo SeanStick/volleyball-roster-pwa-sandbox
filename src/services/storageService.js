@@ -455,7 +455,7 @@ export const storageService = {
   getActiveTab() {
     try {
       const tab = localStorage.getItem(ACTIVE_TAB_KEY);
-      const validTabs = ['roster', 'court', 'formations', 'stats'];
+      const validTabs = ['roster', 'court', 'formations', 'stats', 'official-sheet', 'drills', 'whiteboard'];
       if (tab && validTabs.includes(tab)) {
         return tab;
       }
@@ -468,7 +468,7 @@ export const storageService = {
 
   saveActiveTab(tab) {
     try {
-      const validTabs = ['roster', 'court', 'formations', 'stats'];
+      const validTabs = ['roster', 'court', 'formations', 'stats', 'official-sheet', 'drills', 'whiteboard'];
       if (tab && validTabs.includes(tab)) {
         localStorage.setItem(ACTIVE_TAB_KEY, tab);
       }

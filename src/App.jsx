@@ -15,7 +15,8 @@ import {
   Cloud,
   Share2,
   ArrowRight,
-  Dumbbell
+  Dumbbell,
+  FileText
 } from 'lucide-react';
 import VolleyballIcon from './components/icons/VolleyballIcon';
 import confetti from 'canvas-confetti';
@@ -26,6 +27,7 @@ import CourtView from './components/CourtView';
 import FormationsView from './components/FormationsView';
 import ScoreboardBar from './components/ScoreboardBar';
 import MatchStatsView from './components/MatchStatsView';
+import OfficialRosterLineupSheetView from './components/OfficialRosterLineupSheetView';
 import DrillHubPage from './components/DrillHubPage';
 import WhiteboardPage from './components/WhiteboardPage';
 import ImportExportModal from './components/ImportExportModal';
@@ -2241,10 +2243,23 @@ export default function App() {
           <span className="tab-label-desktop">Match Stats & PDF</span>
           <span className="tab-label-mobile">Stats & PDF</span>
         </button>
+
+        <button
+          id="tab-official-sheet"
+          role="tab"
+          aria-selected={activeTab === 'official-sheet'}
+          className={`tab-button ${activeTab === 'official-sheet' ? 'active' : ''}`}
+          onClick={() => setActiveTab('official-sheet')}
+          title="Official NFHS Team Roster & Lineup Sheet"
+        >
+          <FileText size={18} className="tab-icon" />
+          <span className="tab-label-desktop">Official Sheet</span>
+          <span className="tab-label-mobile">Sheet</span>
+        </button>
       </div>
 
-      {/* Floating In-Game Scoreboard Ribbon with Tournament Context Header (Hidden on Drills & Whiteboard pages for maximum coaching area) */}
-      {activeTab !== 'drills' && activeTab !== 'whiteboard' && (
+      {/* Floating In-Game Scoreboard Ribbon with Tournament Context Header (Hidden on Drills, Whiteboard & Official Sheet pages for maximum coaching area) */}
+      {activeTab !== 'drills' && activeTab !== 'whiteboard' && activeTab !== 'official-sheet' && (
         <ScoreboardBar
           matchStats={matchStats}
           setMatchStats={setMatchStats}
@@ -2617,6 +2632,24 @@ export default function App() {
           onDeletePoint={handleDeletePointById}
           onOpenGeminiCoach={handleOpenGeminiCoach}
           isLoggedIn={Boolean(user?.uid)}
+        />
+      )}
+
+      {/* Official NFHS / High School Athletic Union Scoresheet & Lineup View */}
+      {activeTab === 'official-sheet' && (
+        <OfficialRosterLineupSheetView
+          roster={roster}
+          startingLineup={startingLineup}
+          lineup={lineup}
+          teamSettings={teamSettings}
+          matchStats={matchStats}
+          phase={phase}
+          rotation={rotation}
+          savedLineupPresets={savedLineupPresets}
+          onNavigateTab={(tab, rot) => {
+            setActiveTab(tab);
+            if (rot) setRotation(rot);
+          }}
         />
       )}
 

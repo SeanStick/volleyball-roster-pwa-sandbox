@@ -2231,7 +2231,7 @@ export default function App() {
             </span>
           </div>
           <span className="tab-label-desktop">6-2 Formations & Tactics</span>
-          <span className="tab-label-mobile">6-2 Tactics</span>
+          <span className="tab-label-mobile">6-2</span>
         </button>
       </div>
 

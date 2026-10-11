@@ -6,6 +6,7 @@ import {
   CloudOff,
   RefreshCw,
   LogOut,
+  LogIn,
   ChevronDown,
   Users,
   Shield,
@@ -534,7 +535,7 @@ export default function UserMenu({
                         justifyContent: 'center'
                       }}
                     >
-                      {getInitials(displayName, user.email)}
+                      {getInitials(displayName, user?.email || '')}
                     </div>
                     <span
                       style={{
@@ -544,8 +545,8 @@ export default function UserMenu({
                         width: '6px',
                         height: '6px',
                         borderRadius: '50%',
-                        background: '#10b981',
-                        boxShadow: '0 0 5px #10b981'
+                        background: user ? '#10b981' : '#94a3b8',
+                        boxShadow: user ? '0 0 5px #10b981' : 'none'
                       }}
                     />
                   </div>
@@ -554,13 +555,13 @@ export default function UserMenu({
                     <div style={{ fontSize: '0.78rem', fontWeight: 800, color: '#f8fafc', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                       {displayName} <strong style={{ color: '#60a5fa' }}>(You)</strong>
                     </div>
-                    <div style={{ fontSize: '0.66rem', color: '#34d399' }}>
-                      🟢 Logged in & Keeping Score
+                    <div style={{ fontSize: '0.66rem', color: user ? '#34d399' : '#94a3b8' }}>
+                      {user ? '🟢 Logged in & Keeping Score' : '⚪ Guest Coach (Not signed in)'}
                     </div>
                   </div>
                 </div>
 
-                {lastScoreEvent?.scorer?.uid === user.uid && (
+                {Boolean(user?.uid && lastScoreEvent?.scorer?.uid === user.uid) && (
                   <span
                     style={{
                       fontSize: '0.62rem',
@@ -1100,34 +1101,65 @@ export default function UserMenu({
 
             <div style={{ height: '1px', background: 'var(--border-glass)', margin: '0.4rem 0' }} />
 
-            <button
-              type="button"
-              onClick={() => {
-                setIsOpen(false);
-                if (onLogout) onLogout();
-              }}
-              style={{
-                width: '100%',
-                display: 'flex',
-                alignItems: 'center',
-                gap: '0.6rem',
-                padding: '0.55rem 0.75rem',
-                background: 'transparent',
-                border: 'none',
-                borderRadius: 'var(--radius-sm)',
-                color: '#f87171',
-                fontSize: '0.82rem',
-                fontWeight: 600,
-                cursor: 'pointer',
-                textAlign: 'left',
-                transition: 'background 0.15s'
-              }}
-              onMouseEnter={(e) => (e.currentTarget.style.background = 'rgba(239, 68, 68, 0.15)')}
-              onMouseLeave={(e) => (e.currentTarget.style.background = 'transparent')}
-            >
-              <LogOut size={15} />
-              <span>Sign Out</span>
-            </button>
+            {user ? (
+              <button
+                type="button"
+                onClick={() => {
+                  setIsOpen(false);
+                  if (onLogout) onLogout();
+                }}
+                style={{
+                  width: '100%',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '0.6rem',
+                  padding: '0.55rem 0.75rem',
+                  background: 'transparent',
+                  border: 'none',
+                  borderRadius: 'var(--radius-sm)',
+                  color: '#f87171',
+                  fontSize: '0.82rem',
+                  fontWeight: 600,
+                  cursor: 'pointer',
+                  textAlign: 'left',
+                  transition: 'background 0.15s'
+                }}
+                onMouseEnter={(e) => (e.currentTarget.style.background = 'rgba(239, 68, 68, 0.15)')}
+                onMouseLeave={(e) => (e.currentTarget.style.background = 'transparent')}
+              >
+                <LogOut size={15} />
+                <span>Sign Out</span>
+              </button>
+            ) : (
+              <button
+                type="button"
+                onClick={() => {
+                  setIsOpen(false);
+                  if (onOpenAuthModal) onOpenAuthModal('login');
+                }}
+                style={{
+                  width: '100%',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '0.6rem',
+                  padding: '0.55rem 0.75rem',
+                  background: 'linear-gradient(135deg, rgba(255, 107, 53, 0.2), rgba(234, 88, 12, 0.3))',
+                  border: '1px solid rgba(255, 107, 53, 0.4)',
+                  borderRadius: 'var(--radius-sm)',
+                  color: '#ffedd5',
+                  fontSize: '0.82rem',
+                  fontWeight: 700,
+                  cursor: 'pointer',
+                  textAlign: 'left',
+                  transition: 'background 0.15s'
+                }}
+                onMouseEnter={(e) => (e.currentTarget.style.background = 'rgba(255, 107, 53, 0.35)')}
+                onMouseLeave={(e) => (e.currentTarget.style.background = 'linear-gradient(135deg, rgba(255, 107, 53, 0.2), rgba(234, 88, 12, 0.3))')}
+              >
+                <LogIn size={15} color="var(--accent-orange)" />
+                <span>Sign In / Create Account</span>
+              </button>
+            )}
           </div>
         </div>
       )}

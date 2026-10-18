@@ -244,9 +244,13 @@ export const notificationService = {
   },
 
   // Dispatches Timeout alert
-  sendTimeoutNotification({ teamCalling, ourScore, opponentScore }) {
-    const title = `⏱️ Timeout Called by ${teamCalling === 'us' ? 'Our Squad' : 'Opponent'}`;
-    const body = `Score: Us ${ourScore} - ${opponentScore} Opponent • 60-second break`;
+  sendTimeoutNotification({ teamCalling, ourScore, opponentScore, callerName, setNumber, opponentName }) {
+    const isUs = teamCalling === 'us';
+    const teamLabel = isUs ? 'Our Squad' : (opponentName || 'Opponent');
+    const callerLabel = callerName ? ` by ${callerName}` : '';
+    const title = `⏱️ Timeout Called${callerLabel} (${teamLabel})`;
+    const setPrefix = setNumber ? `Set ${setNumber} • ` : '';
+    const body = `${setPrefix}Score: Us ${ourScore ?? 0} - ${opponentScore ?? 0} ${opponentName || 'Opponent'} • 30s/60s Huddle`;
 
     return this.sendLockScreenNotification({
       title,

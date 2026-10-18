@@ -40,6 +40,7 @@ import MatchWizardModal from './components/MatchWizardModal';
 import TournamentDayHubModal from './components/TournamentDayHubModal';
 import TournamentSyncToast from './components/TournamentSyncToast';
 import RemoteScoreUpdateOverlay from './components/RemoteScoreUpdateOverlay';
+import RemoteTimeoutOverlay from './components/RemoteTimeoutOverlay';
 import FirebaseSettingsModal from './components/FirebaseSettingsModal';
 import DrillCenterModal from './components/DrillCenterModal';
 import GameCenterModal from './components/GameCenterModal';
@@ -54,6 +55,7 @@ import AutoSubConfirmModal from './components/AutoSubConfirmModal';
 import GeminiCoachModal from './components/GeminiCoachModal';
 import { storageService, DEFAULT_TEAM_ID } from './services/storageService';
 import { notificationService } from './services/notificationService';
+import { soundEffectsService } from './services/soundEffectsService';
 import { firebaseService } from './services/firebaseService';
 import { rotateLineupClockwise, checkLineupFrontRowLiberoViolation, ZONE_LABELS } from './services/volleyballRules';
 import './styles/court.css';
@@ -190,8 +192,11 @@ export default function App() {
   const [matchStats, setMatchStats] = useState(() => storageService.getMatchStats());
   const [matchHistory, setMatchHistory] = useState(() => storageService.getMatchHistory());
   const [remoteScoreEvent, setRemoteScoreEvent] = useState(null);
+  const [remoteTimeoutEvent, setRemoteTimeoutEvent] = useState(null);
   const [autoSubModalData, setAutoSubModalData] = useState(null);
   const lastSeenScoreEventIdRef = useRef(null);
+  const lastSeenTimeoutEventIdRef = useRef(null);
+  const syncChannelRef = useRef(null);
   const lastScoreStateRef = useRef({
     ourScore: matchStats?.ourScore ?? 0,
     opponentScore: matchStats?.opponentScore ?? 0
@@ -363,6 +368,69 @@ export default function App() {
   }, []);
 
   // -------------------------------------------------------------
+  // Hook 1.5: Instant Cross-Tab / Multi-Window Local Peer Sync
+  // -------------------------------------------------------------
+  useEffect(() => {
+    if (typeof window === 'undefined' || typeof window.BroadcastChannel === 'undefined') return;
+
+    try {
+      const channel = new BroadcastChannel('volleyball_realtime_sync');
+      syncChannelRef.current = channel;
+
+      channel.onmessage = (event) => {
+        const data = event?.data;
+        if (!data || data.deviceId === currentDeviceId) return;
+
+        if (data.type === 'timeout_called' && data.event) {
+          const incomingTO = data.event;
+          if (incomingTO.id && incomingTO.id !== lastSeenTimeoutEventIdRef.current) {
+            lastSeenTimeoutEventIdRef.current = incomingTO.id;
+
+            // 1. Referee Whistle & Haptic Vibration
+            soundEffectsService.playTimeoutAlertSound(incomingTO.teamCalling || 'us');
+
+            // 2. Dispatch Lock Screen / Background System Notification
+            notificationService.sendTimeoutNotification({
+              teamCalling: incomingTO.teamCalling || 'us',
+              ourScore: incomingTO.ourScore,
+              opponentScore: incomingTO.opponentScore,
+              callerName: incomingTO.callerName,
+              setNumber: incomingTO.setNumber,
+              opponentName: incomingTO.opponentName || matchStats?.opponentName || 'Opponent'
+            });
+
+            // 3. Open Real-Time Timeout Overlay with countdown
+            setRemoteTimeoutEvent(incomingTO);
+
+            // 4. In-App Sync Toast
+            const isUs = incomingTO.teamCalling === 'us';
+            setSyncToast({
+              title: isUs ? `⏱️ Timeout Called by ${incomingTO.callerName || 'Co-Coach'}` : `⏱️ Timeout (${incomingTO.opponentName || 'Opponent'})`,
+              message: `Set ${incomingTO.setNumber || 1} • US ${incomingTO.ourScore} - ${incomingTO.opponentScore} OPP (${isUs ? incomingTO.ourTimeoutsRemaining : incomingTO.opponentTimeoutsRemaining} left this set)`,
+              type: 'new_point'
+            });
+
+            // Update local timeouts remaining if provided
+            if (incomingTO.ourTimeoutsRemaining !== undefined || incomingTO.opponentTimeoutsRemaining !== undefined) {
+              setMatchStats(prev => ({
+                ...prev,
+                ourTimeoutsRemaining: incomingTO.ourTimeoutsRemaining ?? prev?.ourTimeoutsRemaining,
+                opponentTimeoutsRemaining: incomingTO.opponentTimeoutsRemaining ?? prev?.opponentTimeoutsRemaining
+              }));
+            }
+          }
+        }
+      };
+
+      return () => {
+        channel.close();
+      };
+    } catch (e) {
+      console.warn('BroadcastChannel initialization notice:', e);
+    }
+  }, [currentDeviceId, matchStats?.opponentName]);
+
+  // -------------------------------------------------------------
   // Hook 2: Dedicated Real-Time Collaborative Listener on Active Squad
   // -------------------------------------------------------------
   useEffect(() => {
@@ -485,6 +553,45 @@ export default function App() {
 
           setMatchStats(cloudTeam.matchStats);
           storageService.saveMatchStats(cloudTeam.matchStats);
+        }
+
+        // Check for incoming remote timeout event from another device
+        if (cloudTeam.lastTimeoutEvent) {
+          const incomingTO = cloudTeam.lastTimeoutEvent;
+          const isNewTO = incomingTO.id && incomingTO.id !== lastSeenTimeoutEventIdRef.current;
+
+          if (isNewTO) {
+            const eventTime = incomingTO.timestamp ? new Date(incomingTO.timestamp).getTime() : Date.now();
+            const isRecent = Date.now() - eventTime < 180000; // within last 3 minutes
+
+            if (isRecent) {
+              lastSeenTimeoutEventIdRef.current = incomingTO.id;
+
+              // 1. Play referee whistle alert & haptics
+              soundEffectsService.playTimeoutAlertSound(incomingTO.teamCalling || 'us');
+
+              // 2. Dispatch Lock Screen / Background Notification
+              notificationService.sendTimeoutNotification({
+                teamCalling: incomingTO.teamCalling || 'us',
+                ourScore: incomingTO.ourScore,
+                opponentScore: incomingTO.opponentScore,
+                callerName: incomingTO.callerName,
+                setNumber: incomingTO.setNumber,
+                opponentName: incomingTO.opponentName || cloudTeam.matchStats?.opponentName || 'Opponent'
+              });
+
+              // 3. Trigger High-Visibility Remote Timeout Overlay
+              setRemoteTimeoutEvent(incomingTO);
+
+              // 4. In-App Sync Toast
+              const isUs = incomingTO.teamCalling === 'us';
+              setSyncToast({
+                title: isUs ? `⏱️ Timeout Called by ${incomingTO.callerName || 'Co-Coach'}` : `⏱️ Timeout (${incomingTO.opponentName || 'Opponent'})`,
+                message: `Set ${incomingTO.setNumber || 1} • US ${incomingTO.ourScore} - ${incomingTO.opponentScore} OPP (${isUs ? incomingTO.ourTimeoutsRemaining : incomingTO.opponentTimeoutsRemaining} TOs left)`,
+                type: 'new_point'
+              });
+            }
+          }
         }
 
         // 2. Match State (Lineups, Rotations, Subs, Liberos)
@@ -795,10 +902,16 @@ export default function App() {
     const currentRemaining = isUs ? (matchStats?.ourTimeoutsRemaining ?? 2) : (matchStats?.opponentTimeoutsRemaining ?? 2);
     if (currentRemaining <= 0) return;
 
+    const timeoutEventId = `to-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`;
+    const callerName = user?.displayName || user?.email?.split('@')[0] || 'Coach';
+
     const timeoutEntry = {
-      id: `to-${Date.now()}`,
+      id: timeoutEventId,
       setNumber: matchStats?.setNumber || 1,
       team: isUs ? 'us' : 'opponent',
+      callerName,
+      callerUid: user?.uid || null,
+      callerDeviceId: currentDeviceId,
       ourScore: matchStats?.ourScore || 0,
       opponentScore: matchStats?.opponentScore || 0,
       timestamp: new Date().toISOString()
@@ -813,6 +926,41 @@ export default function App() {
 
     setMatchStats(nextStats);
 
+    const timeoutEvent = {
+      id: timeoutEventId,
+      type: 'timeout',
+      teamCalling: isUs ? 'us' : 'opponent',
+      callerName,
+      callerUid: user?.uid || null,
+      callerDeviceId: currentDeviceId,
+      setNumber: nextStats.setNumber || 1,
+      ourScore: nextStats.ourScore,
+      opponentScore: nextStats.opponentScore,
+      opponentName: matchStats?.opponentName || 'Opponent',
+      ourTimeoutsRemaining: nextStats.ourTimeoutsRemaining,
+      opponentTimeoutsRemaining: nextStats.opponentTimeoutsRemaining,
+      timestamp: new Date().toISOString()
+    };
+
+    // Mark as locally seen so this device does not trigger a remote alert on itself
+    lastSeenTimeoutEventIdRef.current = timeoutEventId;
+
+    // Sound referee whistle & haptics locally
+    soundEffectsService.playTimeoutAlertSound(isUs ? 'us' : 'opponent');
+
+    // Post to BroadcastChannel for other open tabs/windows
+    if (syncChannelRef.current) {
+      try {
+        syncChannelRef.current.postMessage({
+          type: 'timeout_called',
+          event: timeoutEvent,
+          deviceId: currentDeviceId
+        });
+      } catch (err) {
+        console.warn('BroadcastChannel error:', err);
+      }
+    }
+
     setSyncToast({
       title: isUs ? '⏱️ Timeout Called (US)' : `⏱️ Timeout (${matchStats?.opponentName || 'Opponent'})`,
       message: `Score: US ${nextStats.ourScore} - ${nextStats.opponentScore} OPP (${isUs ? nextStats.ourTimeoutsRemaining : nextStats.opponentTimeoutsRemaining} left this set)`,
@@ -822,11 +970,16 @@ export default function App() {
     notificationService.sendTimeoutNotification({
       teamCalling: isUs ? 'us' : 'opponent',
       ourScore: nextStats.ourScore,
-      opponentScore: nextStats.opponentScore
+      opponentScore: nextStats.opponentScore,
+      callerName,
+      setNumber: nextStats.setNumber || 1,
+      opponentName: matchStats?.opponentName || 'Opponent'
     });
 
+    // Broadcast immediately to Firestore for all other devices
     syncCloudImmediately({
-      matchStats: nextStats
+      matchStats: nextStats,
+      lastTimeoutEvent: timeoutEvent
     });
   };
 
@@ -2159,6 +2312,14 @@ export default function App() {
         scoreEvent={remoteScoreEvent}
         onDismiss={() => setRemoteScoreEvent(null)}
         autoDismissSeconds={15}
+      />
+
+      {/* Real-Time Co-Coach Timeout Alert Overlay with 60s/30s Huddle Countdown */}
+      <RemoteTimeoutOverlay
+        timeoutEvent={remoteTimeoutEvent}
+        onDismiss={() => setRemoteTimeoutEvent(null)}
+        onOpenWhiteboard={() => setActiveTab('whiteboard')}
+        onOpenGeminiCoach={handleOpenGeminiCoach}
       />
 
       {/* Navigation Tabs: Core Sideline & Tactical Navigation */}

@@ -164,6 +164,88 @@ class SoundEffectsService {
       console.warn('Sound playback notice:', err);
     }
   }
+
+  /**
+   * Distinct referee timeout whistle sound + buzzer alert for collaborative devices.
+   * Produces an authentic dual-tone whistle blast with rapid amplitude modulation (pea trill)
+   * followed by physical device vibration.
+   */
+  playTimeoutAlertSound(teamCalling = 'us') {
+    // 1. Strong haptic pulses [short burst, gap, longer burst, gap, solid pulse]
+    this.vibrate([280, 100, 280, 100, 480]);
+
+    // 2. Synthesize official referee whistle via Web Audio
+    try {
+      const ctx = this.getAudioContext();
+      if (!ctx) return;
+
+      if (ctx.state === 'suspended') {
+        ctx.resume();
+      }
+
+      const now = ctx.currentTime;
+
+      // Helper to synthesize one whistle blast (dual high frequencies with rapid warble)
+      const playWhistleBlast = (startTime, duration, peakVol = 0.4) => {
+        const osc1 = ctx.createOscillator();
+        const osc2 = ctx.createOscillator();
+        const tremolo = ctx.createOscillator();
+        const tremoloGain = ctx.createGain();
+        const blastGain = ctx.createGain();
+
+        // Fox 40 style acoustic dissonance: 2800Hz & 3120Hz
+        osc1.type = 'triangle';
+        osc1.frequency.setValueAtTime(2800, startTime);
+        osc1.frequency.exponentialRampToValueAtTime(2920, startTime + duration);
+
+        osc2.type = 'sine';
+        osc2.frequency.setValueAtTime(3120, startTime);
+        osc2.frequency.exponentialRampToValueAtTime(3240, startTime + duration);
+
+        // 32Hz amplitude warble
+        tremolo.frequency.setValueAtTime(32, startTime);
+        tremoloGain.gain.setValueAtTime(0.3, startTime);
+        tremolo.connect(blastGain.gain);
+
+        blastGain.gain.setValueAtTime(0.01, startTime);
+        blastGain.gain.linearRampToValueAtTime(peakVol, startTime + 0.03);
+        blastGain.gain.exponentialRampToValueAtTime(0.001, startTime + duration);
+
+        osc1.connect(blastGain);
+        osc2.connect(blastGain);
+        blastGain.connect(ctx.destination);
+
+        tremolo.start(startTime);
+        osc1.start(startTime);
+        osc2.start(startTime);
+
+        tremolo.stop(startTime + duration);
+        osc1.stop(startTime + duration);
+        osc2.stop(startTime + duration);
+      };
+
+      // Blast 1: Quick alert chirp (0.18s)
+      playWhistleBlast(now, 0.18, 0.38);
+
+      // Blast 2: Solid official referee blast (0.32s)
+      playWhistleBlast(now + 0.22, 0.32, 0.42);
+
+      // Warm low stadium buzzer tone underlying the whistle for extra punch
+      const buzzer = ctx.createOscillator();
+      const buzzerGain = ctx.createGain();
+      buzzer.type = 'sawtooth';
+      buzzer.frequency.setValueAtTime(teamCalling === 'us' ? 220 : 185, now + 0.05);
+      buzzerGain.gain.setValueAtTime(0.08, now + 0.05);
+      buzzerGain.gain.exponentialRampToValueAtTime(0.001, now + 0.55);
+
+      buzzer.connect(buzzerGain);
+      buzzerGain.connect(ctx.destination);
+      buzzer.start(now + 0.05);
+      buzzer.stop(now + 0.58);
+    } catch (err) {
+      console.warn('Timeout sound playback error:', err);
+    }
+  }
 }
 
 export const soundEffectsService = new SoundEffectsService();

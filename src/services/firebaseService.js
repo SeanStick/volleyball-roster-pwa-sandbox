@@ -390,12 +390,18 @@ export const firebaseService = {
         matchState: teamData.matchState || null,
         matchStats: teamData.matchStats || null,
         matchHistory: teamData.matchHistory || [],
-        lastScoreEvent: teamData.lastScoreEvent || null,
         updatedAt: new Date().toISOString(),
         updatedBy: userId,
         updatedByDeviceId: deviceId || teamData.updatedByDeviceId || null,
         updatedByName: userDisplayName
       };
+
+      if (teamData.lastScoreEvent !== undefined) {
+        payload.lastScoreEvent = teamData.lastScoreEvent;
+      }
+      if (teamData.lastTimeoutEvent !== undefined) {
+        payload.lastTimeoutEvent = teamData.lastTimeoutEvent;
+      }
 
       // Write full collaborative squad to /teams/{teamId}
       await setDoc(sharedTeamDocRef, payload, { merge: true });

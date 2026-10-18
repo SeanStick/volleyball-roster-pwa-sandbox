@@ -8,7 +8,7 @@ export default function JerseyVisualizer({
   isLibero = false,
   primaryColor = '#ff6b35',
   secondaryColor = '#1e3a8a',
-  size = 140
+  size
 }) {
   const jerseyColor = isLibero ? '#7c3aed' : primaryColor;
   const trimColor = isLibero ? '#f59e0b' : secondaryColor;
@@ -17,8 +17,10 @@ export default function JerseyVisualizer({
   const displayName = name ? name.toUpperCase() : 'SPIKER';
   const displayNum = number !== undefined && number !== null && number !== '' ? number : '00';
 
+  const inlineStyle = size ? { width: `${size}px`, height: `${size * 1.1}px` } : undefined;
+
   return (
-    <div style={{ width: size, height: size * 1.1 }} className="jersey-svg-wrap">
+    <div style={inlineStyle} className="jersey-svg-wrap">
       <svg
         viewBox="0 0 200 220"
         width="100%"

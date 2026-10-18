@@ -349,17 +349,18 @@ export const firebaseService = {
       const sharedTeamDocRef = doc(db, 'teams', teamId);
       const existingSnap = await getDoc(sharedTeamDocRef);
       
+      let existingData = {};
       let existingMembers = {};
       let existingShareCode = teamData.shareCode;
       let ownerId = userId;
       let ownerName = userDisplayName;
 
       if (existingSnap.exists()) {
-        const d = existingSnap.data();
-        existingMembers = d.members || {};
-        existingShareCode = d.shareCode || existingShareCode || this.generateShareCode();
-        ownerId = d.ownerId || ownerId;
-        ownerName = d.ownerName || ownerName;
+        existingData = existingSnap.data() || {};
+        existingMembers = existingData.members || {};
+        existingShareCode = existingData.shareCode || existingShareCode || this.generateShareCode();
+        ownerId = existingData.ownerId || ownerId;
+        ownerName = existingData.ownerName || ownerName;
       } else {
         if (!existingShareCode) {
           existingShareCode = this.generateShareCode();
@@ -379,6 +380,42 @@ export const firebaseService = {
         }
       };
 
+      // Smart Collaborative Roster Merge: prevents overwriting when two coaches edit players concurrently
+      let finalRoster = teamData.roster || [];
+      const remoteDeletedIds = new Set(existingData.deletedPlayerIds || []);
+      if (teamData.deletedPlayerId) remoteDeletedIds.add(teamData.deletedPlayerId);
+      if (Array.isArray(teamData.deletedPlayerIds)) {
+        teamData.deletedPlayerIds.forEach(id => remoteDeletedIds.add(id));
+      }
+
+      if (Array.isArray(existingData.roster) && Array.isArray(teamData.roster)) {
+        const incomingMap = new Map(teamData.roster.map(p => [p.id, p]));
+        const mergedList = [];
+
+        // 1. First add incoming players (resolving by updatedAt timestamp if both modified the same player)
+        teamData.roster.forEach(player => {
+          if (!remoteDeletedIds.has(player.id)) {
+            const remoteP = existingData.roster.find(rp => rp.id === player.id);
+            if (remoteP && remoteP.updatedAt && player.updatedAt) {
+              if (new Date(remoteP.updatedAt).getTime() > new Date(player.updatedAt).getTime()) {
+                mergedList.push(remoteP);
+                return;
+              }
+            }
+            mergedList.push(player);
+          }
+        });
+
+        // 2. Preserve any player added by another coach that this client had not yet loaded
+        existingData.roster.forEach(remoteP => {
+          if (!incomingMap.has(remoteP.id) && !remoteDeletedIds.has(remoteP.id)) {
+            mergedList.push(remoteP);
+          }
+        });
+
+        finalRoster = mergedList;
+      }
+
       const payload = {
         id: teamId,
         shareCode: existingShareCode,
@@ -386,7 +423,8 @@ export const firebaseService = {
         ownerName,
         members: updatedMembers,
         teamSettings: teamData.teamSettings || {},
-        roster: teamData.roster || [],
+        roster: finalRoster,
+        deletedPlayerIds: Array.from(remoteDeletedIds).slice(0, 50),
         matchState: teamData.matchState || null,
         matchStats: teamData.matchStats || null,
         matchHistory: teamData.matchHistory || [],
@@ -401,6 +439,9 @@ export const firebaseService = {
       }
       if (teamData.lastTimeoutEvent !== undefined) {
         payload.lastTimeoutEvent = teamData.lastTimeoutEvent;
+      }
+      if (teamData.lastRosterEvent !== undefined) {
+        payload.lastRosterEvent = teamData.lastRosterEvent;
       }
 
       // Write full collaborative squad to /teams/{teamId}
@@ -432,9 +473,135 @@ export const firebaseService = {
         // Non-fatal index write
       }
 
-      return { success: true, teamId, shareCode: existingShareCode, members: updatedMembers };
+      return { success: true, teamId, shareCode: existingShareCode, members: updatedMembers, roster: finalRoster };
     } catch (e) {
       console.warn('Firestore collaborative team sync error:', e);
+      return { success: false, error: e.message };
+    }
+  },
+
+  /**
+   * Dedicated atomic method to save or update an individual player.
+   * Eliminates roster clobbering when multiple coaches edit simultaneously.
+   */
+  async saveRosterPlayer(teamId, user, playerData, deviceId) {
+    if (!teamId || !playerData) return { success: false, error: 'Team ID and player data required' };
+
+    const db = this.getDbInstance();
+    if (!db || !this.isConfigured()) {
+      return { success: true, player: playerData };
+    }
+
+    try {
+      const sharedTeamDocRef = doc(db, 'teams', teamId);
+      const snap = await getDoc(sharedTeamDocRef);
+      if (!snap.exists()) {
+        return { success: false, error: 'Team document not found' };
+      }
+
+      const teamData = snap.data();
+      const currentRoster = Array.isArray(teamData.roster) ? teamData.roster : [];
+      const now = new Date().toISOString();
+      const playerWithMeta = {
+        ...playerData,
+        updatedAt: now,
+        updatedBy: user?.uid || null,
+        updatedByName: user?.displayName || user?.email?.split('@')[0] || 'Coach'
+      };
+
+      const existingIndex = currentRoster.findIndex(p => p.id === playerData.id);
+      let updatedRoster;
+      if (existingIndex >= 0) {
+        updatedRoster = currentRoster.map(p => p.id === playerData.id ? playerWithMeta : p);
+      } else {
+        updatedRoster = [playerWithMeta, ...currentRoster];
+      }
+
+      // If player set as first server, ensure others are unset
+      if (playerWithMeta.isFirstServer) {
+        updatedRoster = updatedRoster.map(p => p.id === playerWithMeta.id ? p : { ...p, isFirstServer: false });
+      }
+
+      const lastRosterEvent = {
+        id: `re-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
+        type: existingIndex >= 0 ? 'update_player' : 'add_player',
+        playerId: playerWithMeta.id,
+        playerName: playerWithMeta.name,
+        playerNumber: playerWithMeta.number,
+        callerName: user?.displayName || user?.email?.split('@')[0] || 'Coach',
+        callerUid: user?.uid || null,
+        callerDeviceId: deviceId || null,
+        timestamp: now
+      };
+
+      await setDoc(sharedTeamDocRef, {
+        roster: updatedRoster,
+        lastRosterEvent,
+        updatedAt: now,
+        updatedBy: user?.uid || null,
+        updatedByDeviceId: deviceId || null,
+        updatedByName: user?.displayName || user?.email?.split('@')[0] || 'Coach'
+      }, { merge: true });
+
+      return { success: true, roster: updatedRoster, player: playerWithMeta, lastRosterEvent };
+    } catch (e) {
+      console.warn('saveRosterPlayer error:', e);
+      return { success: false, error: e.message };
+    }
+  },
+
+  /**
+   * Dedicated atomic method to delete a player from the collaborative team roster.
+   */
+  async deleteRosterPlayer(teamId, user, playerId, deviceId) {
+    if (!teamId || !playerId) return { success: false, error: 'Team ID and player ID required' };
+
+    const db = this.getDbInstance();
+    if (!db || !this.isConfigured()) {
+      return { success: true, playerId };
+    }
+
+    try {
+      const sharedTeamDocRef = doc(db, 'teams', teamId);
+      const snap = await getDoc(sharedTeamDocRef);
+      if (!snap.exists()) {
+        return { success: false, error: 'Team document not found' };
+      }
+
+      const teamData = snap.data();
+      const currentRoster = Array.isArray(teamData.roster) ? teamData.roster : [];
+      const playerToDelete = currentRoster.find(p => p.id === playerId);
+      const updatedRoster = currentRoster.filter(p => p.id !== playerId);
+      const now = new Date().toISOString();
+
+      const existingDeleted = Array.isArray(teamData.deletedPlayerIds) ? teamData.deletedPlayerIds : [];
+      const updatedDeleted = [playerId, ...existingDeleted.filter(id => id !== playerId)].slice(0, 50);
+
+      const lastRosterEvent = {
+        id: `re-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
+        type: 'delete_player',
+        playerId,
+        playerName: playerToDelete?.name || 'Player',
+        playerNumber: playerToDelete?.number,
+        callerName: user?.displayName || user?.email?.split('@')[0] || 'Coach',
+        callerUid: user?.uid || null,
+        callerDeviceId: deviceId || null,
+        timestamp: now
+      };
+
+      await setDoc(sharedTeamDocRef, {
+        roster: updatedRoster,
+        deletedPlayerIds: updatedDeleted,
+        lastRosterEvent,
+        updatedAt: now,
+        updatedBy: user?.uid || null,
+        updatedByDeviceId: deviceId || null,
+        updatedByName: user?.displayName || user?.email?.split('@')[0] || 'Coach'
+      }, { merge: true });
+
+      return { success: true, roster: updatedRoster, lastRosterEvent };
+    } catch (e) {
+      console.warn('deleteRosterPlayer error:', e);
       return { success: false, error: e.message };
     }
   },

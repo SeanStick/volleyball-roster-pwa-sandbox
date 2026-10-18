@@ -196,6 +196,7 @@ export default function App() {
   const [autoSubModalData, setAutoSubModalData] = useState(null);
   const lastSeenScoreEventIdRef = useRef(null);
   const lastSeenTimeoutEventIdRef = useRef(null);
+  const lastSeenRosterEventIdRef = useRef(null);
   const syncChannelRef = useRef(null);
   const lastScoreStateRef = useRef({
     ourScore: matchStats?.ourScore ?? 0,
@@ -206,7 +207,8 @@ export default function App() {
   // Instant Cloud Sync Function for Game Events (Scores, Points, Rotations, Tournament Setup)
   // -------------------------------------------------------------
   const syncCloudImmediately = useCallback((bundleOverrides = {}) => {
-    if (!user?.uid || isHydratingCloudRef.current || isApplyingRemoteUpdateRef.current) return;
+    // Explicit user actions (overrides) should never be dropped even if a background snapshot is processing
+    if (!user?.uid || isHydratingCloudRef.current) return;
 
     if (syncTimeoutRef.current) {
       clearTimeout(syncTimeoutRef.current);
@@ -420,6 +422,23 @@ export default function App() {
             }
           }
         }
+
+        // Instant local cross-tab roster sync
+        if (data.type === 'roster_updated' && Array.isArray(data.roster)) {
+          setRoster(data.roster);
+          storageService.saveRoster(data.roster);
+
+          const pName = data.player?.name || 'Player';
+          const actionText = data.action === 'delete_player'
+            ? 'Removed a player from roster'
+            : (data.action === 'add_player' ? `Added ${pName}` : `Updated ${pName}`);
+
+          setSyncToast({
+            title: '📋 Roster Synced',
+            message: actionText,
+            type: 'new_point'
+          });
+        }
       };
 
       return () => {
@@ -615,10 +634,64 @@ export default function App() {
           storageService.saveTeamSettings(cloudTeam.teamSettings);
         }
 
-        // 4. Player Roster
+        // 4. Player Roster (Smart Collaborative Merge)
         if (Array.isArray(cloudTeam.roster)) {
-          setRoster(cloudTeam.roster);
-          storageService.saveRoster(cloudTeam.roster);
+          setRoster(prevLocal => {
+            if (!Array.isArray(prevLocal) || prevLocal.length === 0) {
+              storageService.saveRoster(cloudTeam.roster);
+              return cloudTeam.roster;
+            }
+
+            const cloudMap = new Map(cloudTeam.roster.map(p => [p.id, p]));
+            const deletedSet = new Set(cloudTeam.deletedPlayerIds || []);
+
+            const isIdentical = prevLocal.length === cloudTeam.roster.length &&
+              prevLocal.every((lp, i) => cloudTeam.roster[i] && lp.id === cloudTeam.roster[i].id && lp.updatedAt === cloudTeam.roster[i].updatedAt);
+
+            if (isIdentical) return prevLocal;
+
+            const merged = [];
+            cloudTeam.roster.forEach(cp => {
+              if (!deletedSet.has(cp.id)) {
+                merged.push(cp);
+              }
+            });
+
+            // Preserve newly created local players that haven't reached cloud yet
+            prevLocal.forEach(lp => {
+              if (!cloudMap.has(lp.id) && !deletedSet.has(lp.id)) {
+                const isVeryRecent = lp.updatedAt && (Date.now() - new Date(lp.updatedAt).getTime()) < 15000;
+                if (isVeryRecent) {
+                  merged.unshift(lp);
+                }
+              }
+            });
+
+            storageService.saveRoster(merged);
+            return merged;
+          });
+        }
+
+        // 4b. Notify on incoming collaborative roster events from co-coaches
+        if (cloudTeam.lastRosterEvent) {
+          const rEvent = cloudTeam.lastRosterEvent;
+          if (rEvent.id && rEvent.id !== lastSeenRosterEventIdRef.current) {
+            lastSeenRosterEventIdRef.current = rEvent.id;
+            const isRecent = (Date.now() - new Date(rEvent.timestamp || 0).getTime()) < 120000;
+            if (isRecent) {
+              const actionLabel = rEvent.type === 'delete_player'
+                ? `Removed #${rEvent.playerNumber !== undefined ? rEvent.playerNumber : ''} ${rEvent.playerName || 'Player'}`
+                : (rEvent.type === 'add_player'
+                    ? `Added #${rEvent.playerNumber !== undefined ? rEvent.playerNumber : ''} ${rEvent.playerName || 'Player'}`
+                    : `Updated #${rEvent.playerNumber !== undefined ? rEvent.playerNumber : ''} ${rEvent.playerName || 'Player'}`);
+
+              setSyncToast({
+                title: `📋 Roster Updated by ${rEvent.callerName || 'Co-Coach'}`,
+                message: actionLabel,
+                type: 'new_point'
+              });
+            }
+          }
         }
 
         // 5. Match History
@@ -2095,9 +2168,36 @@ export default function App() {
   };
 
   const handleUpdateRosterPlayerStatus = (playerId, updates) => {
-    const updatedRoster = roster.map(p => p.id === playerId ? { ...p, ...updates } : p);
+    let targetPlayer = null;
+    const currentRoster = Array.isArray(roster) ? roster : [];
+    const updatedRoster = currentRoster.map(p => {
+      if (p.id === playerId) {
+        targetPlayer = { ...p, ...updates, updatedAt: new Date().toISOString() };
+        return targetPlayer;
+      }
+      return p;
+    });
     setRoster(updatedRoster);
     storageService.saveRoster(updatedRoster);
+
+    if (syncChannelRef.current && targetPlayer) {
+      try {
+        syncChannelRef.current.postMessage({
+          type: 'roster_updated',
+          action: 'update_player',
+          player: targetPlayer,
+          roster: updatedRoster,
+          deviceId: currentDeviceId
+        });
+      } catch (err) {
+        console.warn('BroadcastChannel error:', err);
+      }
+    }
+
+    if (targetPlayer && user?.uid && activeTeamId) {
+      firebaseService.saveRosterPlayer(activeTeamId, user, targetPlayer, currentDeviceId).catch(() => {});
+    }
+
     syncCloudImmediately({
       roster: updatedRoster
     });
@@ -2129,21 +2229,29 @@ export default function App() {
   };
 
   // -------------------------------------------------------------
-  // Player Actions
+  // Player Actions (Robust Collaborative Roster Sync)
   // -------------------------------------------------------------
   const handleSavePlayer = (playerData) => {
-    let nextRoster;
-    setRoster(prev => {
-      let updatedList = playerToEdit
-        ? prev.map(p => p.id === playerData.id ? playerData : p)
-        : [playerData, ...prev];
+    const playerId = playerData.id || playerToEdit?.id || `p-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`;
+    const fullPlayerData = {
+      ...playerData,
+      id: playerId,
+      updatedAt: new Date().toISOString()
+    };
 
-      if (playerData.isFirstServer) {
-        updatedList = updatedList.map(p => p.id === playerData.id ? p : { ...p, isFirstServer: false });
-      }
-      nextRoster = updatedList;
-      return updatedList;
-    });
+    const currentRoster = Array.isArray(roster) ? roster : [];
+    const isEdit = Boolean(playerToEdit || currentRoster.some(p => p.id === playerId));
+    let nextRoster = isEdit
+      ? currentRoster.map(p => p.id === playerId ? fullPlayerData : p)
+      : [fullPlayerData, ...currentRoster];
+
+    if (fullPlayerData.isFirstServer) {
+      nextRoster = nextRoster.map(p => p.id === playerId ? p : { ...p, isFirstServer: false });
+    }
+
+    // 1. Synchronously update local React state & storage
+    setRoster(nextRoster);
+    storageService.saveRoster(nextRoster);
 
     if (!playerToEdit) {
       confetti({ particleCount: 35, spread: 50, origin: { y: 0.6 } });
@@ -2151,15 +2259,38 @@ export default function App() {
     setIsPlayerModalOpen(false);
     setPlayerToEdit(null);
 
-    if (nextRoster) {
-      syncCloudImmediately({ roster: nextRoster });
+    // 2. Broadcast immediately to local peer tabs via BroadcastChannel
+    if (syncChannelRef.current) {
+      try {
+        syncChannelRef.current.postMessage({
+          type: 'roster_updated',
+          action: isEdit ? 'update_player' : 'add_player',
+          player: fullPlayerData,
+          roster: nextRoster,
+          deviceId: currentDeviceId
+        });
+      } catch (err) {
+        console.warn('BroadcastChannel error:', err);
+      }
     }
+
+    // 3. Dedicated atomic player save in Firestore
+    if (user?.uid && activeTeamId) {
+      firebaseService.saveRosterPlayer(activeTeamId, user, fullPlayerData, currentDeviceId).catch(err => {
+        console.warn('Direct saveRosterPlayer error:', err);
+      });
+    }
+
+    // 4. Synchronize full bundle immediately
+    syncCloudImmediately({ roster: nextRoster });
   };
 
   const handleDeletePlayer = (id) => {
     if (window.confirm('Are you sure you want to remove this player from the roster?')) {
-      const nextRoster = roster.filter(p => p.id !== id);
+      const currentRoster = Array.isArray(roster) ? roster : [];
+      const nextRoster = currentRoster.filter(p => p.id !== id);
       setRoster(nextRoster);
+      storageService.saveRoster(nextRoster);
 
       const nextLineup = { ...lineup };
       Object.keys(nextLineup).forEach(k => {
@@ -2180,8 +2311,31 @@ export default function App() {
       });
       setLiberoExchanges(nextExchanges);
 
+      // Broadcast immediately to local peer tabs
+      if (syncChannelRef.current) {
+        try {
+          syncChannelRef.current.postMessage({
+            type: 'roster_updated',
+            action: 'delete_player',
+            playerId: id,
+            roster: nextRoster,
+            deviceId: currentDeviceId
+          });
+        } catch (err) {
+          console.warn('BroadcastChannel error:', err);
+        }
+      }
+
+      // Atomic delete in Firestore
+      if (user?.uid && activeTeamId) {
+        firebaseService.deleteRosterPlayer(activeTeamId, user, id, currentDeviceId).catch(err => {
+          console.warn('Direct deleteRosterPlayer error:', err);
+        });
+      }
+
       syncCloudImmediately({
         roster: nextRoster,
+        deletedPlayerId: id,
         matchState: {
           lineup: nextLineup,
           startingLineup: nextStartingLineup,
@@ -2198,31 +2352,47 @@ export default function App() {
   };
 
   const handleUpdatePlayerPosition = (playerId, targetPosition) => {
-    const nextRoster = roster.map(p => {
+    let updatedPlayer = null;
+    const currentRoster = Array.isArray(roster) ? roster : [];
+    const nextRoster = currentRoster.map(p => {
       if (p.id === playerId) {
-        return {
+        updatedPlayer = {
           ...p,
           position: targetPosition,
-          isLibero: targetPosition === 'Libero'
+          isLibero: targetPosition === 'Libero',
+          updatedAt: new Date().toISOString()
         };
+        return updatedPlayer;
       }
       return p;
     });
     setRoster(nextRoster);
+    storageService.saveRoster(nextRoster);
+
+    if (updatedPlayer && user?.uid && activeTeamId) {
+      firebaseService.saveRosterPlayer(activeTeamId, user, updatedPlayer, currentDeviceId).catch(() => {});
+    }
     syncCloudImmediately({ roster: nextRoster });
   };
 
   const handleDuplicatePlayer = (player) => {
-    const nextNumber = Math.min(99, player.number + 1);
+    const nextNumber = Math.min(99, (player.number || 0) + 1);
     const newPlayer = {
       ...player,
-      id: `p-${Date.now()}`,
+      id: `p-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`,
       name: `${player.name} (Copy)`,
       number: nextNumber,
-      isCaptain: false
+      isCaptain: false,
+      updatedAt: new Date().toISOString()
     };
-    const nextRoster = [newPlayer, ...roster];
+    const currentRoster = Array.isArray(roster) ? roster : [];
+    const nextRoster = [newPlayer, ...currentRoster];
     setRoster(nextRoster);
+    storageService.saveRoster(nextRoster);
+
+    if (user?.uid && activeTeamId) {
+      firebaseService.saveRosterPlayer(activeTeamId, user, newPlayer, currentDeviceId).catch(() => {});
+    }
     syncCloudImmediately({ roster: nextRoster });
   };
 
@@ -2963,7 +3133,11 @@ export default function App() {
       <ImportExportModal
         isOpen={isImportExportModalOpen}
         onClose={() => setIsImportExportModalOpen(false)}
-        onRosterUpdated={(newRoster) => setRoster(newRoster)}
+        onRosterUpdated={(newRoster) => {
+          setRoster(newRoster);
+          storageService.saveRoster(newRoster);
+          syncCloudImmediately({ roster: newRoster });
+        }}
       />
 
       {/* 🎯 Volleyball Drills & Animated Practice Hub Modal */}

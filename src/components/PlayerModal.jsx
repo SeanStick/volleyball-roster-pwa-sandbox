@@ -91,8 +91,10 @@ export default function PlayerModal({ isOpen, onClose, onSave, playerToEdit, tea
     e.preventDefault();
     if (!validate()) return;
 
+    const playerId = playerToEdit?.id || `p-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`;
     onSave({
-      ...(playerToEdit || { id: `p-${Date.now()}` }),
+      ...(playerToEdit || {}),
+      id: playerId,
       name: formData.name.trim(),
       number: parseInt(formData.number, 10),
       position: formData.position,
